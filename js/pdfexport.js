@@ -1,19 +1,61 @@
-let FONT_BYTES = null;
+let CUSTOM_FONT_BYTE_CACHE = null;
+let FONTKIT_REGISTERED = false;
+
+function cloneFontBytes(rawBytes) {
+  const requiredKeys = ["signature", "normal", "monospace"];
+  const cloned = {};
+
+  for (const key of requiredKeys) {
+    const source = rawBytes?.[key];
+    if (!source) throw new Error(`Missing font bytes for "${key}"`);
+
+    cloned[key] = source instanceof Uint8Array ? source : new Uint8Array(source);
+  }
+
+  return cloned;
+}
 
 async function loadAllCustomFontBytes() {
-  return FONT_BYTES; // already in memory
+  if (CUSTOM_FONT_BYTE_CACHE) return CUSTOM_FONT_BYTE_CACHE;
+
+  if (typeof FONT_BYTES === "undefined" || !FONT_BYTES) {
+    throw new Error("Custom font bytes were not initialised (utils.js missing?)");
+  }
+
+  CUSTOM_FONT_BYTE_CACHE = cloneFontBytes(FONT_BYTES);
+  return CUSTOM_FONT_BYTE_CACHE;
+}
+
+function ensureFontkitRegistered() {
+  if (FONTKIT_REGISTERED) return;
+
+  const fontkitGlobal =
+    (typeof globalThis !== "undefined" && globalThis.fontkit) ||
+    (typeof window !== "undefined" && window.fontkit);
+
+  if (!fontkitGlobal) {
+    throw new Error("fontkit library was not loaded");
+  }
+
+  if (!PDFLib || !PDFLib.PDFDocument || typeof PDFLib.PDFDocument.registerFontkit !== "function") {
+    throw new Error("PDFLib missing registerFontkit support");
+  }
+
+  PDFLib.PDFDocument.registerFontkit(fontkitGlobal);
+  FONTKIT_REGISTERED = true;
 }
 
 async function embedFontsForDoc(doc) {
   // Try custom fonts (now from FONT_BYTES)
   let sig = null, norm = null, mono = null;
   try {
+    ensureFontkitRegistered();
     const bytes = await loadAllCustomFontBytes();
     sig  = await doc.embedFont(bytes.signature, { subset: true });
     norm = await doc.embedFont(bytes.normal,    { subset: true });
     mono = await doc.embedFont(bytes.monospace, { subset: true });
   } catch (e) {
-    // fall back to built-ins below
+    console.warn("Falling back to standard fonts:", e);
   }
 
   const helv   = await doc.embedFont(PDFLib.StandardFonts.Helvetica);
