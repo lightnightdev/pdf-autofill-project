@@ -201,7 +201,7 @@ async function generateAndExportPDFs() {
     }
 
     // 6) Generate and download a single ZIP
-    const zipName = `flattened_pdfs_${new Date()
+    const zipName = `autofilled_pdfs_${new Date()
       .toISOString()
       .slice(0, 19)
       .replace(/[:T]/g, "-")}.zip`;
