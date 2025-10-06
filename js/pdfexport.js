@@ -95,7 +95,7 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 async function generateAndExportPDFs() {
   const total = (csvData?.length || 0) - 1;
   if (total <= 0) { log("CSV has no data rows."); return; }
-  if (!confirm(`Generate and download ${total} flattened PDF(s)?`)) return;
+  if (!confirm(`Generate and download ${total} flattened PDF(s) as a ZIP?`)) return;
 
   currentPdf = await getCachedPDF();
   if (!window.PDFLib) { log("pdf-lib not available"); return; }
@@ -107,6 +107,9 @@ async function generateAndExportPDFs() {
     const srcBytes = await currentPdf.arrayBuffer();
     const srcDoc = await PDFLib.PDFDocument.load(srcBytes);
 
+    // collect files for zipping
+    const filesForZip = [];
+
     for (let r = 1; r < csvData.length; r++) {
       log(`Generating row ${r} of ${total}…`);
 
@@ -116,7 +119,7 @@ async function generateAndExportPDFs() {
       srcPages.forEach(p => outDoc.addPage(p));
 
       // 2) Deep Sanitize
-      await deepSanitizePdf(outDoc);    // ⬅️ do this
+      await deepSanitizePdf(outDoc);
 
       // 3) Embed your custom fonts for THIS doc
       const fonts = await embedFontsForDoc(outDoc);
@@ -150,20 +153,19 @@ async function generateAndExportPDFs() {
         page.drawText(text, { x: exportX, y: exportY, size, font });
       }
 
-      // 5) Save and download this file
-      const bytes = await outDoc.save(); // Uint8Array in memory
+      // 5) Save and queue this file for the ZIP (no per-file download)
+      const bytes = await outDoc.save({ useObjectStreams: false, compress: true });
       const stemRaw = (csvData[r]?.[0] || "").toString();
       const stem = sanitizeStem(stemRaw) || `Row-${r}`;
-      /* For saving files individually instead of zipped
-      const blob = new Blob([bytes], { type: "application/pdf" });
-      downloadBlob(blob, `${stem}.pdf`);
-      await sleep(75); // small spacing between downloads
-      */
 
-
+      filesForZip.push({ name: `${stem}.pdf`, data: bytes });
     }
 
-    log("All flattened PDFs generated and downloaded separately.");
+    // 6) Generate and download a single ZIP
+    const zipName = `flattened_pdfs_${new Date().toISOString().slice(0,19).replace(/[:T]/g,"-")}.zip`;
+    await downloadZip(filesForZip, zipName);
+
+    log(`All ${total} flattened PDFs generated and zipped into ${zipName}.`);
   } catch (err) {
     console.error(err);
     log("Export error: " + (err?.message || err));
