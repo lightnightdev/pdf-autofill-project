@@ -152,13 +152,15 @@ async function generateAndExportPDFs() {
 
       // 5) Save and download this file
       const bytes = await outDoc.save(); // Uint8Array in memory
-      const blob = new Blob([bytes], { type: "application/pdf" });
-
       const stemRaw = (csvData[r]?.[0] || "").toString();
       const stem = sanitizeStem(stemRaw) || `Row-${r}`;
+      /* For saving files individually instead of zipped
+      const blob = new Blob([bytes], { type: "application/pdf" });
       downloadBlob(blob, `${stem}.pdf`);
-
       await sleep(75); // small spacing between downloads
+      */
+
+
     }
 
     log("All flattened PDFs generated and downloaded separately.");
