@@ -1,5 +1,4 @@
 let CUSTOM_FONT_BYTE_CACHE = null;
-let FONTKIT_REGISTERED = false;
 
 function cloneFontBytes(rawBytes) {
   const requiredKeys = ["signature", "normal", "monospace"];
@@ -9,7 +8,8 @@ function cloneFontBytes(rawBytes) {
     const source = rawBytes?.[key];
     if (!source) throw new Error(`Missing font bytes for "${key}"`);
 
-    cloned[key] = source instanceof Uint8Array ? source : new Uint8Array(source);
+    cloned[key] =
+      source instanceof Uint8Array ? source : new Uint8Array(source);
   }
 
   return cloned;
@@ -18,63 +18,69 @@ function cloneFontBytes(rawBytes) {
 async function loadAllCustomFontBytes() {
   if (CUSTOM_FONT_BYTE_CACHE) return CUSTOM_FONT_BYTE_CACHE;
 
-  if (typeof FONT_BYTES === "undefined" || !FONT_BYTES) {
-    throw new Error("Custom font bytes were not initialised (utils.js missing?)");
+  const fontBytes = initFontBytes(); // Call the init function
+  if (!fontBytes) {
+    throw new Error("Custom font bytes were not initialised");
   }
 
-  CUSTOM_FONT_BYTE_CACHE = cloneFontBytes(FONT_BYTES);
+  CUSTOM_FONT_BYTE_CACHE = cloneFontBytes(fontBytes);
   return CUSTOM_FONT_BYTE_CACHE;
 }
 
-function ensureFontkitRegistered() {
-  if (FONTKIT_REGISTERED) return;
-
-  const fontkitGlobal =
-    (typeof globalThis !== "undefined" && globalThis.fontkit) ||
-    (typeof window !== "undefined" && window.fontkit);
-
+async function embedFontsForDoc(doc) {
+  const fontkitGlobal = window.fontkit || globalThis.fontkit;
   if (!fontkitGlobal) {
     throw new Error("fontkit library was not loaded");
   }
 
-  if (!PDFLib || !PDFLib.PDFDocument || typeof PDFLib.PDFDocument.registerFontkit !== "function") {
-    throw new Error("PDFLib missing registerFontkit support");
-  }
+  doc.registerFontkit(fontkitGlobal);
 
-  PDFLib.PDFDocument.registerFontkit(fontkitGlobal);
-  FONTKIT_REGISTERED = true;
-}
-
-async function embedFontsForDoc(doc) {
-  // Try custom fonts (now from FONT_BYTES)
-  let sig = null, norm = null, mono = null;
+  let sig = null,
+    norm = null,
+    mono = null;
   try {
-    ensureFontkitRegistered();
     const bytes = await loadAllCustomFontBytes();
-    sig  = await doc.embedFont(bytes.signature, { subset: true });
-    norm = await doc.embedFont(bytes.normal,    { subset: true });
-    mono = await doc.embedFont(bytes.monospace, { subset: true });
+
+    // Add validation
+    console.log("Signature bytes length:", bytes.signature.length);
+    console.log("Normal bytes length:", bytes.normal.length);
+    console.log("Monospace bytes length:", bytes.monospace.length);
+
+    // Check if they're actually Uint8Arrays
+    console.log(
+      "Signature is Uint8Array:",
+      bytes.signature instanceof Uint8Array
+    );
+
+    // Try embedding one at a time to see which fails
+
+    sig = await doc.embedFont(bytes.signature, { subset: false });
+    norm = await doc.embedFont(bytes.normal, { subset: false });
+    mono = await doc.embedFont(bytes.monospace, { subset: false });
   } catch (e) {
     console.warn("Falling back to standard fonts:", e);
   }
 
-  const helv   = await doc.embedFont(PDFLib.StandardFonts.Helvetica);
+  const helv = await doc.embedFont(PDFLib.StandardFonts.Helvetica);
   const helvIt = await doc.embedFont(PDFLib.StandardFonts.HelveticaOblique);
-  const cour   = await doc.embedFont(PDFLib.StandardFonts.Courier);
+  const cour = await doc.embedFont(PDFLib.StandardFonts.Courier);
 
   return {
-    signature: sig  || helvIt,
-    normal:    norm || helv,
+    signature: sig || helvIt,
+    normal: norm || helv,
     monospace: mono || cour,
   };
 }
 
 function pickFontForPdf(fontKey, embedded) {
-  switch ((fontKey || '').toLowerCase()) {
-    case 'signature': return embedded.signature;
-    case 'monospace': return embedded.monospace;
-    case 'normal':
-    default: return embedded.normal;
+  switch ((fontKey || "").toLowerCase()) {
+    case "signature":
+      return embedded.signature;
+    case "monospace":
+      return embedded.monospace;
+    case "normal":
+    default:
+      return embedded.normal;
   }
 }
 
@@ -86,21 +92,48 @@ function getCellOrHeader(rowIdx, colIdx) {
   return `Col ${colIdx}`;
 }
 
-function sanitizeStem(s) {
-  return (s || "").toString().trim().replace(/[^\w\-]+/g, "_").slice(0, 64) || "Row";
+function getCellOrBlank(rowIdx, colIdx) {
+  const val = csvData?.[rowIdx]?.[colIdx];
+  if (val && String(val).trim() !== "") return String(val);
+  return ""; // Return empty string instead of falling back to header
 }
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function sanitizeStem(s) {
+  return (
+    (s || "")
+      .toString()
+      .trim()
+      .replace(/[^\w\-]+/g, "_")
+      .slice(0, 64) || ""
+  );
+}
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
 
 async function generateAndExportPDFs() {
   const total = (csvData?.length || 0) - 1;
-  if (total <= 0) { log("CSV has no data rows."); return; }
-  if (!confirm(`Generate and download ${total} flattened PDF(s) as a ZIP?`)) return;
+  if (total <= 0) {
+    log("CSV has no data rows.");
+    return;
+  }
+  if (!confirm(`Generate and download ${total} flattened PDF(s) as a ZIP?`))
+    return;
 
   currentPdf = await getCachedPDF();
-  if (!window.PDFLib) { log("pdf-lib not available"); return; }
-  if (!currentPdf) { log("No base PDF loaded."); return; }
-  if (!locData || Object.keys(locData).length === 0) { log("No locations set."); return; }
+  if (!window.PDFLib) {
+    log("pdf-lib not available");
+    return;
+  }
+  if (!currentPdf) {
+    log("No base PDF loaded.");
+    return;
+  }
+  if (!locData || Object.keys(locData).length === 0) {
+    log("No locations set.");
+    return;
+  }
 
   try {
     log("Preparing source PDF…");
@@ -116,7 +149,7 @@ async function generateAndExportPDFs() {
       // 1) New output doc with copied pages
       const outDoc = await PDFLib.PDFDocument.create();
       const srcPages = await outDoc.copyPages(srcDoc, srcDoc.getPageIndices());
-      srcPages.forEach(p => outDoc.addPage(p));
+      srcPages.forEach((p) => outDoc.addPage(p));
 
       // 2) Deep Sanitize
       await deepSanitizePdf(outDoc);
@@ -146,7 +179,7 @@ async function generateAndExportPDFs() {
         const exportX = (Number(cfg.x) || 0) * scaleX;
         const exportY = pageH - (Number(cfg.y) || 0) * scaleY;
 
-        const text = getCellOrHeader(r, parseInt(key, 10));
+        const text = getCellOrBlank(r, parseInt(key, 10));
         const size = Number(cfg.size) || 12;
         const font = pickFontForPdf(cfg.font, fonts);
 
@@ -154,15 +187,24 @@ async function generateAndExportPDFs() {
       }
 
       // 5) Save and queue this file for the ZIP (no per-file download)
-      const bytes = await outDoc.save({ useObjectStreams: false, compress: true });
+      const bytes = await outDoc.save({
+        useObjectStreams: false,
+        compress: true,
+      });
       const stemRaw = (csvData[r]?.[0] || "").toString();
-      const stem = sanitizeStem(stemRaw) || `Row-${r}`;
+        // To get leading 0's if more than 9 rows
+        const paddedRow = String(r).padStart(String(total).length, '0');
+        const sanitized = sanitizeStem(stemRaw);
+      const stem = sanitized ? `${paddedRow}-${sanitized}` : `Row-${paddedRow}`;
 
       filesForZip.push({ name: `${stem}.pdf`, data: bytes });
     }
 
     // 6) Generate and download a single ZIP
-    const zipName = `flattened_pdfs_${new Date().toISOString().slice(0,19).replace(/[:T]/g,"-")}.zip`;
+    const zipName = `flattened_pdfs_${new Date()
+      .toISOString()
+      .slice(0, 19)
+      .replace(/[:T]/g, "-")}.zip`;
     await downloadZip(filesForZip, zipName);
 
     log(`All ${total} flattened PDFs generated and zipped into ${zipName}.`);
@@ -172,55 +214,57 @@ async function generateAndExportPDFs() {
   }
 }
 
-
-
-
-
-
 async function deepSanitizePdf(outDoc) {
   const { PDFName, PDFDict, PDFArray } = PDFLib;
 
   // 1) Flatten AcroForm fields (safe if no form present)
-  try { outDoc.getForm().flatten(); } catch { }
+  try {
+    outDoc.getForm().flatten();
+  } catch {}
 
   // 2) Remove page annotations & additional actions
   try {
     for (const page of outDoc.getPages()) {
       const node = page.node;
       // Clear annotations array (comments, links, etc.)
-      if (node.get(PDFName.of('Annots'))) node.set(PDFName.of('Annots'), outDoc.context.obj([]));
+      if (node.get(PDFName.of("Annots")))
+        node.set(PDFName.of("Annots"), outDoc.context.obj([]));
       // Remove page-level actions (AA)
-      if (node.get(PDFName.of('AA'))) node.delete(PDFName.of('AA'));
+      if (node.get(PDFName.of("AA"))) node.delete(PDFName.of("AA"));
     }
-  } catch { }
+  } catch {}
 
   // 3) Remove document open actions
   try {
     const cat = outDoc.catalog; // Catalog dict
-    if (cat.dict.has(PDFName.of('OpenAction'))) cat.dict.delete(PDFName.of('OpenAction'));
-    if (cat.dict.has(PDFName.of('AA'))) cat.dict.delete(PDFName.of('AA'));
-  } catch { }
+    if (cat.dict.has(PDFName.of("OpenAction")))
+      cat.dict.delete(PDFName.of("OpenAction"));
+    if (cat.dict.has(PDFName.of("AA"))) cat.dict.delete(PDFName.of("AA"));
+  } catch {}
 
   // 4) Remove JavaScript & EmbeddedFiles name trees from /Names
   try {
     const cat = outDoc.catalog;
-    const names = cat.dict.get(PDFName.of('Names'));
+    const names = cat.dict.get(PDFName.of("Names"));
     if (names) {
       const namesDict = outDoc.context.lookup(names, PDFDict);
       if (namesDict) {
-        if (namesDict.has(PDFName.of('JavaScript'))) namesDict.delete(PDFName.of('JavaScript'));
-        if (namesDict.has(PDFName.of('EmbeddedFiles'))) namesDict.delete(PDFName.of('EmbeddedFiles'));
+        if (namesDict.has(PDFName.of("JavaScript")))
+          namesDict.delete(PDFName.of("JavaScript"));
+        if (namesDict.has(PDFName.of("EmbeddedFiles")))
+          namesDict.delete(PDFName.of("EmbeddedFiles"));
         // If /Names becomes empty, drop it
-        if (namesDict.size === 0) cat.dict.delete(PDFName.of('Names'));
+        if (namesDict.size === 0) cat.dict.delete(PDFName.of("Names"));
       }
     }
-  } catch { }
+  } catch {}
 
   // 5) Remove metadata/XMP (optional)
   try {
     const cat = outDoc.catalog;
-    if (cat.dict.has(PDFName.of('Metadata'))) cat.dict.delete(PDFName.of('Metadata'));
-  } catch { }
+    if (cat.dict.has(PDFName.of("Metadata")))
+      cat.dict.delete(PDFName.of("Metadata"));
+  } catch {}
 
   // 6) Ensure fonts are subset & standard where possible (you already use { subset: true })
   // Nothing to do here programmatically unless re-embedding. You’re good.
@@ -228,30 +272,22 @@ async function deepSanitizePdf(outDoc) {
   // 7) Clear viewer prefs that can trigger behaviors (optional)
   try {
     const cat = outDoc.catalog;
-    if (cat.dict.has(PDFName.of('ViewerPreferences'))) cat.dict.delete(PDFName.of('ViewerPreferences'));
-  } catch { }
+    if (cat.dict.has(PDFName.of("ViewerPreferences")))
+      cat.dict.delete(PDFName.of("ViewerPreferences"));
+  } catch {}
 }
-
-
-
-
-
-
-
-
-
-
 
 // downloader
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename;
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
   document.body.appendChild(a);
-  a.click(); a.remove();
+  a.click();
+  a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
-
 
 async function downloadZip(files, zipName = "output.zip") {
   // files: Array<{ name: string, data: Uint8Array | ArrayBuffer | Blob | string }>
@@ -262,8 +298,10 @@ async function downloadZip(files, zipName = "output.zip") {
   const blob = await zip.generateAsync({ type: "blob" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url; a.download = zipName;
+  a.href = url;
+  a.download = zipName;
   document.body.appendChild(a);
-  a.click(); a.remove();
+  a.click();
+  a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

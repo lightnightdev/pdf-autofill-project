@@ -20,133 +20,125 @@
   font-style: normal;
 }
 
-
-
 /* Reset-ish */
 * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 html,
 body {
-    height: 100%;
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-    font-size: 12px;
+  height: 100%;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial;
+  font-size: 12px;
 }
 
 .layout {
-    display: grid;
-    grid-template-columns: 300px 1fr 300px;
-    /* left fixed, center fluid, right fixed */
-    min-height: 100vh;
-    /* full viewport height */
-    gap: 0px;
-    /* no gap by default; change if you want spacing */
+  display: grid;
+  grid-template-columns: 300px 1fr 300px;
+  /* left fixed, center fluid, right fixed */
+  min-height: 100vh;
+  /* full viewport height */
+  gap: 0px;
+  /* no gap by default; change if you want spacing */
 }
-
-
-
-
-
-
 
 /* Shared sidebar styles */
 .sidebar {
-    padding: 8px;
-    margin: 0px;
-    overflow: auto;
-    /* allow scrolling if content is taller than viewport */
-    background: #f3f4f6;
-    /* light neutral background */
-    border-right: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 8px;
+  margin: 0px;
+  overflow: auto;
+  /* allow scrolling if content is taller than viewport */
+  background: #f3f4f6;
+  /* light neutral background */
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 /* Sidebar Left */
 .sidebar.left {
-    margin: 0;
-    margin-bottom: 0;
+  margin: 0;
+  margin-bottom: 0;
 }
 
 .file-row {
-    margin: 2px;
-    margin-bottom: 10px;
+  margin: 2px;
+  margin-bottom: 10px;
 }
 
 .logbox {
-    white-space: pre-wrap;
-    font-family: monospace;
-    font-size: 12px;
-    height: 200px;
-    overflow: auto;
-    background: #0f172a;
-    color: #afa;
-    padding: 4px;
-    border-radius: 6px
+  white-space: pre-wrap;
+  font-family: monospace;
+  font-size: 12px;
+  height: 200px;
+  overflow: auto;
+  background: #0f172a;
+  color: #afa;
+  padding: 4px;
+  border-radius: 6px;
 }
 
 /* Right sidebar border on the left instead */
 .sidebar.right {
-    padding: 8px;
-    background: #e3e4e6;
-    border-right: none;
-    border-left: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 8px;
+  background: #e3e4e6;
+  border-right: none;
+  border-left: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .card.card-select {
-    font-weight: bold;
-    background-color: #ffc107;
+  font-weight: bold;
+  background-color: #ffc107;
 }
 
 .card.card-select.loc-data-exists {
-    background-color: #1f1 ! important;
+  background-color: #1f1 !important;
 }
 
 .card.loc-data-exists {
-    background-color: #afa;
+  background-color: #afa;
 }
 
 .csvbar {
-    padding: 8px;
-    background: #e3e4e6;
-    height: 80px;
+  padding: 8px;
+  background: #e3e4e6;
+  height: 80px;
 }
 
 #csv-table th,
 #csv-table td {
-    cursor: pointer;
-    /* show selectable */
-    border: 1px solid #ccc;
-    padding: 2px 4px;
+  cursor: pointer;
+  /* show selectable */
+  border: 1px solid #ccc;
+  padding: 2px 4px;
 }
 
 #csv-table td {
-    background: #fff;
+  background: #fff;
 }
 
 #csv-table th {
-    background: #eee;
-    font-weight: "bold";
+  background: #eee;
+  font-weight: "bold";
 }
 
 #csv-table th.selected,
 #csv-table td.selected {
-    background-color: #fff9c4;
-    /* light yellow */
-    font-weight: bold;
+  background-color: #fff9c4;
+  /* light yellow */
+  font-weight: bold;
 }
-
 
 /* Main content area */
 .content {
-    padding: 32px;
-    overflow: auto;
-    background: white;
+  padding: 32px;
+  overflow: auto;
+  background: white;
 }
 
 #pdf-canvas {
-    border: 1px solid #0f172a;
+  border: 1px solid #0f172a;
 }
 
 .loc-data-el {
@@ -158,38 +150,37 @@ body {
 
 /* Optional: make headers stand out */
 .sidebar h2 {
-    margin-bottom: 12px;
-    font-size: 1.1rem;
+  margin-bottom: 12px;
+  font-size: 1.1rem;
 }
 
 .content h1 {
-    margin-bottom: 16px;
-    font-size: 1.4rem;
+  margin-bottom: 16px;
+  font-size: 1.4rem;
 }
-
 
 /* Responsive fallback:
    If the viewport is narrower than 1000px, stack the layout vertically.
    You can adjust breakpoints/behavior to what you prefer. */
 @media (max-width: 1000px) {
-    .layout {
-        grid-template-columns: 1fr;
-        /* single column */
-        grid-auto-rows: auto;
-    }
+  .layout {
+    grid-template-columns: 1fr;
+    /* single column */
+    grid-auto-rows: auto;
+  }
 
-    .sidebar,
-    .content {
-        padding: 20px;
-    }
+  .sidebar,
+  .content {
+    padding: 20px;
+  }
 
-    .sidebar {
-        border-right: none;
-        border-left: none;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-    }
+  .sidebar {
+    border-right: none;
+    border-left: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
 
-    .sidebar.right {
-        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-    }
+  .sidebar.right {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
 }
