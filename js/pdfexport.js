@@ -1,7 +1,7 @@
 let CUSTOM_FONT_BYTE_CACHE = null;
 
 function cloneFontBytes(rawBytes) {
-  const requiredKeys = ["signature", "normal", "monospace"];
+  const requiredKeys = ["_signature", "_normal", "_monospace"];
   const cloned = {};
 
   for (const key of requiredKeys) {
@@ -41,46 +41,33 @@ async function embedFontsForDoc(doc) {
   try {
     const bytes = await loadAllCustomFontBytes();
 
-    // Add validation
-    console.log("Signature bytes length:", bytes.signature.length);
-    console.log("Normal bytes length:", bytes.normal.length);
-    console.log("Monospace bytes length:", bytes.monospace.length);
-
-    // Check if they're actually Uint8Arrays
-    console.log(
-      "Signature is Uint8Array:",
-      bytes.signature instanceof Uint8Array
-    );
-
-    // Try embedding one at a time to see which fails
-
-    sig = await doc.embedFont(bytes.signature, { subset: false });
-    norm = await doc.embedFont(bytes.normal, { subset: false });
-    mono = await doc.embedFont(bytes.monospace, { subset: false });
+    // Embed fonts to PDF document
+    sig = await doc.embedFont(bytes._signature, { subset: false });
+    norm = await doc.embedFont(bytes._normal, { subset: false });
+    mono = await doc.embedFont(bytes._monospace, { subset: false });
   } catch (e) {
     console.warn("Falling back to standard fonts:", e);
+    sig = await doc.embedFont(PDFLib.StandardFonts.HelveticaOblique);
+    norm = await doc.embedFont(PDFLib.StandardFonts.Helvetica);
+    mono = await doc.embedFont(PDFLib.StandardFonts.Courier);
   }
 
-  const helv = await doc.embedFont(PDFLib.StandardFonts.Helvetica);
-  const helvIt = await doc.embedFont(PDFLib.StandardFonts.HelveticaOblique);
-  const cour = await doc.embedFont(PDFLib.StandardFonts.Courier);
-
   return {
-    signature: sig || helvIt,
-    normal: norm || helv,
-    monospace: mono || cour,
+    _signature: sig,
+    _normal: norm,
+    _monospace: mono,
   };
 }
 
 function pickFontForPdf(fontKey, embedded) {
   switch ((fontKey || "").toLowerCase()) {
-    case "signature":
-      return embedded.signature;
-    case "monospace":
-      return embedded.monospace;
-    case "normal":
+    case "_signature":
+      return embedded._signature;
+    case "_monospace":
+      return embedded._monospace;
+    case "_normal":
     default:
-      return embedded.normal;
+      return embedded._normal;
   }
 }
 

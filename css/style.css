@@ -1,20 +1,20 @@
 /* Fonts */
 @font-face {
-  font-family: "Signature";
+  font-family: "_signature";
   src: url("Signature.otf") format("opentype");
   font-weight: 400;
   font-style: normal;
 }
 
 @font-face {
-  font-family: "CreatoDisplay";
+  font-family: "_normal";
   src: url("CreatoDisplay-Regular.otf") format("opentype");
   font-weight: 400;
   font-style: normal;
 }
 
 @font-face {
-  font-family: "Courier Prime";
+  font-family: "_monospace";
   src: url("CourierPrime-Regular.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;

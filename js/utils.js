@@ -14,9 +14,9 @@ function initFontBytes() {
   }
   
   window.FONT_BYTES = {
-    signature: b64ToU8(SIGNATURE_OTF_B64),
-    normal:    b64ToU8(CREATO_REG_OTF_B64),
-    monospace: b64ToU8(COURIER_PRIME_TTF_B64),
+    _signature: b64ToU8(SIGNATURE_OTF_B64),
+    _normal:    b64ToU8(CREATO_REG_OTF_B64),
+    _monospace: b64ToU8(COURIER_PRIME_TTF_B64),
   };
   
   return window.FONT_BYTES;

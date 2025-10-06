@@ -186,7 +186,6 @@ function setFontSizeSelectors(colIdx) {
   // ✅ Prefill font + size if this column already has locData
   const card = document.querySelector(`[data-col-idx="${colIdx}"]`);
   if (card && card.classList.contains("loc-data-exists") && locData?.[colIdx]) {
-    log('setting');
     const cfg = locData[colIdx];
 
     const fontSelect = document.getElementById("font-select");
@@ -200,7 +199,7 @@ function setFontSizeSelectors(colIdx) {
     }
   } else {
     // Optional: reset to defaults when no locData
-    document.getElementById("font-select").value = "CreatoDisplay";
+    document.getElementById("font-select").value = "_normal";
     document.getElementById("size-select").value = 12;
   }
 }
