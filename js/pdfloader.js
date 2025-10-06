@@ -66,78 +66,93 @@ document.getElementById("pdf-file").addEventListener("change", async (e) => {
   const file = e.target.files?.[0];
   if (!file) return;
 
+  const file_ab = await file.arrayBuffer();
+
   try {
-    log(`Selected file: ${file.name}`);
-    log(`Original size: ${(file.size / 1024).toFixed(1)} KB`);
-
-    const canEdit = await isEditingAllowed(file); // or drop await if truly sync
+    log(` Selected file: ${file.name}`);
+    log(` Original size: ${(file.size / 1024).toFixed(1)} KB`);
+    const canEdit = await isEditingAllowed(file_ab); // or drop await if truly sync
+    if (!canEdit) {
+      log("PDF modifications not allowed. Rasterizing...");
+    }
     const processed = canEdit
-      ? await rasterizeFile(file)            // return processed bytes/blob
-      : await flattenAndCompressFile(file);  // return processed bytes/blob
+      ? await flattenAndCompressFile(file_ab) // return processed bytes/blob
+      : await rasterizeFile(file_ab, {dpi : 100} ); // return processed bytes/blob
 
-    savePdfToIndexedDb(processed);     // pass processed output
-    renderPdf(processed);              // pass processed output
+    renderPdf(processed); // pass processed output
+    savePdfToIndexedDb(processed); // pass processed output
   } catch (err) {
     log("Error: " + (err?.message || err));
     console.error(err);
   }
 });
 
-
-
-
-async function flattenAndCompressFile(file) {
+async function flattenAndCompressFile(arrayBuffer) {
   try {
     // --------------------
     // Flatten & compress with PDF-lib
     // --------------------
-    console.log("getting arrayBuffer");
-    const arrayBuffer = await file.arrayBuffer();
-    console.log("AB size:", arrayBuffer.byteLength);
-    dumpHeaderFooter(arrayBuffer);
-    console.log("Encrypted flag (heuristic):", isLikelyEncrypted(arrayBuffer));
+    // dumpSizeHeaderFooter(arrayBuffer);
     const pdfLibDoc = await PDFLib.PDFDocument.load(arrayBuffer, {
       ignoreEncryption: true,
     });
-    console.log("flatten");
 
     const form = pdfLibDoc.getForm();
     if (form) form.flatten();
 
-    console.log("getting bytes");
-
     const pdfBytes = await pdfLibDoc.save({
-      useObjectStreams: false,
+      useObjectStreams: true,
       compress: true,
     });
-    log(
-      `Flattened & compressed PDF: ${(pdfBytes.byteLength / 1024).toFixed(
-        1
-      )} KB`
-    );
+    return pdfBytes;
   } catch (err) {
     log("Error processing PDF: " + err.message);
     console.error(err);
   }
-};
-
-function savePdfToIndexedDb(file){
-    // --------------------
-    // Save to IndexedDB
-    // --------------------
-    const blob = new Blob([pdfBytes], { type: "application/pdf" });
-    savePdfBlob(blob);
 }
 
-async function renderPdf(file){
-    // --------------------
-    // Render PDF
-    // --------------------
-    const typedarray = new Uint8Array(pdfBytes);
-    await loadPDF(typedarray);
-};
+function savePdfToIndexedDb(arrayBuffer) {
+  // --------------------
+  // Save to IndexedDB
+  // --------------------
+  const blob = new Blob([arrayBuffer], { type: "application/pdf" });
+  log(` Saving: PDF: ${(arrayBuffer.byteLength / 1024).toFixed(1)} KB`);
+  savePdfBlob(blob);
+}
 
-function dumpHeaderFooter(ab) {
+async function renderPdf(arrayBuffer) {
+  // --------------------
+  // Render PDF
+  // --------------------
+  const typedarray = new Uint8Array(arrayBuffer);
+  await loadPDF(typedarray);
+}
+
+async function isEditingAllowed(ab) {
+  loadingTask = pdfjsLib.getDocument({ data: ab });
+  const PdfDoc = await loadingTask.promise;
+  const permissions = await PdfDoc.getPermissions();
+
+  // If null, then no restrictions
+  if (!permissions) return true;
+
+  log("Encryption detected. Checking for permissions...");
+
+  const canModify = permissions.includes(
+    pdfjsLib.PermissionFlag.MODIFY_CONTENTS
+  );
+
+  if (canModify) {
+    log("Modify permissions enabled.");
+  }
+
+  return canModify;
+}
+
+// No Longer Used
+
+function dumpSizeHeaderFooter(ab) {
+  console.log("AB size:", ab.byteLength);
   const u8 = new Uint8Array(ab);
   const head = new TextDecoder("ascii").decode(u8.slice(0, 16));
   const tail = new TextDecoder("ascii").decode(
@@ -147,24 +162,3 @@ function dumpHeaderFooter(ab) {
   console.log("Has %%EOF:", tail.includes("%%EOF")); // must be true
   console.log("Has startxref:", tail.includes("startxref")); // must be true
 }
-
-async function isEditingAllowed(arrayBuffer) {
-  const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-  const doc = await loadingTask.promise;
-  const perms = await doc.getPermissions();
-
-  // null means not encrypted → editing is allowed
-  if (!perms) return true;
-
-  // otherwise check for MODIFY_CONTENTS flag
-  return perms.includes(pdfjsLib.PermissionFlag.MODIFY_CONTENTS);
-}
-
-
-// function isLikelyEncrypted(ab) {
-//   // crude detection: trailer dict or xref stream references /Encrypt
-//   const text = new TextDecoder("latin1").decode(new Uint8Array(ab));
-//   return text.includes("/Encrypt");
-// }
-
-
