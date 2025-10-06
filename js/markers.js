@@ -118,7 +118,7 @@ function applyDataToMarker(el, markerData, colIndex) {
   // anchor bottom-left corner at (x, y)
   el.style.left = (markerData.x || 0) + 'px';
   el.style.top  = (markerData.y || 0) + 'px';
-  el.style.transform = 'translate(0, -100%)';
+  // el.style.transform = 'translate(0, -100%)'; <-- already in css
 
   let font = markerData.font || CreatoDisplay;
 

@@ -34,18 +34,16 @@
                     <label for="csv-file">CSV:</label>
                     <input id="csv-file" type="file" accept="text/csv,text/plain" />
                 </div>
-                <div class="file-row">
-                    <label for="csv-file">Signature Font:</label>
-                    <input id="csv-file" type="file" accept="text/csv,text/plain" />
-                </div>
             </div>
 
             <br>
             <hr><br>
 
             <h2>PDF Navigation</h2>
-            <span id="page-info">Page 0 / 0</span>
-            <div style="margin: 10px 0;">
+            <div id="pdf-page-info">
+                <span id="page-info">Page 0 / 0</span>
+            </div>
+            <div id="pdf-page-buttons"><br>
                 <button id="prev-page" class="btn btn-secondary btn-sm">Previous Page</button>
                 <button id="next-page" class="btn btn-secondary btn-sm">Next Page</button>
             </div>
@@ -57,7 +55,7 @@
             <i class="bi bi-trash"></i> Clear All Markers
             </button>            
 
-            <button id="btn-clear-loc" class="btn btn-success m-2" type="button" onclick="generateAndExportPDFs()">
+            <button id="btn-make-pdfs" class="btn btn-success m-2" type="button" onclick="generateAndExportPDFs()">
                 Generate PDFs
             </button>    
 
@@ -85,8 +83,8 @@
                     <div class="d-flex align-items-center m-2">
                         <label for="font-select" class="form-label mb-0">Font:</label>
                         <select id="font-select" class="form-select form-select-sm">
-                            <option value="Courier Prime">Monospace</option>
                             <option value="CreatoDisplay">Normal</option>
+                            <option value="Courier Prime">Monospace</option>
                             <option value="Signature">Signature</option>
                         </select>
                     </div>
@@ -113,7 +111,9 @@
     <!-- Libraries -->
 
     <!-- pdf-lib: used to write and flatten PDFs -->
-    <script src="https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js"></script>
+
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -124,6 +124,7 @@
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
     <!-- My Dependencies -->
+    <script src="js/utils.js"></script>
     <script src="js/log.js"></script>
     <script src="js/pdfloader.js"></script>
     <script src="js/csvloader.js"></script>
