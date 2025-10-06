@@ -41,7 +41,6 @@ async function renderPage(pageNum) {
   document.getElementById(
     "page-info"
   ).textContent = `Page ${currentPage} / ${totalPages}`;
-  log(`Rendered page ${currentPage}`);
 
   // sync overlay
   if (typeof renderLocAll === "function") {
