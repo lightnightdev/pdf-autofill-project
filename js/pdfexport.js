@@ -1,5 +1,125 @@
 let CUSTOM_FONT_BYTE_CACHE = null;
 
+// main function
+async function generateAndExportPDFs() {
+  // Calculate total number of data rows (excluding header row)
+  const total = (csvData?.length || 0) - 1;
+  if (total <= 0) {
+    log("CSV has no data rows.");
+    return;
+  }
+  if (!confirm(`Generate and download ${total} flattened PDF(s) as a ZIP?`))
+    return;
+
+  // Validate environment and inputs
+  currentPdf = await getCachedPDF();
+  if (!window.PDFLib) {
+    log("pdf-lib not available");
+    return;
+  }
+  if (!currentPdf) {
+    log("No base PDF loaded.");
+    return;
+  }
+  if (!locData || Object.keys(locData).length === 0) {
+    log("No locations set.");
+    return;
+  }
+
+  try {
+    log("Preparing source PDF…");
+    const srcBytes = await currentPdf.arrayBuffer();
+    const srcDoc = await PDFLib.PDFDocument.load(srcBytes);
+
+    // collect files for zipping
+    const filesForZip = [];
+
+    // Iterate through each data row in the CSV (skipping header)
+    for (let r = 1; r < csvData.length; r++) {
+      log(`Generating row ${r} of ${total}…`);
+
+      // 1) New output doc with copied pages
+      const outDoc = await PDFLib.PDFDocument.create();
+      const srcPages = await outDoc.copyPages(srcDoc, srcDoc.getPageIndices());
+      srcPages.forEach((p) => outDoc.addPage(p));
+      // TODO let user select pages
+
+      // 2) Deep Sanitize
+      await deepSanitizePdf(outDoc);
+
+      // 3) Embed your custom fonts for THIS doc
+      const fonts = await embedFontsForDoc(outDoc);
+
+      // 4) Draw placements for this row
+      for (const key of Object.keys(locData)) {
+        const cfg = locData[key];
+        if (!cfg) continue;
+
+        const pageIndex = (cfg.page || 1) - 1;
+        const page = outDoc.getPage(pageIndex);
+        if (!page) continue;
+
+        // Page dimensions (PDF coordinates use points)
+        const pageW = page.getWidth();
+        const pageH = page.getHeight();
+
+        // Stage size = width/height of HTML overlay when user placed fields
+        // This helps map pixel coordinates (HTML) to point coordinates (PDF)
+        const stageW = Number(cfg.stageW) || pageW; // captured overlay width
+        const stageH = Number(cfg.stageH) || pageH;
+
+        // Scale factors: px → pt
+        const scaleX = pageW / stageW;
+        const scaleY = pageH / stageH;
+        
+        // Something is wrong here
+        const cssPxSize = Number(cfg.size) || 12;
+        const pdfFontSize = cssPxSize * scaleY;
+
+        // Convert HTML overlay (top-left origin) → PDF coords (bottom-left origin)
+        // Also, adjust Y-value according to the font
+        const exportX = (Number(cfg.x) || 0) * scaleX;
+        const exportYTop  = pageH - (Number(cfg.y) || 0) * scaleY;
+        const exportY = computeBaselineY(exportYTop, pdfFontSize, cfg.font);
+
+        const text = getCellOrBlank(r, parseInt(key, 10));
+        const font = pickFontForPdf(cfg.font, fonts);
+
+
+        page.drawText(text, { x: exportX, y: exportY, size: pdfFontSize, font });
+      }
+
+      // 5) Save and queue this file for the ZIP (no per-file download)
+      const bytes = await outDoc.save({
+        useObjectStreams: false,
+        compress: true,
+      });
+      const stemRaw = (csvData[r]?.[0] || "").toString();
+        // To get leading 0's if more than 9 rows
+        const paddedRow = String(r).padStart(String(total).length, '0');
+        const sanitized = sanitizeStem(stemRaw);
+      const stem = sanitized ? `${paddedRow}-${sanitized}` : `Row-${paddedRow}`;
+
+      filesForZip.push({ name: `${stem}.pdf`, data: bytes });
+    }
+
+    // 6) Generate and download a single ZIP
+    const zipName = `autofilled_pdfs_${new Date()
+      .toISOString()
+      .slice(0, 19)
+      .replace(/[:T]/g, "-")}.zip`;
+    await downloadZip(filesForZip, zipName);
+
+    log(`All ${total} flattened PDFs generated and zipped into ${zipName}.`);
+  } catch (err) {
+    console.error(err);
+    log("Export error: " + (err?.message || err));
+  }
+}
+
+
+
+
 function cloneFontBytes(rawBytes) {
   const requiredKeys = ["_signature", "_normal", "_monospace"];
   const cloned = {};
@@ -85,6 +205,30 @@ function getCellOrBlank(rowIdx, colIdx) {
   return ""; // Return empty string instead of falling back to header
 }
 
+/**
+ * Convert top-aligned Y coordinate (HTML overlay) → baseline Y (PDF coordinate system).
+ *
+ * @param {number} exportYTop - The top coordinate from your overlay (already scaled to PDF points).
+ * @param {number} fontSize - The final PDF font size (in points).
+ * @param {string} fontKey - The font ID used in your project, e.g. "_signature", "_normal", "_monospace".
+ * @param {number} [unitsPerEm=1000] - The font design grid size (1000 or 2048 typical; default 1000).
+ * @returns {number} - The adjusted Y coordinate for PDF drawText() baseline.
+ */
+function computeBaselineY(exportYTop, fontSize, fontKey) {
+  const ascender = FONT_STYPOASCENDERS[fontKey];
+  const unitsPerEm = FONT_UNITS_PER_EM[fontKey] || 1000;
+  
+  const ascenderRatio = ascender ? ascender / unitsPerEm : 0.8;
+  
+  console.log(`${fontKey}: ascender=${ascender}, upem=${unitsPerEm}, ratio=${ascenderRatio}`);
+  
+  const exportY = exportYTop + ascenderRatio * fontSize;
+  return exportY;
+}
+
+
+
+
 function sanitizeStem(s) {
   return (
     (s || "")
@@ -99,107 +243,6 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-async function generateAndExportPDFs() {
-  const total = (csvData?.length || 0) - 1;
-  if (total <= 0) {
-    log("CSV has no data rows.");
-    return;
-  }
-  if (!confirm(`Generate and download ${total} flattened PDF(s) as a ZIP?`))
-    return;
-
-  currentPdf = await getCachedPDF();
-  if (!window.PDFLib) {
-    log("pdf-lib not available");
-    return;
-  }
-  if (!currentPdf) {
-    log("No base PDF loaded.");
-    return;
-  }
-  if (!locData || Object.keys(locData).length === 0) {
-    log("No locations set.");
-    return;
-  }
-
-  try {
-    log("Preparing source PDF…");
-    const srcBytes = await currentPdf.arrayBuffer();
-    const srcDoc = await PDFLib.PDFDocument.load(srcBytes);
-
-    // collect files for zipping
-    const filesForZip = [];
-
-    for (let r = 1; r < csvData.length; r++) {
-      log(`Generating row ${r} of ${total}…`);
-
-      // 1) New output doc with copied pages
-      const outDoc = await PDFLib.PDFDocument.create();
-      const srcPages = await outDoc.copyPages(srcDoc, srcDoc.getPageIndices());
-      srcPages.forEach((p) => outDoc.addPage(p));
-
-      // 2) Deep Sanitize
-      await deepSanitizePdf(outDoc);
-
-      // 3) Embed your custom fonts for THIS doc
-      const fonts = await embedFontsForDoc(outDoc);
-
-      // 4) Draw placements for this row
-      for (const key of Object.keys(locData)) {
-        const cfg = locData[key];
-        if (!cfg) continue;
-
-        const pageIndex = (cfg.page || 1) - 1;
-        const page = outDoc.getPage(pageIndex);
-        if (!page) continue;
-
-        const pageW = page.getWidth();
-        const pageH = page.getHeight();
-
-        const stageW = Number(cfg.stageW) || pageW; // captured overlay width
-        const stageH = Number(cfg.stageH) || pageH;
-
-        const scaleX = pageW / stageW;
-        const scaleY = pageH / stageH;
-
-        // top-left overlay coords -> bottom-left PDF coords
-        const exportX = (Number(cfg.x) || 0) * scaleX;
-        const exportY = pageH - (Number(cfg.y) || 0) * scaleY;
-
-        const text = getCellOrBlank(r, parseInt(key, 10));
-        const size = Number(cfg.size) || 12;
-        const font = pickFontForPdf(cfg.font, fonts);
-
-        page.drawText(text, { x: exportX, y: exportY, size, font });
-      }
-
-      // 5) Save and queue this file for the ZIP (no per-file download)
-      const bytes = await outDoc.save({
-        useObjectStreams: false,
-        compress: true,
-      });
-      const stemRaw = (csvData[r]?.[0] || "").toString();
-        // To get leading 0's if more than 9 rows
-        const paddedRow = String(r).padStart(String(total).length, '0');
-        const sanitized = sanitizeStem(stemRaw);
-      const stem = sanitized ? `${paddedRow}-${sanitized}` : `Row-${paddedRow}`;
-
-      filesForZip.push({ name: `${stem}.pdf`, data: bytes });
-    }
-
-    // 6) Generate and download a single ZIP
-    const zipName = `autofilled_pdfs_${new Date()
-      .toISOString()
-      .slice(0, 19)
-      .replace(/[:T]/g, "-")}.zip`;
-    await downloadZip(filesForZip, zipName);
-
-    log(`All ${total} flattened PDFs generated and zipped into ${zipName}.`);
-  } catch (err) {
-    console.error(err);
-    log("Export error: " + (err?.message || err));
-  }
-}
 
 async function deepSanitizePdf(outDoc) {
   const { PDFName, PDFDict, PDFArray } = PDFLib;
