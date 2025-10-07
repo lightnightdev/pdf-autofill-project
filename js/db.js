@@ -1,4 +1,36 @@
 // db.js
+
+// KEYS
+const DB_NAME = "PDFCache";
+const STORE_NAME = "files";
+const PDF_KEY = "currentPDF"; // Only ever store one PDF
+const CSV_KEY = "csvData";
+const LOC_KEY = "locData";
+const RENDER_KEY = 'render_pdf'; // idb key for preview pdf
+
+// Startup
+async function loadCachedData() {
+  const request = indexedDB.open(DB_NAME, 1);
+  request.onupgradeneeded = (e) => {
+    db = e.target.result;
+    db.createObjectStore(STORE_NAME);
+  };
+  request.onsuccess = (e) => {
+    db = e.target.result;
+    loadCache();
+  };
+  request.onerror = (e) => log("IndexedDB error: " + e.target.error);
+}
+
+async function loadCache(){
+  await loadCachedCSV();
+  await loadCachedPDF();
+  await loadCachedLocData();
+  displayCSVPreviewAsCards(csvData);
+  loadPDF(currentPdfBytes);
+  renderLocAll?.(); // draw markers for current page
+};
+
 // CSV
 async function loadCachedCSV() {
   try {
@@ -6,7 +38,6 @@ async function loadCachedCSV() {
     if (!data) return;
     csvData = data;
     log(`Loaded cached CSV: (${data.length - 1} data rows)`);
-    displayCSVPreviewAsCards(data);
   } catch (err) {
     log("Error loading cached CSV: " + (err?.message || err));
   }
@@ -19,7 +50,7 @@ async function loadCachedPDF() {
     if (!blob) return;
     log(`Loaded cached PDF: ${(blob.size / 1024).toFixed(1)} KB`);
     const arrayBuffer = await blob.arrayBuffer();
-    await loadPDF(new Uint8Array(arrayBuffer));
+    currentPdfBytes = arrayBuffer;
   } catch (err) {
     log("Error loading cached PDF: " + (err?.message || err));
   }
@@ -30,7 +61,6 @@ async function loadCachedLocData() {
   try {
     locData = (await idbGet(LOC_KEY)) || {};
     log("Loaded cached locations.");
-    renderLocAll?.(); // draw markers for current page
   } catch (err) {
     log("Error loading locations: " + (err?.message || err));
   }
@@ -60,6 +90,17 @@ function saveCsvData(data) {
   };
   tx.onerror = (err) => log("Error saving CSV: " + err.target.error);
 }
+
+
+function savePdfRenderBlob(blob) {
+  const tx = db.transaction(STORE_NAME, "readwrite");
+  tx.objectStore(STORE_NAME).put(blob, RENDER_KEY);
+  tx.oncomplete = () => {
+    console.log("Saving Render PDF to IndexedDB (overwriting previous)");
+  };
+  tx.onerror = (err) => log("IndexedDB save error: " + err.target.error);
+}
+
 
 function savePdfBlob(blob) {
   const tx = db.transaction(STORE_NAME, "readwrite");

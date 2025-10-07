@@ -169,10 +169,15 @@ body {
 }
 
 .loc-data-el {
+  line-height: 1;
   transform: translate(0%, -100%);
   /* padding: 0px 0px; */
   /* border-radius: 0px;  */
   background: rgba(255, 193, 7, 0.5);
+}
+
+.loc-data-el.card-select {
+  background: rgba(100,255,193,0.5);
 }
 
 /* Optional: make headers stand out */

@@ -30,7 +30,7 @@ canvas.addEventListener("click", (e) => {
   // Get selected elements
   const selectedFontInput = document.getElementById('font-select');
   const selectedSizeInput = document.getElementById('size-select');
-  const selectedSpacingInput = document.getElementById('size-select');
+  const selectedSpacingInput = document.getElementById('spacing-select');
   selectedFont = selectedFontInput.value;
   selectedSize = selectedSizeInput.value ? selectedSizeInput.value : "12";
   selectedSpacing = selectedSpacingInput.value ? selectedSpacingInput.value : "0";
@@ -54,9 +54,12 @@ canvas.addEventListener("click", (e) => {
   // Add element to card
   const card = document.querySelector(`[data-col-idx="${selectedColIndex}"]`)
   card.classList.add("loc-data-exists")
-
-  // Render current colIndex only
-  renderLoc(selectedColIndex);
+  if (selectedSpacing > 0) {
+    updateRenderDoc();
+  } else {
+    // Render current colIndex only
+    renderLoc(selectedColIndex);
+  }
   saveLocData();
 
 });
@@ -68,7 +71,25 @@ canvas.addEventListener("click", (e) => {
 //
 // Rendering
 //
-function renderLocAll() {
+
+async function renderLocAll() {
+  // If current page has any spacing, render via PDF-Lib (baked) as  well.
+  if (typeof currentPage !== 'number' || !locData) { log('No page/text to render.'); return; }
+
+  if (pageHasNonZeroSpacing(currentPage)) {
+    try {
+      await renderPage(currentPage);
+    } catch (e) {
+      console.error(e);
+      log('Issue with non-zero spacing columns on page.');
+    }
+  }
+
+  // Render Overlay
+  renderLocAllOverlay();
+}
+
+function renderLocAllOverlay() {
   if (!syncOverlayBoxToCanvas()) { log('no overlay or canvas'); return; }
   if (typeof currentPage !== 'number' || !locData) { log('No page/text to render.'); return; }
 
@@ -80,7 +101,7 @@ function renderLocAll() {
   // 2) Recreate only markers for this page
   Object.keys(locData).forEach((key) => {
     const data = locData[key];
-    if (data && data.page === currentPage) {
+    if (data && Number(data.spacing) <= 0 && data.page === currentPage) {
       createMarker(key, data, overlay);
     }
   });
@@ -92,12 +113,15 @@ function renderLoc(colIndex) {
   if (!data) return;
   if (typeof currentPage !== 'number' || data.page !== currentPage) return;
   if (!syncOverlayBoxToCanvas()) return;
-
+  if (Number(data.spacing) > 0) {
+    updateRenderDoc();
+    return;
+  }
   const overlay = document.getElementById('pdf-overlay');
   // remove existing marker for this col (if any), then recreate
   const existing = document.getElementById(`loc-${colIndex}`);
   if (existing) existing.remove();
-  console.log(data);
+
   createMarker(colIndex, data, overlay);
 }
 
@@ -105,7 +129,9 @@ function createMarker(colIndex, markerData, overlay) {
   const el = document.createElement('div');
   el.id = `loc-${colIndex}`;
   el.className = 'loc-data-el';
-  el.dataset.colIndex = String(colIndex);
+  if (selectedColIndex == colIndex) {el.className = 'loc-data-el card-select'}
+  el.dataset.colIdx = String(colIndex);
+  el.addEventListener('click', () => selectCard(parseInt(colIndex,10)));
   el.style.position = 'absolute';
   el.style.pointerEvents = 'auto';
 
@@ -159,32 +185,49 @@ function syncOverlayBoxToCanvas() {
 
 
 
+// Check if page has 
+function pageHasNonZeroSpacing(pageNum) {
+  if (!locData) return false;
+  for (const key of Object.keys(locData)) {
+    const d = locData[key];
+    if (!d || d.page !== pageNum) continue;
+    if (Number(d.spacing) > 0) return true;
+  }
+  return false;
+}
+
+
+
 
 
 
 
 // 
-// Selecting Cards & Font/Size
+// Selecting Cards, Changing Font/Size/Loc
 // 
-
+// This is the onClick for the cards!!!!!
 function selectCard(colIdx) {
   selectedColIndex = colIdx;
-  const container = document.getElementById("csv-cards");
-
-  Array.from(container.children).forEach((card) => {
+  const markers = document.getElementById("pdf-overlay");
+  const cards = document.getElementById("csv-cards");
+  addSelectClass(markers, colIdx)
+  addSelectClass(cards, colIdx)
+  setFontSizeSelectors(colIdx);
+}
+function addSelectClass(parentContainer, colIdx) {
+  Array.from(parentContainer.children).forEach((card) => {
     if (parseInt(card.dataset.colIdx) === colIdx) {
       card.classList.add("card-select");
     } else {
       card.classList.remove("card-select");
     }
   });
-  setFontSizeSelectors(colIdx);
 }
 
 function setFontSizeSelectors(colIdx) {
+
   // ✅ Prefill font + size if this column already has locData
-  const card = document.querySelector(`[data-col-idx="${colIdx}"]`);
-  if (card && card.classList.contains("loc-data-exists") && locData?.[colIdx]) {
+  if (locData?.[colIdx]) {
     const cfg = locData[colIdx];
 
     const fontSelect = document.getElementById("font-select");
@@ -239,6 +282,10 @@ function onStyleInputChange() {
   const rawSize = parseInt(document.getElementById('size-select').value, 10);
   const rawSpacing = parseInt(document.getElementById('spacing-select').value, 10);
 
+  const prevSpacingNotZero = Number(markerData.spacing) != 0;
+  const nextSpacingIsZero = Number(rawSpacing) <= 0;
+  const spacingToZero = prevSpacingNotZero && nextSpacingIsZero
+
   // normalize values
   markerData.font = rawFont
   markerData.size = Number.isFinite(rawSize) && rawSize > 0 ? rawSize : 12;
@@ -246,11 +293,13 @@ function onStyleInputChange() {
 
   // persist + update just this marker
   try { saveLocData && saveLocData(); } catch { }
+
+  if (spacingToZero) { updateRenderDoc() };
   renderLoc(selectedColIndex); // incremental re-render for this one
+
 }
 
-function moveSpace(move) {
-  log(move);
+function actionKey(move) {
   if (selectedColIndex == null || !locData) { return; }
 
   const markerData = locData[selectedColIndex];
@@ -269,10 +318,19 @@ function moveSpace(move) {
     case "y-":
       markerData.y -= 1;
       break;
+    case "s-":
+      markerData.size = parseInt(markerData.size, 10) - 1;
+      setFontSizeSelectors(selectedColIndex);
+      break;
+    case "s+":
+      markerData.size = parseInt(markerData.size, 10) + 1;
+      setFontSizeSelectors(selectedColIndex);
+      break;
     default:
       console.warn("Move error: unknown direction", move);
   }
   try { saveLocData && saveLocData(); } catch { }
+
   renderLoc(selectedColIndex); // incremental re-render for this one
 }
 

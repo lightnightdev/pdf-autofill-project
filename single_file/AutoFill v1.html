@@ -853,7 +853,7 @@ AAEAAAAQAQAABAAAR0RFRgSHCHMAAAGQAAAAPEdTVUL+MPU1AAAI9AAAA85PUy8ycMiKKAAAAcwAAABg
         if (!blob) return;
         log(`Loaded cached PDF: ${(blob.size / 1024).toFixed(1)} KB`);
         const arrayBuffer = await blob.arrayBuffer();
-        await loadPDF(new Uint8Array(arrayBuffer));
+        await loadPDF(arrayBuffer);
       } catch (err) {
         log("Error loading cached PDF: " + (err?.message || err));
       }

@@ -3,7 +3,11 @@
 // --------------------
 // PDF state
 // --------------------
-let pdfDoc = null;
+let currentPdfBytes = null;   // base pdf we render pages from
+let pdfDoc = null;            // cached PDF as pdfjsLib document for viewing
+let editDoc = null;           // PDF-Lib document with fonts
+let editDocFonts = null;
+let renderDoc = null;         // PDF-Lib document with edits
 let currentPage = 1;
 let totalPages = 0;
 
@@ -18,6 +22,83 @@ document.getElementById("next-page").addEventListener("click", () => {
   if (currentPage >= totalPages) return;
   renderPage(currentPage + 1);
 });
+
+function removePage() {
+  if (pdfDoc.totalPages == 1) {
+    log('Only one page!');
+    return;
+  }
+
+  if (!confirm(`Hide page ${currentPage}? This will remove all placed fields and remove it from the exported document.`)) {
+    return;
+  }
+
+  // 3) Remove all locData for that page
+  if (locData && typeof locData === "object") {
+    for (const key of Object.keys(locData)) {
+      const cfg = locData[key];
+      if (cfg && Number(cfg.page) === Number(currentPage)) {
+        delete locData[key];
+      }
+    }
+  }
+  saveLocData();
+  removePageBytes(currentPage)
+  displayCSVPreviewAsCards(csvData);
+  renderLocAll();
+  log('Page hidden and removed.')
+
+}
+
+async function removePageBytes(pageNum) {
+  doc = await PDFLib.PDFDocument.load(currentPdfBytes);
+  if (doc.totalPages == 1 ) { return; }
+  doc.removePage(pageNum - 1);
+  currentPdfBytes = await doc.save();
+  loadPDF(currentPdfBytes);
+}
+
+// --------------------
+// Load PDF into pdfDoc and render first page - startup enters here too
+// typedarray is Uint8Array(arrayBuffer)
+// --------------------
+async function loadPDF(arrayBuffer) {
+  currentPdfBytes = arrayBuffer;
+  createEditDoc(arrayBuffer);
+  // on error, renderPage with pdfDoc
+}
+
+// --------------------
+// Turn PDF bytes into editable PDFLib object (editDoc)
+// Edit Doc is the template w/ fonts -- renderDoc will copy EditDoc 
+// --------------------
+async function createEditDoc(arrayBuffer) {
+  editDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+  editDocFonts = await embedFontsForDoc(editDoc); // embedding fonts
+  await updateRenderDoc(1, true);
+
+}
+
+async function updateRenderDoc(pageNum = 1, logLoad = false) {
+  renderDoc = null;
+  const editDocBytes = await editDoc.save();                  // serialize the current in-memory PDF
+  renderDoc = await PDFLib.PDFDocument.load(editDocBytes);    // load a new independent copy
+  await drawSizingText(renderDoc, editDocFonts);
+  await showRenderDoc(pageNum, logLoad);
+}
+
+async function showRenderDoc(pageNum, logLoad = false) {
+  const renderArrayBuffer = await renderDoc.save({
+    useObjectStreams: false,
+    compress: false,
+  });
+  const typedarray = new Uint8Array(renderArrayBuffer);
+  pdfDoc = await pdfjsLib.getDocument({ data: typedarray }).promise;
+  totalPages = pdfDoc.numPages;
+  if (logLoad) { log(`PDF loaded, pages: ${totalPages}`) };
+  await renderPage(pageNum);
+}
+//function drawPlacedText(page, cfg, text, fontsMap) {
 
 // --------------------
 // Render a page
@@ -43,20 +124,13 @@ async function renderPage(pageNum) {
   ).textContent = `Page ${currentPage} / ${totalPages}`;
 
   // sync overlay
-  if (typeof renderLocAll === "function") {
-    renderLocAll();
-  }
+  renderLocAllOverlay();
 }
 
-// --------------------
-// Load PDF into pdfDoc and render first page
-// --------------------
-async function loadPDF(typedarray) {
-  pdfDoc = await pdfjsLib.getDocument({ data: typedarray }).promise;
-  totalPages = pdfDoc.numPages;
-  log(`PDF loaded, pages: ${totalPages}`);
-  await renderPage(1);
-}
+
+
+
+
 
 // --------------------
 // Handle file input
@@ -78,7 +152,7 @@ document.getElementById("pdf-file").addEventListener("change", async (e) => {
       ? await flattenAndCompressFile(file_ab) // return processed bytes/blob
       : await rasterizeFile(file_ab, { dpi: 100 }); // return processed bytes/blob
 
-    renderPdf(processed); // pass processed output
+    loadPDF(processed); // pass processed output
     savePdfToIndexedDb(processed); // pass processed output
   } catch (err) {
     log("Error: " + (err?.message || err));
@@ -86,19 +160,21 @@ document.getElementById("pdf-file").addEventListener("change", async (e) => {
   }
 });
 
+// --------------------
+// Flatten & compress with PDF-lib
+// --------------------
 async function flattenAndCompressFile(arrayBuffer) {
   try {
-    // --------------------
-    // Flatten & compress with PDF-lib
-    // --------------------
     // dumpSizeHeaderFooter(arrayBuffer);
-    const pdfLibDoc = await PDFLib.PDFDocument.load(arrayBuffer, {
-      ignoreEncryption: true,
-    });
 
+    // Get PDF from Array buffer
+    const pdfLibDoc = await PDFLib.PDFDocument.load(arrayBuffer, { ignoreEncryption: true, });
+
+    // Flatten form fields
     const form = pdfLibDoc.getForm();
     if (form) form.flatten();
 
+    // Save bytes
     const pdfBytes = await pdfLibDoc.save({
       useObjectStreams: true,
       compress: true,
@@ -111,22 +187,27 @@ async function flattenAndCompressFile(arrayBuffer) {
   }
 }
 
+// --------------------
+// Save Render (with spacing markers) / Main PDF to IndexedDb
+// --------------------
+// 
+function saveRenderPdfToIndexedDb(arrayBuffer) {
+  const blob = new Blob([arrayBuffer], { type: "application/pdf" });
+  log(` Saving Render PDF: ${(arrayBuffer.byteLength / 1024).toFixed(1)} KB`);
+  savePdfRenderBlob(blob);
+}
+
 function savePdfToIndexedDb(arrayBuffer) {
-  // --------------------
-  // Save to IndexedDB
-  // --------------------
   const blob = new Blob([arrayBuffer], { type: "application/pdf" });
   log(` Saving: PDF: ${(arrayBuffer.byteLength / 1024).toFixed(1)} KB`);
   savePdfBlob(blob);
 }
 
-async function renderPdf(arrayBuffer) {
-  // --------------------
-  // Render PDF
-  // --------------------
-  const typedarray = new Uint8Array(arrayBuffer);
-  await loadPDF(typedarray);
-}
+
+
+
+
+
 
 async function isEditingAllowed(ab) {
   loadingTask = pdfjsLib.getDocument({ data: ab });

@@ -46,9 +46,15 @@ AAEAAAAQAQAABAAAR0RFRgSHCHMAAAGQAAAAPEdTVUL+MPU1AAAI9AAAA85PUy8ycMiKKAAAAcwAAABg
 //CourierPrime-Regular.ttf
 
 const FONT_STYPOASCENDERS = {
-  "_signature": 781,
-  "_normal": 804,
-  "_monospace": 1600,
+  "_signature": 781, // 781, -313
+  "_normal": 804, // hhea 950, -238
+  "_monospace": 1600, //hea same
+}
+
+const FONT_STYPODESCENDERS = {
+  "_signature": -313,
+  "_normal": -196,
+  "_monospace": -700,
 }
 
 const FONT_UNITS_PER_EM = {
@@ -196,4 +202,110 @@ async function rasterizeFile(input, opts = {}) {
 
   // Save rasterized PDF
   return await outDoc.save({ useObjectStreams: false, addDefaultPage: false, compress: true });
+}
+
+
+// PDF-Specific Utils
+// --- coordinate + font helpers reused by preview + export for character spacing ---
+
+function computeExportCoords(page, cfg) {
+  const pageW = page.getWidth();
+  const pageH = page.getHeight();
+
+  const stageW = Number(cfg.stageW) || pageW;
+  const stageH = Number(cfg.stageH) || pageH;
+
+  const scaleX = pageW / stageW;
+  const scaleY = pageH / stageH;
+
+  const cssPxSize = Number(cfg.size) || 12;
+  const pdfFontSize = cssPxSize * scaleY;
+
+  const exportX = (Number(cfg.x) || 0) * scaleX;
+
+  // 
+  const ytop = (Number(cfg.y))
+  const exportYTop = pageH - (Number(cfg.y) || 0) * scaleY;
+  const exportY = (typeof computeBaselineY === 'function')
+    ? computeBaselineY(exportYTop, pdfFontSize, cfg.font)
+    : exportYTop;
+
+  return { pageW, pageH, scaleX, scaleY, pdfFontSize, exportX, exportY };
+}
+
+function drawPlacedText(page, cfg, text, fontsMap) {
+  const font = pickFontForPdf(cfg.font, fontsMap);
+  const spacing = Number(cfg.spacing) || 0;
+
+  const { pdfFontSize, exportX, exportY } = computeExportCoords(page, cfg);
+
+  if (!spacing) {
+    page.drawText(text, { x: exportX, y: exportY, size: pdfFontSize, font });
+    return;
+  }
+
+  // Per-character draw (manual spacing). Skip extra space after last char.
+  let cursorX = exportX;
+  const chars = Array.from(text);
+  for (let i = 0; i < chars.length; i++) {
+    const ch = chars[i];
+    page.drawText(ch, { x: cursorX, y: exportY, size: pdfFontSize, font });
+    if (i < chars.length - 1) {
+      cursorX += font.widthOfTextAtSize(ch, pdfFontSize) + spacing;
+    }
+  }
+}
+
+function drawRowText(doc, docFonts, row) {
+  for (const key of Object.keys(locData)) {
+    const cfg = locData[key];
+    if (!cfg) continue;
+
+    const pageIndex = (cfg.page || 1) - 1;
+    const page = doc.getPage(pageIndex);
+    if (!page) continue;
+
+    const text = getCellOrBlank(row, parseInt(key, 10));
+    drawPlacedText(page, cfg, text, docFonts); // <--- single call now
+  }
+}
+
+
+// essentially drawRowText but Row 1 only (after header) and checks for sizing
+function drawSizingText(doc, docFonts) {
+  for (const key of Object.keys(locData)) {
+    const cfg = locData[key];
+    if (!cfg) continue;
+    if (!Number.isFinite(Number(cfg.spacing) || cfg.spacing <= 0)) continue;
+
+    const pageIndex = (cfg.page || 1) - 1;
+    const page = doc.getPage(pageIndex);
+    if (!page) continue;
+
+    const text = getCellOrHeader(1, parseInt(key, 10));
+    drawPlacedText(page, cfg, text, docFonts); // <--- single call now
+  }
+}
+
+function keycaptures() {
+  document.addEventListener('keydown', function (event) {
+    if (selectedColIndex === null) {
+      log("Choose a column");
+      return;
+    }
+
+    let action = "";
+    switch (event.key) {
+      case 'ArrowUp': action = "y-"; break;
+      case 'ArrowDown': action = "y+"; break;
+      case 'ArrowLeft': action = "x-"; break;
+      case 'ArrowRight': action = "x+"; break;
+      case '-': action = "s-"; break;
+      case '=' : action = "s+"; break;
+      case '+' : action = "s+"; break;
+      default: return;
+    }
+    event.preventDefault();
+    actionKey(action);
+  });
 }
