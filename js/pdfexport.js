@@ -51,6 +51,7 @@ async function generateAndExportPDFs() {
       // 3) Embed your custom fonts for THIS doc
       const fonts = await embedFontsForDoc(outDoc);
 
+
       // 4) Draw placements for this row
       drawRowText(outDoc, fonts, r);
 
@@ -126,6 +127,14 @@ async function embedFontsForDoc(doc) {
   try {
     const bytes = await loadAllCustomFontBytes();
 
+    // ADD LOGGING HERE
+    console.log("Font bytes loaded:", {
+      sig: bytes._signature?.byteLength,
+      norm: bytes._normal?.byteLength,
+      mono: bytes._monospace?.byteLength
+    });
+
+
     // Embed fonts to PDF document
     sig = await doc.embedFont(bytes._signature, { subset: false });
     norm = await doc.embedFont(bytes._normal, { subset: false });
@@ -170,24 +179,7 @@ function getCellOrBlank(rowIdx, colIdx) {
   return ""; // Return empty string instead of falling back to header
 }
 
-/**
- * Convert top-aligned Y coordinate (HTML overlay) → baseline Y (PDF coordinate system).
- *
- * @param {number} exportYTop - The top coordinate from your overlay (already scaled to PDF points).
- * @param {number} fontSize - The final PDF font size (in points).
- * @param {string} fontKey - The font ID used in your project, e.g. "_signature", "_normal", "_monospace".
- * @param {number} [unitsPerEm=1000] - The font design grid size (1000 or 2048 typical; default 1000).
- * @returns {number} - The adjusted Y coordinate for PDF drawText() baseline.
- */
-function computeBaselineY(exportYTop, fontSize, fontKey) {
-  const ascender = FONT_STYPOASCENDERS[fontKey];
-  const unitsPerEm = FONT_UNITS_PER_EM[fontKey] || 1000;
 
-  const ascenderRatio = ascender ? ascender / unitsPerEm : 0.8;
-
-  const exportY = exportYTop + ascenderRatio * fontSize;
-  return exportY;
-}
 
 
 

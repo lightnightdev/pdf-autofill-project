@@ -223,21 +223,34 @@ function computeExportCoords(page, cfg) {
 
   const exportX = (Number(cfg.x) || 0) * scaleX;
 
-  // 
-  const ytop = (Number(cfg.y))
   const exportYTop = pageH - (Number(cfg.y) || 0) * scaleY;
-  const exportY = (typeof computeBaselineY === 'function')
-    ? computeBaselineY(exportYTop, pdfFontSize, cfg.font)
-    : exportYTop;
+  const exportY = asdfasdfasdf(exportYTop, pdfFontSize, cfg.font);
 
   return { pageW, pageH, scaleX, scaleY, pdfFontSize, exportX, exportY };
+}
+
+function asdfasdfasdf(exportYTop, fontSize, fontKey) {
+  const ascender = FONT_STYPODESCENDERS[fontKey];
+  const unitsPerEm = FONT_UNITS_PER_EM[fontKey] || 1000;
+
+  const ascenderRatio = ascender / unitsPerEm;
+  const adjustment = ascenderRatio * fontSize;
+
+  const exportY = exportYTop - adjustment;
+  return exportY;
 }
 
 function drawPlacedText(page, cfg, text, fontsMap) {
   const font = pickFontForPdf(cfg.font, fontsMap);
   const spacing = Number(cfg.spacing) || 0;
-
   const { pdfFontSize, exportX, exportY } = computeExportCoords(page, cfg);
+
+  console.log("Drawing text:", {
+    text,
+    fontKey: cfg.font,
+    selectedFont: font.name,
+    fontSize: cfg.size
+  });
 
   if (!spacing) {
     page.drawText(text, { x: exportX, y: exportY, size: pdfFontSize, font });
@@ -301,8 +314,8 @@ function keycaptures() {
       case 'ArrowLeft': action = "x-"; break;
       case 'ArrowRight': action = "x+"; break;
       case '-': action = "s-"; break;
-      case '=' : action = "s+"; break;
-      case '+' : action = "s+"; break;
+      case '=': action = "s+"; break;
+      case '+': action = "s+"; break;
       default: return;
     }
     event.preventDefault();
