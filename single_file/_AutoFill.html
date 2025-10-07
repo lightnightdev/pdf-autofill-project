@@ -1,3 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autofiller v1.1</title>
+
+    <!-- CSS -->
+     <style>
+/* Fonts */
+/* made in JS registerBase64Font */
+
+/* Reset-ish */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial;
+  font-size: 12px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 300px 1fr 300px;
+  /* left fixed, center fluid, right fixed */
+  min-height: 100vh;
+  /* full viewport height */
+  gap: 0px;
+  /* no gap by default; change if you want spacing */
+}
+
+/* Shared sidebar styles */
+.sidebar {
+  padding: 8px;
+  margin: 0px;
+  overflow: auto;
+  /* allow scrolling if content is taller than viewport */
+  background: #f3f4f6;
+  /* light neutral background */
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* Sidebar Left */
+.sidebar.left {
+  margin: 0;
+  margin-bottom: 0;
+}
+
+.file-row {
+  margin: 2px;
+  margin-bottom: 10px;
+}
+
+#pdf-page-info {
+  text-align: center;
+  justify-content: center;
+  font-size: 20px;
+}
+#pdf-page-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+/* Make all buttons inside #pdf-page-buttons uniform */
+#pdf-page-buttons button {
+  min-width: 120px;         /* constant width */
+  text-align: center;
+  font-weight: 500;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+.logbox {
+  white-space: pre-wrap;
+  font-family: monospace;
+  font-size: 12px;
+  height: 200px;
+  overflow: auto;
+  background: #0f172a;
+  color: #afa;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+/* Right sidebar border on the left instead */
+.sidebar.right {
+  padding: 8px;
+  background: #e3e4e6;
+  border-right: none;
+  border-left: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.card.card-select {
+  font-weight: bold;
+  background-color: #ffc107;
+}
+
+.card.card-select.loc-data-exists {
+  background-color: #1f1 !important;
+}
+
+.card.loc-data-exists {
+  background-color: #afa;
+}
+
+.csvbar {
+  padding: 8px;
+  background: #e3e4e6;
+  height: 80px;
+}
+
+#csv-table th,
+#csv-table td {
+  cursor: pointer;
+  /* show selectable */
+  border: 1px solid #ccc;
+  padding: 2px 4px;
+}
+
+#csv-table td {
+  background: #fff;
+}
+
+#csv-table th {
+  background: #eee;
+  font-weight: "bold";
+}
+
+#csv-table th.selected,
+#csv-table td.selected {
+  background-color: #fff9c4;
+  /* light yellow */
+  font-weight: bold;
+}
+
+/* Main content area */
+.content {
+  padding: 32px;
+  overflow: auto;
+  background: white;
+}
+
+#pdf-canvas {
+  border: 1px solid #0f172a;
+}
+
+.loc-data-el {
+  transform: translate(0%, -100%);
+  /* padding: 0px 0px; */
+  /* border-radius: 0px;  */
+  background: rgba(255, 193, 7, 0.5);
+}
+
+/* Optional: make headers stand out */
+.sidebar h2 {
+  margin-bottom: 12px;
+  font-size: 1.1rem;
+}
+
+.content h1 {
+  margin-bottom: 16px;
+  font-size: 1.4rem;
+}
+
+/* Responsive fallback:
+   If the viewport is narrower than 1000px, stack the layout vertically.
+   You can adjust breakpoints/behavior to what you prefer. */
+@media (max-width: 1000px) {
+  .layout {
+    grid-template-columns: 1fr;
+    /* single column */
+    grid-auto-rows: auto;
+  }
+
+  .sidebar,
+  .content {
+    padding: 20px;
+  }
+
+  .sidebar {
+    border-right: none;
+    border-left: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  .sidebar.right {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
+}
+
+     </style>
+    <!-- Bootstrap  -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Quick Styles -->
+    <style>
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="layout">
+
+        <aside class="sidebar left">
+          <h1>PDF-CSV Autofiller</h1>
+          <span>v1.0</span>
+            <h2>Select Files</h2>
+            <div class="file-input">
+                <div class="file-row">
+                    <label for="pdf-file">PDF:</label>
+                    <input id="pdf-file" type="file" accept="application/pdf" />
+                </div>
+                <div class="file-row">
+                    <label for="csv-file">CSV:</label>
+                    <input id="csv-file" type="file" accept="text/csv,text/plain" />
+                </div>
+            </div>
+
+            <br>
+            <hr><br>
+
+            <h2>PDF Navigation</h2>
+            <div id="pdf-page-info">
+                <span id="page-info">Page 0 / 0</span>
+            </div>
+            <div id="pdf-page-buttons"><br>
+                <button id="prev-page" class="btn btn-secondary btn-sm">Previous Page</button>
+                <button id="next-page" class="btn btn-secondary btn-sm">Next Page</button>
+            </div>
+
+            <br>
+            <hr><br>
+            
+            <button id="btn-clear-loc" class="btn btn-danger btn-sm m-2" type="button" onclick="clearAllLocData()">
+            <i class="bi bi-trash"></i> Clear All Markers
+            </button>            
+
+            <button id="btn-make-pdfs" class="btn btn-success m-2" type="button" onclick="generateAndExportPDFs()">
+                Generate PDFs
+            </button>    
+
+            <br>
+            <hr><br>
+            <div id="logbox" class="logbox"></div>
+
+        </aside>
+
+        <!-- Main PDF Display -->
+        <div class="wrapper">
+            <main class="content">
+                <div id="pdf-stage" style="position:relative; display:inline-block;">
+                    <canvas id="pdf-canvas"></canvas>
+                    <div id="pdf-overlay" style="position:absolute; left:0; top:0; pointer-events:none;"></div>
+                </div>
+            </main>
+        </div>
+
+        <aside class="sidebar right">
+            <h2>Select Columns</h2>
+            <div class="">
+                <!-- Controls column -->
+                <div class="">
+                    <div class="d-flex align-items-center m-2">
+                        <label for="font-select" class="form-label mb-0">Font:</label>
+                        <select id="font-select" class="form-select form-select-sm">
+                            <option value="_normal">Normal</option>
+                            <option value="_monospace">Monospace</option>
+                            <option value="_signature">Signature</option>
+                        </select>
+                    </div>
+
+                    <div class="d-flex align-items-center m-2">
+                        <label for="size-select" class="form-label mb-0">Size:</label>
+                        <input type="number" class="form-control" id="size-select" placeholder="12">
+                    </div>
+                </div>
+
+                <!-- Table column -->
+                <div class="">
+                    <div class="table-responsive">
+                        <div id="csv-cards" class="d-flex flex-column gap-2">
+                        </div>
+                    </div>
+
+                </div>
+
+        </aside>
+
+    </div>
+
+    <!-- Libraries -->
+
+    <!-- pdf-lib: used to write and flatten PDFs -->
+
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    </script>
+    <!-- PapaParse for CSV parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+
+
+
+    <!-- My Dependencies -->
+<script>
+// utils.js
+
 // --- utils ---
 function b64ToU8(base64) {
   // Handle big strings safely
@@ -54,6 +379,36 @@ const FONT_UNITS_PER_EM = {
   "_normal": 1000,     // Check your font file for actual value
   "_monospace": 2048   // Check your font file for actual value
 };
+
+
+
+registerBase64Font("_signature", SIGNATURE_OTF_B64);
+registerBase64Font("_normal", CREATO_REG_OTF_B64);
+registerBase64Font("_monospace", COURIER_PRIME_TTF_B64);
+
+
+
+
+
+function registerBase64Font(fontName, base64Data) {
+  const style = document.createElement("style");
+  style.innerHTML = `
+    @font-face {
+      font-family: "${fontName}";
+      src: url("data:font/ttf;base64,${base64Data}") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+
+
+
+
+
+
 
 /**
  * Rasterize a PDF into an image-only PDF.
@@ -165,3 +520,1083 @@ async function rasterizeFile(input, opts = {}) {
   // Save rasterized PDF
   return await outDoc.save({ useObjectStreams: false, addDefaultPage: false, compress: true });
 }
+
+
+// log.js
+// --------------------
+// Utility: log messages
+// --------------------
+function log(msg) {
+  const logbox = document.getElementById("logbox");
+  logbox.textContent += msg + "\n";
+  logbox.scrollTop = logbox.scrollHeight;
+}
+
+// pdfloader.js
+// pdfmanager.js
+
+// --------------------
+// PDF state
+// --------------------
+let pdfDoc = null;
+let currentPage = 1;
+let totalPages = 0;
+
+// --------------------
+// Navigation buttons
+// --------------------
+document.getElementById("prev-page").addEventListener("click", () => {
+  if (currentPage <= 1) return;
+  renderPage(currentPage - 1);
+});
+document.getElementById("next-page").addEventListener("click", () => {
+  if (currentPage >= totalPages) return;
+  renderPage(currentPage + 1);
+});
+
+// --------------------
+// Render a page
+// --------------------
+async function renderPage(pageNum) {
+  if (!pdfDoc) return;
+
+  const page = await pdfDoc.getPage(pageNum);
+  const viewport = page.getViewport({ scale: 1.5 });
+  const canvas = document.getElementById("pdf-canvas");
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+
+  await page.render({ canvasContext: ctx, viewport }).promise;
+
+  // Update page info
+  totalPages = pdfDoc.numPages;
+  currentPage = pageNum;
+  document.getElementById(
+    "page-info"
+  ).textContent = `Page ${currentPage} / ${totalPages}`;
+
+  // sync overlay
+  if (typeof renderLocAll === "function") {
+    renderLocAll();
+  }
+}
+
+// --------------------
+// Load PDF into pdfDoc and render first page
+// --------------------
+async function loadPDF(typedarray) {
+  pdfDoc = await pdfjsLib.getDocument({ data: typedarray }).promise;
+  totalPages = pdfDoc.numPages;
+  log(`PDF loaded, pages: ${totalPages}`);
+  await renderPage(1);
+}
+
+// --------------------
+// Handle file input
+// --------------------
+document.getElementById("pdf-file").addEventListener("change", async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const file_ab = await file.arrayBuffer();
+
+  try {
+    log(` Selected file: ${file.name}`);
+    log(` Original size: ${(file.size / 1024).toFixed(1)} KB`);
+    const canEdit = await isEditingAllowed(file_ab); // or drop await if truly sync
+    if (!canEdit) {
+      log("PDF modifications not allowed. Rasterizing...");
+    }
+    const processed = canEdit
+      ? await flattenAndCompressFile(file_ab) // return processed bytes/blob
+      : await rasterizeFile(file_ab, {dpi : 100} ); // return processed bytes/blob
+
+    renderPdf(processed); // pass processed output
+    savePdfToIndexedDb(processed); // pass processed output
+  } catch (err) {
+    log("Error: " + (err?.message || err));
+    console.error(err);
+  }
+});
+
+async function flattenAndCompressFile(arrayBuffer) {
+  try {
+    // --------------------
+    // Flatten & compress with PDF-lib
+    // --------------------
+    // dumpSizeHeaderFooter(arrayBuffer);
+    const pdfLibDoc = await PDFLib.PDFDocument.load(arrayBuffer, {
+      ignoreEncryption: true,
+    });
+
+    const form = pdfLibDoc.getForm();
+    if (form) form.flatten();
+
+    const pdfBytes = await pdfLibDoc.save({
+      useObjectStreams: true,
+      compress: true,
+    });
+    return pdfBytes;
+  } catch (err) {
+    log("Error processing PDF: " + err.message);
+    console.error(err);
+  }
+}
+
+function savePdfToIndexedDb(arrayBuffer) {
+  // --------------------
+  // Save to IndexedDB
+  // --------------------
+  const blob = new Blob([arrayBuffer], { type: "application/pdf" });
+  log(` Saving: PDF: ${(arrayBuffer.byteLength / 1024).toFixed(1)} KB`);
+  savePdfBlob(blob);
+}
+
+async function renderPdf(arrayBuffer) {
+  // --------------------
+  // Render PDF
+  // --------------------
+  const typedarray = new Uint8Array(arrayBuffer);
+  await loadPDF(typedarray);
+}
+
+async function isEditingAllowed(ab) {
+  loadingTask = pdfjsLib.getDocument({ data: ab });
+  const PdfDoc = await loadingTask.promise;
+  const permissions = await PdfDoc.getPermissions();
+
+  // If null, then no restrictions
+  if (!permissions) return true;
+
+  log("Encryption detected. Checking for permissions...");
+
+  const canModify = permissions.includes(
+    pdfjsLib.PermissionFlag.MODIFY_CONTENTS
+  );
+
+  if (canModify) {
+    log("Modify permissions enabled.");
+  }
+
+  return canModify;
+}
+
+// No Longer Used
+
+function dumpSizeHeaderFooter(ab) {
+  console.log("AB size:", ab.byteLength);
+  const u8 = new Uint8Array(ab);
+  const head = new TextDecoder("ascii").decode(u8.slice(0, 16));
+  const tail = new TextDecoder("ascii").decode(
+    u8.slice(Math.max(0, u8.length - 2048))
+  );
+  console.log("HEAD:", head); // should start with %PDF-1.x
+  console.log("Has %%EOF:", tail.includes("%%EOF")); // must be true
+  console.log("Has startxref:", tail.includes("startxref")); // must be true
+}
+
+// csvloader.js">
+// --------------------
+// CSV Handling with headers
+// --------------------
+
+document.getElementById("csv-file").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  log(`Selected CSV: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
+
+  Papa.parse(file, {
+    complete: function (results) {
+      let rawData = results.data; // 2D array, first row = headers
+      if (!rawData || rawData.length === 0) return log("CSV is empty");
+      if (!rawData || rawData.length === 1) return log("CSV is headers only");
+
+      // Filter for emptry rows
+      const data = rawData.filter(row => 
+        row && row.some(cell => cell && cell.trim() !== "")
+      );
+      log(`CSV parsed, ${data.length - 1} data rows`);
+
+      // Save to local environment
+      csvData = data;
+
+      // Save to IndexedDB
+      saveCsvData(data);
+    },
+    header: false, // we parse manually
+  });
+});
+
+
+function displayCSVPreviewAsCards(data) {
+  const container = document.getElementById("csv-cards");
+  container.innerHTML = ""; // clear previous
+
+  if (!data || data.length === 0) return;
+
+  const headers = data[0];
+  const rowsToShow = Math.min(2, data.length - 1);
+
+  headers.forEach((colName, colIdx) => {
+    const card = document.createElement("div");
+    card.className = 'card p-2 text-center';
+    card.dataset.colIdx = colIdx;
+    card.style.cursor = "pointer";
+
+    // ✅ If locData has this column, mark it
+    if (locData && locData[colIdx]) {
+      card.classList.add("loc-data-exists");
+    }
+
+    // Build inner content: header + first 2 rows preview
+    const headerDiv = document.createElement("div");
+    headerDiv.className = "fw-bold mb-1 text-start";
+    headerDiv.textContent = colName;
+    card.appendChild(headerDiv);
+
+    for (let i = 1; i <= rowsToShow; i++) {
+      const cellDiv = document.createElement("div");
+      cellDiv.textContent = data[i][colIdx] || "";
+      cellDiv.className = "text-start";
+      cellDiv.style.fontSize = "0.8rem"; // smaller preview
+      card.appendChild(cellDiv);
+    }
+
+    // Handle click
+    card.onclick = () => selectCard(parseInt(card.dataset.colIdx));
+
+    container.appendChild(card);
+  });
+}
+
+// // Display table with headers and first two data rows
+// function displayCSVPreviewWithHeaders(data) {
+//   const table = document.getElementById("csv-table");
+//   table.innerHTML = ""; // clear previous
+
+//   if (!data || data.length === 0) return;
+
+//   const headers = data[0];
+//   const rowsToShow = Math.min(2, data.length - 1); // first 2 data rows
+
+//   // --- Header row ---
+//   const trHead = document.createElement("tr");
+//   headers.forEach((cell, colIdx) => {
+//     const th = document.createElement("th");
+//     th.textContent = cell;
+//     th.style.cursor = "pointer"; // indicate selectable
+//     th.onclick = () => selectColumn(colIdx);
+//     trHead.appendChild(th);
+//   });
+//   table.appendChild(trHead);
+
+//   // --- Data rows ---
+//   for (let i = 1; i <= rowsToShow; i++) {
+//     const tr = document.createElement("tr");
+//     data[i].forEach((cell, colIdx) => {
+//       const td = document.createElement("td");
+//       td.textContent = cell;
+//       td.style.cursor = "pointer"; // selectable
+//       td.onclick = () => selectColumn(colIdx);
+//       tr.appendChild(td);
+//     });
+//     table.appendChild(tr);
+//   }
+// }
+
+
+
+// function selectColumn(colIdx) {
+//   selectedColIndex = colIdx;
+//   const table = document.getElementById("csv-table");
+
+//   Array.from(table.rows).forEach(row => {
+//     Array.from(row.cells).forEach((cell, i) => {
+//       if (i === colIdx) {
+//         cell.classList.add("selected");
+//       } else {
+//         cell.classList.remove("selected");
+//       }
+//     });
+//   });
+// }
+
+// db.js
+// CSV
+async function loadCachedCSV() {
+  try {
+    const data = await idbGet(CSV_KEY);
+    if (!data) return;
+    csvData = data;
+    log(`Loaded cached CSV: (${data.length - 1} data rows)`);
+    displayCSVPreviewAsCards(data);
+  } catch (err) {
+    log("Error loading cached CSV: " + (err?.message || err));
+  }
+}
+
+// PDF
+async function loadCachedPDF() {
+  try {
+    const blob = await idbGet(PDF_KEY);
+    if (!blob) return;
+    log(`Loaded cached PDF: ${(blob.size / 1024).toFixed(1)} KB`);
+    const arrayBuffer = await blob.arrayBuffer();
+    await loadPDF(new Uint8Array(arrayBuffer));
+  } catch (err) {
+    log("Error loading cached PDF: " + (err?.message || err));
+  }
+}
+
+// Locations
+async function loadCachedLocData() {
+  try {
+    locData = (await idbGet(LOC_KEY)) || {};
+    log("Loaded cached locations.");
+    renderLocAll?.(); // draw markers for current page
+  } catch (err) {
+    log("Error loading locations: " + (err?.message || err));
+  }
+}
+
+
+// 
+// 
+// Save to IndexedDB
+// 
+// 
+function saveLocData() {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    tx.objectStore(STORE_NAME).put(locData, LOC_KEY);
+    tx.oncomplete = () => {
+        log("Locations saved.");
+    };
+    tx.onerror = (err) => log("Error saving locations: " + err.target.error);
+}
+
+function saveCsvData(data) {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    tx.objectStore(STORE_NAME).put(data, CSV_KEY);
+    tx.oncomplete = () => {
+        log("CSV data saved.");
+        displayCSVPreviewAsCards(data);
+    };
+    tx.onerror = (err) => log("Error saving CSV: " + err.target.error);
+}
+
+function savePdfBlob(blob) {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    tx.objectStore(STORE_NAME).put(blob, PDF_KEY);
+    tx.oncomplete = () => {
+        log("Saved PDF to IndexedDB (overwriting previous)");
+    };
+    tx.onerror = (err) => log("IndexedDB save error: " + err.target.error);
+}
+
+// 
+// 
+// Get from IndexedDB
+// 
+// 
+// Generic getter: get any value by key (e.g., CSV_KEY, PDF_KEY, LOC_KEY)
+function idbGet(key) {
+  return new Promise((resolve, reject) => {
+    if (!db) return reject(new Error("IndexedDB not initialized"));
+    const tx = db.transaction(STORE_NAME, "readonly");
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.get(key);
+    req.onsuccess = () => resolve(req.result ?? null);
+    req.onerror = () => reject(req.error || new Error("IndexedDB get failed"));
+  });
+}
+async function getCachedCSV() { return idbGet(CSV_KEY); }
+async function getCachedPDF() { return idbGet(PDF_KEY); }
+async function getCachedLoc() { return idbGet(LOC_KEY); }
+
+// markers.js
+
+
+//  Global Variables
+
+let selectedColIndex = null;
+let selectedFont = "monospace";
+let selectedSize = "12px";
+const canvas = document.getElementById("pdf-canvas");
+
+
+
+
+// 
+// 
+// Track clicks on page
+// 
+// 
+canvas.addEventListener("click", (e) => {
+  if (selectedColIndex === null) {
+    log("ERROR: Please select a column first!");
+    return;
+  }
+
+  // Get click coordinates relative to the canvas
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  // Get selected elements
+  const selectedFontInput = document.getElementById('font-select');
+  const selectedSizeInput = document.getElementById('size-select');
+  selectedFont = selectedFontInput.value;
+  selectedSize = selectedSizeInput.value ? selectedSizeInput.value : "12";
+
+  // Get the selected column data (first visible row as example)
+  const headerText = csvData[0][selectedColIndex];
+  const firstRowText = csvData[1][selectedColIndex];
+
+  // Save to locData
+  locData[selectedColIndex] = {
+    x: x,
+    y: y,
+    page: currentPage,
+    font: selectedFont,
+    size: selectedSize,
+    stageW: canvas?.width || 1,     // 👈 store capture canvas size
+    stageH: canvas?.height || 1
+  };
+
+  // Add element to card
+  const card = document.querySelector(`[data-col-idx="${selectedColIndex}"]`)
+  card.classList.add("loc-data-exists")
+
+  log('');
+  log(`${headerText}`);
+  log(` -Row 1: ${firstRowText}`);
+  log(` -Loc: x=${x}, y=${y}, pg=${currentPage}`);
+  log(` -Font: ${selectedFont}, Size: ${selectedSize}`);
+
+  // Render current colIndex only
+  renderLoc(selectedColIndex);
+  saveLocData();
+
+});
+
+
+
+
+
+//
+// Rendering
+//
+function renderLocAll() {
+  if (!syncOverlayBoxToCanvas()) { log('no overlay or canvas'); return; }
+  if (typeof currentPage !== 'number' || !locData) { log('No page/text to render.'); return; }
+
+  const overlay = document.getElementById('pdf-overlay');
+
+  // 1) Clear everything
+  overlay.innerHTML = '';
+
+  // 2) Recreate only markers for this page
+  Object.keys(locData).forEach((key) => {
+    const data = locData[key];
+    if (data && data.page === currentPage) {
+      createMarker(key, data, overlay);
+    }
+  });
+}
+
+function renderLoc(colIndex) {
+  // incremental update for just one column
+  const data = locData?.[colIndex];
+  if (!data) return;
+  if (typeof currentPage !== 'number' || data.page !== currentPage) return;
+  if (!syncOverlayBoxToCanvas()) return;
+
+  const overlay = document.getElementById('pdf-overlay');
+  // remove existing marker for this col (if any), then recreate
+  const existing = document.getElementById(`loc-${colIndex}`);
+  if (existing) existing.remove();
+  createMarker(colIndex, data, overlay);
+}
+
+function createMarker(colIndex, markerData, overlay) {
+  const el = document.createElement('div');
+  el.id = `loc-${colIndex}`;
+  el.className = 'loc-data-el';
+  el.dataset.colIndex = String(colIndex);
+  el.style.position = 'absolute';
+  el.style.pointerEvents = 'auto';
+
+  applyDataToMarker(el, markerData, colIndex);
+  overlay.appendChild(el);
+}
+
+function applyDataToMarker(el, markerData, colIndex) {
+  // anchor bottom-left corner at (x, y)
+  el.style.left = (markerData.x || 0) + 'px';
+  el.style.top  = (markerData.y || 0) + 'px';
+  // el.style.transform = 'translate(0, -100%)'; <-- already in css
+
+  let font = markerData.font || CreatoDisplay;
+
+  el.style.fontFamily = font;
+  el.style.fontSize   = (parseInt(markerData.size, 10) || 12) + 'px';
+
+  el.textContent = getTextContent(parseInt(colIndex, 10));
+}
+
+function getTextContent(colIndex) {
+  const rowVal = csvData?.[1]?.[colIndex];
+  if (rowVal && rowVal.trim() !== '') return rowVal;
+
+  const header = csvData?.[0]?.[colIndex];
+  if (header && header.trim() !== '') return `[${header}]`;
+
+  return `Col ${colIndex}`;
+}
+
+function syncOverlayBoxToCanvas() {
+  const overlay = document.getElementById('pdf-overlay');
+  const canvas  = document.getElementById('pdf-canvas');
+  if (!overlay || !canvas) return false;
+
+  overlay.style.width  = canvas.width  + 'px';
+  overlay.style.height = canvas.height + 'px';
+  overlay.style.left   = '0px';
+  overlay.style.top    = '0px';
+  overlay.style.position = 'absolute';
+  overlay.style.zIndex = 10;
+  overlay.style.pointerEvents = 'none'; // markers can re-enable selectively
+  return true;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+// 
+// Selecting Cards & Font/Size
+// 
+
+function selectCard(colIdx) {
+  selectedColIndex = colIdx;
+  const container = document.getElementById("csv-cards");
+
+  Array.from(container.children).forEach((card) => {
+    if (parseInt(card.dataset.colIdx) === colIdx) {
+      card.classList.add("card-select");
+    } else {
+      card.classList.remove("card-select");
+    }
+  });
+  setFontSizeSelectors(colIdx);
+}
+
+function setFontSizeSelectors(colIdx) {
+  // ✅ Prefill font + size if this column already has locData
+  const card = document.querySelector(`[data-col-idx="${colIdx}"]`);
+  if (card && card.classList.contains("loc-data-exists") && locData?.[colIdx]) {
+    const cfg = locData[colIdx];
+
+    const fontSelect = document.getElementById("font-select");
+    if (cfg.font) {
+      fontSelect.value = cfg.font; // assumes option exists
+    }
+
+    const sizeInput = document.getElementById("size-select");
+    if (cfg.size) {
+      sizeInput.value = cfg.size;
+    }
+  } else {
+    // Optional: reset to defaults when no locData
+    document.getElementById("font-select").value = "_normal";
+    document.getElementById("size-select").value = 12;
+  }
+}
+
+
+
+// call once on startup (after the inputs exist)
+// assigns event listeners
+function initFontSizeHandlers() {
+  const fontSel = document.getElementById('font-select');
+  const sizeInp = document.getElementById('size-select');
+
+  if (!fontSel || !sizeInp) return log('ERROR: font/size selector(s) not detected');
+
+  fontSel.addEventListener('change', onStyleInputChange);
+  sizeInp.addEventListener('input',  onStyleInputChange); // live as you type
+}
+
+
+function onStyleInputChange() {
+  if (selectedColIndex == null) { return; }
+  if (!locData) locData = {};
+
+  // Return if entry doesn't exist
+  const markerData = locData[selectedColIndex];
+  if (!markerData) { return; }
+
+  // read inputs
+  const rawFont = document.getElementById('font-select').value;
+  const rawSize = parseInt(document.getElementById('size-select').value, 10);
+
+  // normalize values
+  markerData.font = rawFont
+  markerData.size = Number.isFinite(rawSize) && rawSize > 0 ? rawSize : 12;
+
+  // persist + update just this marker
+  try { saveLocData && saveLocData(); } catch {}
+  renderLoc(selectedColIndex); // incremental re-render for this one
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//
+// Deleting
+//
+// Assumes: db, STORE_NAME, LOC_KEY, locData, renderLocAll(), displayCSVPreviewAsCards(), log()
+
+async function clearAllLocData() {
+  if (!confirm("Delete all saved locations? This cannot be undone.")) return;
+
+  // 1) Clear locally
+  locData = {};
+  try {
+    // 2) Clear in IndexedDB
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+    store.delete(LOC_KEY);
+
+    await new Promise((resolve, reject) => {
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+
+    log("All location data deleted.");
+  } catch (err) {
+    log("Error deleting location data: " + (err?.message || err));
+  }
+
+  // 3) Refresh UI: remove markers and unmark CSV cards
+  renderLocAll(); // overlay reconcile will remove markers
+
+  // If your CSV cards are already rendered, strip the "loc-data-exists" class:
+  const container = document.getElementById("csv-cards");
+  if (container) {
+    Array.from(container.children).forEach(card => card.classList.remove("loc-data-exists"));
+  }
+
+  // Optionally reset font/size controls
+  const fontSelect = document.getElementById("font-select");
+  const sizeInput  = document.getElementById("size-select");
+  if (fontSelect) fontSelect.value = "monospace";
+  if (sizeInput)  sizeInput.value  = 12;
+}
+
+// pdfexport.js
+let CUSTOM_FONT_BYTE_CACHE = null;
+
+// main function
+async function generateAndExportPDFs() {
+  // Calculate total number of data rows (excluding header row)
+  const total = (csvData?.length || 0) - 1;
+  if (total <= 0) {
+    log("CSV has no data rows.");
+    return;
+  }
+  if (!confirm(`Generate and download ${total} flattened PDF(s) as a ZIP?`))
+    return;
+
+  // Validate environment and inputs
+  currentPdf = await getCachedPDF();
+  if (!window.PDFLib) {
+    log("pdf-lib not available");
+    return;
+  }
+  if (!currentPdf) {
+    log("No base PDF loaded.");
+    return;
+  }
+  if (!locData || Object.keys(locData).length === 0) {
+    log("No locations set.");
+    return;
+  }
+
+  try {
+    log("Preparing source PDF…");
+    const srcBytes = await currentPdf.arrayBuffer();
+    const srcDoc = await PDFLib.PDFDocument.load(srcBytes);
+
+    // collect files for zipping
+    const filesForZip = [];
+
+    // Iterate through each data row in the CSV (skipping header)
+    for (let r = 1; r < csvData.length; r++) {
+      log(`Generating row ${r} of ${total}…`);
+
+      // 1) New output doc with copied pages
+      const outDoc = await PDFLib.PDFDocument.create();
+      const srcPages = await outDoc.copyPages(srcDoc, srcDoc.getPageIndices());
+      srcPages.forEach((p) => outDoc.addPage(p));
+      // TODO let user select pages
+
+      // 2) Deep Sanitize
+      await deepSanitizePdf(outDoc);
+
+      // 3) Embed your custom fonts for THIS doc
+      const fonts = await embedFontsForDoc(outDoc);
+
+      // 4) Draw placements for this row
+      for (const key of Object.keys(locData)) {
+        const cfg = locData[key];
+        if (!cfg) continue;
+
+        const pageIndex = (cfg.page || 1) - 1;
+        const page = outDoc.getPage(pageIndex);
+        if (!page) continue;
+
+        // Page dimensions (PDF coordinates use points)
+        const pageW = page.getWidth();
+        const pageH = page.getHeight();
+
+        // Stage size = width/height of HTML overlay when user placed fields
+        // This helps map pixel coordinates (HTML) to point coordinates (PDF)
+        const stageW = Number(cfg.stageW) || pageW; // captured overlay width
+        const stageH = Number(cfg.stageH) || pageH;
+
+        // Scale factors: px → pt
+        const scaleX = pageW / stageW;
+        const scaleY = pageH / stageH;
+        
+        // Something is wrong here
+        const cssPxSize = Number(cfg.size) || 12;
+        const pdfFontSize = cssPxSize * scaleY;
+
+        // Convert HTML overlay (top-left origin) → PDF coords (bottom-left origin)
+        // Also, adjust Y-value according to the font
+        const exportX = (Number(cfg.x) || 0) * scaleX;
+        const exportYTop  = pageH - (Number(cfg.y) || 0) * scaleY;
+        const exportY = computeBaselineY(exportYTop, pdfFontSize, cfg.font);
+
+        const text = getCellOrBlank(r, parseInt(key, 10));
+        const font = pickFontForPdf(cfg.font, fonts);
+
+
+        page.drawText(text, { x: exportX, y: exportY, size: pdfFontSize, font });
+      }
+
+      // 5) Save and queue this file for the ZIP (no per-file download)
+      const bytes = await outDoc.save({
+        useObjectStreams: false,
+        compress: true,
+      });
+      const stemRaw = (csvData[r]?.[0] || "").toString();
+        // To get leading 0's if more than 9 rows
+        const paddedRow = String(r).padStart(String(total).length, '0');
+        const sanitized = sanitizeStem(stemRaw);
+      const stem = sanitized ? `${paddedRow}-${sanitized}` : `Row-${paddedRow}`;
+
+      filesForZip.push({ name: `${stem}.pdf`, data: bytes });
+    }
+
+    // 6) Generate and download a single ZIP
+    const zipName = `autofilled_pdfs_${new Date()
+      .toISOString()
+      .slice(0, 19)
+      .replace(/[:T]/g, "-")}.zip`;
+    await downloadZip(filesForZip, zipName);
+
+    log(`All ${total} flattened PDFs generated and zipped into ${zipName}.`);
+  } catch (err) {
+    console.error(err);
+    log("Export error: " + (err?.message || err));
+  }
+}
+
+
+
+
+function cloneFontBytes(rawBytes) {
+  const requiredKeys = ["_signature", "_normal", "_monospace"];
+  const cloned = {};
+
+  for (const key of requiredKeys) {
+    const source = rawBytes?.[key];
+    if (!source) throw new Error(`Missing font bytes for "${key}"`);
+
+    cloned[key] =
+      source instanceof Uint8Array ? source : new Uint8Array(source);
+  }
+
+  return cloned;
+}
+
+async function loadAllCustomFontBytes() {
+  if (CUSTOM_FONT_BYTE_CACHE) return CUSTOM_FONT_BYTE_CACHE;
+
+  const fontBytes = initFontBytes(); // Call the init function
+  if (!fontBytes) {
+    throw new Error("Custom font bytes were not initialised");
+  }
+
+  CUSTOM_FONT_BYTE_CACHE = cloneFontBytes(fontBytes);
+  return CUSTOM_FONT_BYTE_CACHE;
+}
+
+async function embedFontsForDoc(doc) {
+  const fontkitGlobal = window.fontkit || globalThis.fontkit;
+  if (!fontkitGlobal) {
+    throw new Error("fontkit library was not loaded");
+  }
+
+  doc.registerFontkit(fontkitGlobal);
+
+  let sig = null,
+    norm = null,
+    mono = null;
+  try {
+    const bytes = await loadAllCustomFontBytes();
+
+    // Embed fonts to PDF document
+    sig = await doc.embedFont(bytes._signature, { subset: false });
+    norm = await doc.embedFont(bytes._normal, { subset: false });
+    mono = await doc.embedFont(bytes._monospace, { subset: false });
+  } catch (e) {
+    console.warn("Falling back to standard fonts:", e);
+    sig = await doc.embedFont(PDFLib.StandardFonts.HelveticaOblique);
+    norm = await doc.embedFont(PDFLib.StandardFonts.Helvetica);
+    mono = await doc.embedFont(PDFLib.StandardFonts.Courier);
+  }
+
+  return {
+    _signature: sig,
+    _normal: norm,
+    _monospace: mono,
+  };
+}
+
+function pickFontForPdf(fontKey, embedded) {
+  switch ((fontKey || "").toLowerCase()) {
+    case "_signature":
+      return embedded._signature;
+    case "_monospace":
+      return embedded._monospace;
+    case "_normal":
+    default:
+      return embedded._normal;
+  }
+}
+
+function getCellOrHeader(rowIdx, colIdx) {
+  const val = csvData?.[rowIdx]?.[colIdx];
+  if (val && String(val).trim() !== "") return String(val);
+  const header = csvData?.[0]?.[colIdx];
+  if (header && String(header).trim() !== "") return `[${header}]`;
+  return `Col ${colIdx}`;
+}
+
+function getCellOrBlank(rowIdx, colIdx) {
+  const val = csvData?.[rowIdx]?.[colIdx];
+  if (val && String(val).trim() !== "") return String(val);
+  return ""; // Return empty string instead of falling back to header
+}
+
+/**
+ * Convert top-aligned Y coordinate (HTML overlay) → baseline Y (PDF coordinate system).
+ *
+ * @param {number} exportYTop - The top coordinate from your overlay (already scaled to PDF points).
+ * @param {number} fontSize - The final PDF font size (in points).
+ * @param {string} fontKey - The font ID used in your project, e.g. "_signature", "_normal", "_monospace".
+ * @param {number} [unitsPerEm=1000] - The font design grid size (1000 or 2048 typical; default 1000).
+ * @returns {number} - The adjusted Y coordinate for PDF drawText() baseline.
+ */
+function computeBaselineY(exportYTop, fontSize, fontKey) {
+  const ascender = FONT_STYPOASCENDERS[fontKey];
+  const unitsPerEm = FONT_UNITS_PER_EM[fontKey] || 1000;
+  
+  const ascenderRatio = ascender ? ascender / unitsPerEm : 0.8;
+  
+  console.log(`${fontKey}: ascender=${ascender}, upem=${unitsPerEm}, ratio=${ascenderRatio}`);
+  
+  const exportY = exportYTop + ascenderRatio * fontSize;
+  return exportY;
+}
+
+
+
+
+function sanitizeStem(s) {
+  return (
+    (s || "")
+      .toString()
+      .trim()
+      .replace(/[^\w\-]+/g, "_")
+      .slice(0, 64) || ""
+  );
+}
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+
+async function deepSanitizePdf(outDoc) {
+  const { PDFName, PDFDict, PDFArray } = PDFLib;
+
+  // 1) Flatten AcroForm fields (safe if no form present)
+  try {
+    outDoc.getForm().flatten();
+  } catch {}
+
+  // 2) Remove page annotations & additional actions
+  try {
+    for (const page of outDoc.getPages()) {
+      const node = page.node;
+      // Clear annotations array (comments, links, etc.)
+      if (node.get(PDFName.of("Annots")))
+        node.set(PDFName.of("Annots"), outDoc.context.obj([]));
+      // Remove page-level actions (AA)
+      if (node.get(PDFName.of("AA"))) node.delete(PDFName.of("AA"));
+    }
+  } catch {}
+
+  // 3) Remove document open actions
+  try {
+    const cat = outDoc.catalog; // Catalog dict
+    if (cat.dict.has(PDFName.of("OpenAction")))
+      cat.dict.delete(PDFName.of("OpenAction"));
+    if (cat.dict.has(PDFName.of("AA"))) cat.dict.delete(PDFName.of("AA"));
+  } catch {}
+
+  // 4) Remove JavaScript & EmbeddedFiles name trees from /Names
+  try {
+    const cat = outDoc.catalog;
+    const names = cat.dict.get(PDFName.of("Names"));
+    if (names) {
+      const namesDict = outDoc.context.lookup(names, PDFDict);
+      if (namesDict) {
+        if (namesDict.has(PDFName.of("JavaScript")))
+          namesDict.delete(PDFName.of("JavaScript"));
+        if (namesDict.has(PDFName.of("EmbeddedFiles")))
+          namesDict.delete(PDFName.of("EmbeddedFiles"));
+        // If /Names becomes empty, drop it
+        if (namesDict.size === 0) cat.dict.delete(PDFName.of("Names"));
+      }
+    }
+  } catch {}
+
+  // 5) Remove metadata/XMP (optional)
+  try {
+    const cat = outDoc.catalog;
+    if (cat.dict.has(PDFName.of("Metadata")))
+      cat.dict.delete(PDFName.of("Metadata"));
+  } catch {}
+
+  // 6) Ensure fonts are subset & standard where possible (you already use { subset: true })
+  // Nothing to do here programmatically unless re-embedding. You’re good.
+
+  // 7) Clear viewer prefs that can trigger behaviors (optional)
+  try {
+    const cat = outDoc.catalog;
+    if (cat.dict.has(PDFName.of("ViewerPreferences")))
+      cat.dict.delete(PDFName.of("ViewerPreferences"));
+  } catch {}
+}
+
+// downloader
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function downloadZip(files, zipName = "output.zip") {
+  // files: Array<{ name: string, data: Uint8Array | ArrayBuffer | Blob | string }>
+  const zip = new JSZip();
+  for (const f of files) {
+    zip.file(f.name, f.data);
+  }
+  const blob = await zip.generateAsync({ type: "blob" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = zipName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// _startup.js
+// --------------------
+// IndexedDB setup
+// --------------------
+const DB_NAME = "PDFCache";
+const STORE_NAME = "files";
+const PDF_KEY = "currentPDF"; // Only ever store one PDF
+const CSV_KEY = "csvData";
+const LOC_KEY = "locData";
+
+let db;
+let csvData;
+let locData = {};
+
+const request = indexedDB.open(DB_NAME, 1);
+request.onupgradeneeded = (e) => {
+  db = e.target.result;
+  db.createObjectStore(STORE_NAME);
+};
+request.onsuccess = (e) => {
+  db = e.target.result;
+  loadCachedLocData();
+  loadCachedPDF();
+  loadCachedCSV();
+};
+request.onerror = (e) => log("IndexedDB error: " + e.target.error);
+
+
+
+initFontSizeHandlers();
+
+
+</script> 
+</body>
+
+</html>

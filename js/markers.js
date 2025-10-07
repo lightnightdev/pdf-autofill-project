@@ -118,7 +118,7 @@ function applyDataToMarker(el, markerData, colIndex) {
   // anchor bottom-left corner at (x, y)
   el.style.left = (markerData.x || 0) + 'px';
   el.style.top  = (markerData.y || 0) + 'px';
-  el.style.transform = 'translate(0, -100%)';
+  // el.style.transform = 'translate(0, -100%)'; <-- already in css
 
   let font = markerData.font || CreatoDisplay;
 
@@ -186,7 +186,6 @@ function setFontSizeSelectors(colIdx) {
   // ✅ Prefill font + size if this column already has locData
   const card = document.querySelector(`[data-col-idx="${colIdx}"]`);
   if (card && card.classList.contains("loc-data-exists") && locData?.[colIdx]) {
-    log('setting');
     const cfg = locData[colIdx];
 
     const fontSelect = document.getElementById("font-select");
@@ -200,7 +199,7 @@ function setFontSizeSelectors(colIdx) {
     }
   } else {
     // Optional: reset to defaults when no locData
-    document.getElementById("font-select").value = "CreatoDisplay";
+    document.getElementById("font-select").value = "_normal";
     document.getElementById("size-select").value = 12;
   }
 }
