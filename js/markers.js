@@ -1,3 +1,4 @@
+// markers.js
 
 
 //  Global Variables
@@ -29,8 +30,10 @@ canvas.addEventListener("click", (e) => {
   // Get selected elements
   const selectedFontInput = document.getElementById('font-select');
   const selectedSizeInput = document.getElementById('size-select');
+  const selectedSpacingInput = document.getElementById('size-select');
   selectedFont = selectedFontInput.value;
   selectedSize = selectedSizeInput.value ? selectedSizeInput.value : "12";
+  selectedSpacing = selectedSpacingInput.value ? selectedSpacingInput.value : "0";
 
   // Get the selected column data (first visible row as example)
   const headerText = csvData[0][selectedColIndex];
@@ -43,19 +46,14 @@ canvas.addEventListener("click", (e) => {
     page: currentPage,
     font: selectedFont,
     size: selectedSize,
+    spacing: selectedSpacing,
     stageW: canvas?.width || 1,     // 👈 store capture canvas size
-    stageH: canvas?.height || 1
+    stageH: canvas?.height || 1,
   };
 
   // Add element to card
   const card = document.querySelector(`[data-col-idx="${selectedColIndex}"]`)
   card.classList.add("loc-data-exists")
-
-  log('');
-  log(`${headerText}`);
-  log(` -Row 1: ${firstRowText}`);
-  log(` -Loc: x=${x}, y=${y}, pg=${currentPage}`);
-  log(` -Font: ${selectedFont}, Size: ${selectedSize}`);
 
   // Render current colIndex only
   renderLoc(selectedColIndex);
@@ -99,6 +97,7 @@ function renderLoc(colIndex) {
   // remove existing marker for this col (if any), then recreate
   const existing = document.getElementById(`loc-${colIndex}`);
   if (existing) existing.remove();
+  console.log(data);
   createMarker(colIndex, data, overlay);
 }
 
@@ -117,14 +116,14 @@ function createMarker(colIndex, markerData, overlay) {
 function applyDataToMarker(el, markerData, colIndex) {
   // anchor bottom-left corner at (x, y)
   el.style.left = (markerData.x || 0) + 'px';
-  el.style.top  = (markerData.y || 0) + 'px';
+  el.style.top = (markerData.y || 0) + 'px';
   // el.style.transform = 'translate(0, -100%)'; <-- already in css
 
   let font = markerData.font || CreatoDisplay;
 
   el.style.fontFamily = font;
-  el.style.fontSize   = (parseInt(markerData.size, 10) || 12) + 'px';
-
+  el.style.fontSize = (parseInt(markerData.size, 10) || 12) + 'px';
+  el.style.letterSpacing = (parseInt(markerData.spacing, 10) || 0) + 'pt';
   el.textContent = getTextContent(parseInt(colIndex, 10));
 }
 
@@ -140,13 +139,13 @@ function getTextContent(colIndex) {
 
 function syncOverlayBoxToCanvas() {
   const overlay = document.getElementById('pdf-overlay');
-  const canvas  = document.getElementById('pdf-canvas');
+  const canvas = document.getElementById('pdf-canvas');
   if (!overlay || !canvas) return false;
 
-  overlay.style.width  = canvas.width  + 'px';
+  overlay.style.width = canvas.width + 'px';
   overlay.style.height = canvas.height + 'px';
-  overlay.style.left   = '0px';
-  overlay.style.top    = '0px';
+  overlay.style.left = '0px';
+  overlay.style.top = '0px';
   overlay.style.position = 'absolute';
   overlay.style.zIndex = 10;
   overlay.style.pointerEvents = 'none'; // markers can re-enable selectively
@@ -197,10 +196,16 @@ function setFontSizeSelectors(colIdx) {
     if (cfg.size) {
       sizeInput.value = cfg.size;
     }
+
+    const spacingInput = document.getElementById("spacing-select");
+    if (cfg.spacing) {
+      spacingInput.value = cfg.spacing;
+    }
   } else {
     // Optional: reset to defaults when no locData
     document.getElementById("font-select").value = "_normal";
     document.getElementById("size-select").value = 12;
+    document.getElementById("spacing-select").value = 0;
   }
 }
 
@@ -211,11 +216,13 @@ function setFontSizeSelectors(colIdx) {
 function initFontSizeHandlers() {
   const fontSel = document.getElementById('font-select');
   const sizeInp = document.getElementById('size-select');
+  const spacingInp = document.getElementById('spacing-select');
 
-  if (!fontSel || !sizeInp) return log('ERROR: font/size selector(s) not detected');
+  if (!fontSel || !sizeInp || !spacingInp) return log('ERROR: font/size selector(s) not detected');
 
   fontSel.addEventListener('change', onStyleInputChange);
-  sizeInp.addEventListener('input',  onStyleInputChange); // live as you type
+  sizeInp.addEventListener('input', onStyleInputChange);
+  spacingInp.addEventListener('input', onStyleInputChange);
 }
 
 
@@ -230,19 +237,44 @@ function onStyleInputChange() {
   // read inputs
   const rawFont = document.getElementById('font-select').value;
   const rawSize = parseInt(document.getElementById('size-select').value, 10);
+  const rawSpacing = parseInt(document.getElementById('spacing-select').value, 10);
 
   // normalize values
   markerData.font = rawFont
   markerData.size = Number.isFinite(rawSize) && rawSize > 0 ? rawSize : 12;
+  markerData.spacing = Number.isFinite(rawSpacing) && rawSpacing > 0 ? rawSpacing : 0;
 
   // persist + update just this marker
-  try { saveLocData && saveLocData(); } catch {}
+  try { saveLocData && saveLocData(); } catch { }
   renderLoc(selectedColIndex); // incremental re-render for this one
 }
 
+function moveSpace(move) {
+  log(move);
+  if (selectedColIndex == null || !locData) { return; }
 
+  const markerData = locData[selectedColIndex];
+  if (!markerData) { return; }
 
-
+  switch (move) {
+    case "x+":
+      markerData.x += 1;
+      break;
+    case "x-":
+      markerData.x -= 1;
+      break;
+    case "y+":
+      markerData.y += 1;
+      break;
+    case "y-":
+      markerData.y -= 1;
+      break;
+    default:
+      console.warn("Move error: unknown direction", move);
+  }
+  try { saveLocData && saveLocData(); } catch { }
+  renderLoc(selectedColIndex); // incremental re-render for this one
+}
 
 
 
@@ -301,9 +333,7 @@ async function clearAllLocData() {
 
   // Optionally reset font/size controls
   const fontSelect = document.getElementById("font-select");
-  const sizeInput  = document.getElementById("size-select");
+  const sizeInput = document.getElementById("size-select");
   if (fontSelect) fontSelect.value = "monospace";
-  if (sizeInput)  sizeInput.value  = 12;
+  if (sizeInput) sizeInput.value = 12;
 }
-
-

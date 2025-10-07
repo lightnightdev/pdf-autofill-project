@@ -1,3 +1,4 @@
+// db.js
 // CSV
 async function loadCachedCSV() {
   try {
@@ -42,31 +43,31 @@ async function loadCachedLocData() {
 // 
 // 
 function saveLocData() {
-    const tx = db.transaction(STORE_NAME, "readwrite");
-    tx.objectStore(STORE_NAME).put(locData, LOC_KEY);
-    tx.oncomplete = () => {
-        log("Locations saved.");
-    };
-    tx.onerror = (err) => log("Error saving locations: " + err.target.error);
+  const tx = db.transaction(STORE_NAME, "readwrite");
+  tx.objectStore(STORE_NAME).put(locData, LOC_KEY);
+  tx.oncomplete = () => {
+    // log("Locations saved.");
+  };
+  tx.onerror = (err) => log("Error saving locations: " + err.target.error);
 }
 
 function saveCsvData(data) {
-    const tx = db.transaction(STORE_NAME, "readwrite");
-    tx.objectStore(STORE_NAME).put(data, CSV_KEY);
-    tx.oncomplete = () => {
-        log("CSV data saved.");
-        displayCSVPreviewAsCards(data);
-    };
-    tx.onerror = (err) => log("Error saving CSV: " + err.target.error);
+  const tx = db.transaction(STORE_NAME, "readwrite");
+  tx.objectStore(STORE_NAME).put(data, CSV_KEY);
+  tx.oncomplete = () => {
+    log("CSV data saved.");
+    displayCSVPreviewAsCards(data);
+  };
+  tx.onerror = (err) => log("Error saving CSV: " + err.target.error);
 }
 
 function savePdfBlob(blob) {
-    const tx = db.transaction(STORE_NAME, "readwrite");
-    tx.objectStore(STORE_NAME).put(blob, PDF_KEY);
-    tx.oncomplete = () => {
-        log("Saved PDF to IndexedDB (overwriting previous)");
-    };
-    tx.onerror = (err) => log("IndexedDB save error: " + err.target.error);
+  const tx = db.transaction(STORE_NAME, "readwrite");
+  tx.objectStore(STORE_NAME).put(blob, PDF_KEY);
+  tx.oncomplete = () => {
+    log("Saved PDF to IndexedDB (overwriting previous)");
+  };
+  tx.onerror = (err) => log("IndexedDB save error: " + err.target.error);
 }
 
 // 

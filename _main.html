@@ -21,92 +21,99 @@
 
 <body>
 
-    <div class="layout">
+  <div class="layout">
 
-        <aside class="sidebar left">
-            <h2>Select Files</h2>
-            <div class="file-input">
-                <div class="file-row">
-                    <label for="pdf-file">PDF:</label>
-                    <input id="pdf-file" type="file" accept="application/pdf" />
-                </div>
-                <div class="file-row">
-                    <label for="csv-file">CSV:</label>
-                    <input id="csv-file" type="file" accept="text/csv,text/plain" />
-                </div>
-            </div>
+    <aside class="sidebar left">
+      <h1>PDF-CSV Autofiller</h1>
+      <span id="webapp_version_id">v1.2</span>
+      <h2>Select Files</h2>
+      <div class="file-input">
+        <div class="file-row">
+          <label for="pdf-file">PDF:</label>
+          <input id="pdf-file" type="file" accept="application/pdf" />
+        </div>
+        <div class="file-row">
+          <label for="csv-file">CSV:</label>
+          <input id="csv-file" type="file" accept="text/csv,text/plain" />
+        </div>
+      </div>
 
-            <br>
-            <hr><br>
+      <br>
+      <hr><br>
 
-            <h2>PDF Navigation</h2>
-            <div id="pdf-page-info">
-                <span id="page-info">Page 0 / 0</span>
-            </div>
-            <div id="pdf-page-buttons"><br>
-                <button id="prev-page" class="btn btn-secondary btn-sm">Previous Page</button>
-                <button id="next-page" class="btn btn-secondary btn-sm">Next Page</button>
-            </div>
+      <h2>PDF Navigation</h2>
+      <div id="pdf-page-info">
+        <span id="page-info">Page 0 / 0</span>
+      </div>
+      <div id="pdf-page-buttons"><br>
+        <button id="prev-page" class="btn btn-secondary btn-sm">Previous Page</button>
+        <button id="next-page" class="btn btn-secondary btn-sm">Next Page</button>
+      </div>
 
-            <br>
-            <hr><br>
-            
-            <button id="btn-clear-loc" class="btn btn-danger btn-sm m-2" type="button" onclick="clearAllLocData()">
-            <i class="bi bi-trash"></i> Clear All Markers
-            </button>            
+      <br>
+      <hr><br>
 
-            <button id="btn-make-pdfs" class="btn btn-success m-2" type="button" onclick="generateAndExportPDFs()">
-                Generate PDFs
-            </button>    
+      <button id="btn-clear-loc" class="btn btn-danger btn-sm m-2" type="button" onclick="clearAllLocData()">
+        <i class="bi bi-trash"></i> Clear All Markers
+      </button>
 
-            <br>
-            <hr><br>
-            <div id="logbox" class="logbox"></div>
+      <button id="btn-make-pdfs" class="btn btn-success m-2" type="button" onclick="generateAndExportPDFs()">
+        Generate PDFs
+      </button>
 
-        </aside>
+      <br>
+      <hr><br>
+      <div id="logbox" class="logbox"></div>
 
-        <!-- Main PDF Display -->
-        <div class="wrapper">
-            <main class="content">
-                <div id="pdf-stage" style="position:relative; display:inline-block;">
-                    <canvas id="pdf-canvas"></canvas>
-                    <div id="pdf-overlay" style="position:absolute; left:0; top:0; pointer-events:none;"></div>
-                </div>
-            </main>
+    </aside>
+
+    <!-- Main PDF Display -->
+    <div class="wrapper">
+      <main class="content">
+        <div id="pdf-stage" style="position:relative; display:inline-block;">
+          <canvas id="pdf-canvas"></canvas>
+          <div id="pdf-overlay" style="position:absolute; left:0; top:0; pointer-events:none;"></div>
+        </div>
+      </main>
+    </div>
+
+    <aside class="sidebar right">
+      <h2>Select Columns</h2>
+      <div class="">
+        <!-- Controls column -->
+        <div class="">
+          <div class="d-flex align-items-center m-2">
+            <label for="font-select" class="form-label mb-0">Font:</label>
+            <select id="font-select" class="form-select form-select-sm">
+              <option value="_normal">Normal</option>
+              <option value="_monospace">Monospace</option>
+              <option value="_signature">Signature</option>
+            </select>
+          </div>
+
+          <div class="d-flex align-items-center m-2">
+            <label for="size-select" class="form-label mb-0">Size:</label>
+            <input type="number" class="form-control" id="size-select" placeholder="12">
+          </div>
+
+          <div class="d-flex align-items-center m-2">
+            <label for="spacing-select" class="form-label mb-0">Spacing:</label>
+            <input type="number" class="form-control" id="spacing-select" placeholder="0">
+          </div>
         </div>
 
-        <aside class="sidebar right">
-            <h2>Select Columns</h2>
-            <div class="">
-                <!-- Controls column -->
-                <div class="">
-                    <div class="d-flex align-items-center m-2">
-                        <label for="font-select" class="form-label mb-0">Font:</label>
-                        <select id="font-select" class="form-select form-select-sm">
-                            <option value="_normal">Normal</option>
-                            <option value="_monospace">Monospace</option>
-                            <option value="_signature">Signature</option>
-                        </select>
-                    </div>
+        <!-- Table column -->
+        <div class="">
+          <div class="table-responsive">
+            <div id="csv-cards" class="d-flex flex-column gap-2">
+            </div>
+          </div>
 
-                    <div class="d-flex align-items-center m-2">
-                        <label for="size-select" class="form-label mb-0">Size:</label>
-                        <input type="number" class="form-control" id="size-select" placeholder="12">
-                    </div>
-                </div>
+        </div>
 
-                <!-- Table column -->
-                <div class="">
-                    <div class="table-responsive">
-                        <div id="csv-cards" class="d-flex flex-column gap-2">
-                        </div>
-                    </div>
+    </aside>
 
-                </div>
-
-        </aside>
-
-    </div>
+  </div>
 
     <!-- Libraries -->
 

@@ -1,4 +1,4 @@
-// pdfmanager.js
+// pdfloader.js
 
 // --------------------
 // PDF state
@@ -76,7 +76,7 @@ document.getElementById("pdf-file").addEventListener("change", async (e) => {
     }
     const processed = canEdit
       ? await flattenAndCompressFile(file_ab) // return processed bytes/blob
-      : await rasterizeFile(file_ab, {dpi : 100} ); // return processed bytes/blob
+      : await rasterizeFile(file_ab, { dpi: 100 }); // return processed bytes/blob
 
     renderPdf(processed); // pass processed output
     savePdfToIndexedDb(processed); // pass processed output
@@ -107,6 +107,7 @@ async function flattenAndCompressFile(arrayBuffer) {
   } catch (err) {
     log("Error processing PDF: " + err.message);
     console.error(err);
+    return (arrayBuffer);
   }
 }
 

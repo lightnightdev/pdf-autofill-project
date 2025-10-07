@@ -1,3 +1,4 @@
+// csvloader.js">
 // --------------------
 // CSV Handling with headers
 // --------------------
@@ -15,7 +16,7 @@ document.getElementById("csv-file").addEventListener("change", (e) => {
       if (!rawData || rawData.length === 1) return log("CSV is headers only");
 
       // Filter for emptry rows
-      const data = rawData.filter(row => 
+      const data = rawData.filter(row =>
         row && row.some(cell => cell && cell.trim() !== "")
       );
       log(`CSV parsed, ${data.length - 1} data rows`);
@@ -53,13 +54,14 @@ function displayCSVPreviewAsCards(data) {
 
     // Build inner content: header + first 2 rows preview
     const headerDiv = document.createElement("div");
-    headerDiv.className = "fw-bold mb-1";
+    headerDiv.className = "fw-bold mb-1 text-start";
     headerDiv.textContent = colName;
     card.appendChild(headerDiv);
 
     for (let i = 1; i <= rowsToShow; i++) {
       const cellDiv = document.createElement("div");
       cellDiv.textContent = data[i][colIdx] || "";
+      cellDiv.className = "text-start";
       cellDiv.style.fontSize = "0.8rem"; // smaller preview
       card.appendChild(cellDiv);
     }

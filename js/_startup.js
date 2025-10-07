@@ -1,3 +1,4 @@
+// _startup.js
 // --------------------
 // IndexedDB setup
 // --------------------
@@ -28,4 +29,20 @@ request.onerror = (e) => log("IndexedDB error: " + e.target.error);
 
 initFontSizeHandlers();
 
+document.addEventListener('keydown', function (event) {
+  if (selectedColIndex === null) {
+    log("Choose a column");
+    return;
+  }
 
+  let move = "";
+  switch (event.key) {
+    case 'ArrowUp': move = "y-"; break;
+    case 'ArrowDown': move = "y+"; break;
+    case 'ArrowLeft': move = "x-"; break;
+    case 'ArrowRight': move = "x+"; break;
+    default: return;
+  }
+  event.preventDefault();
+  moveSpace(move);
+});

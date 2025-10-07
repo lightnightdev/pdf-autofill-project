@@ -1,3 +1,5 @@
+// utils.js
+
 // --- utils ---
 function b64ToU8(base64) {
   // Handle big strings safely
@@ -12,13 +14,13 @@ function initFontBytes() {
   if (typeof FONT_BYTES !== 'undefined') {
     return FONT_BYTES;
   }
-  
+
   window.FONT_BYTES = {
     _signature: b64ToU8(SIGNATURE_OTF_B64),
-    _normal:    b64ToU8(CREATO_REG_OTF_B64),
+    _normal: b64ToU8(CREATO_REG_OTF_B64),
     _monospace: b64ToU8(COURIER_PRIME_TTF_B64),
   };
-  
+
   return window.FONT_BYTES;
 }
 
@@ -43,7 +45,7 @@ AAEAAAAQAQAABAAAR0RFRgSHCHMAAAGQAAAAPEdTVUL+MPU1AAAI9AAAA85PUy8ycMiKKAAAAcwAAABg
 `.replace(/\s+/g, '');
 //CourierPrime-Regular.ttf
 
-const FONT_STYPOASCENDERS  = {
+const FONT_STYPOASCENDERS = {
   "_signature": 781,
   "_normal": 804,
   "_monospace": 1600,
@@ -54,6 +56,36 @@ const FONT_UNITS_PER_EM = {
   "_normal": 1000,     // Check your font file for actual value
   "_monospace": 2048   // Check your font file for actual value
 };
+
+
+
+registerBase64Font("_signature", SIGNATURE_OTF_B64);
+registerBase64Font("_normal", CREATO_REG_OTF_B64);
+registerBase64Font("_monospace", COURIER_PRIME_TTF_B64);
+
+
+
+
+
+function registerBase64Font(fontName, base64Data) {
+  const style = document.createElement("style");
+  style.innerHTML = `
+    @font-face {
+      font-family: "${fontName}";
+      src: url("data:font/ttf;base64,${base64Data}") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+
+
+
+
+
+
 
 /**
  * Rasterize a PDF into an image-only PDF.
@@ -146,7 +178,7 @@ async function rasterizeFile(input, opts = {}) {
     outPage.drawImage(img, { x: 0, y: 0, width: widthPts, height: heightPts });
 
     // Cleanup memory for this page
-    try { page.cleanup(); } catch {}
+    try { page.cleanup(); } catch { }
     if (!(canvas instanceof OffscreenCanvas)) {
       // help GC
       canvas.width = 1; canvas.height = 1;
