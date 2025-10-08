@@ -127,13 +127,6 @@ async function embedFontsForDoc(doc) {
   try {
     const bytes = await loadAllCustomFontBytes();
 
-    // ADD LOGGING HERE
-    console.log("Font bytes loaded:", {
-      sig: bytes._signature?.byteLength,
-      norm: bytes._normal?.byteLength,
-      mono: bytes._monospace?.byteLength
-    });
-
 
     // Embed fonts to PDF document
     sig = await doc.embedFont(bytes._signature, { subset: false });

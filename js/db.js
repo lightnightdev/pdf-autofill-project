@@ -6,10 +6,13 @@ const STORE_NAME = "files";
 const PDF_KEY = "currentPDF"; // Only ever store one PDF
 const CSV_KEY = "csvData";
 const LOC_KEY = "locData";
+const CHK_KEY = "checkmarkData";
 const RENDER_KEY = 'render_pdf'; // idb key for preview pdf
 
 // Startup
 async function loadCachedData() {
+  log("Application started. Checking for cached data.");
+
   const request = indexedDB.open(DB_NAME, 1);
   request.onupgradeneeded = (e) => {
     db = e.target.result;
@@ -22,13 +25,22 @@ async function loadCachedData() {
   request.onerror = (e) => log("IndexedDB error: " + e.target.error);
 }
 
-async function loadCache(){
+async function loadCache() {
   await loadCachedCSV();
   await loadCachedPDF();
   await loadCachedLocData();
-  displayCSVPreviewAsCards(csvData);
-  loadPDF(currentPdfBytes);
-  renderLocAll?.(); // draw markers for current page
+
+  if (Array.isArray(csvData) && csvData.length > 0) {
+    displayCSVPreviewAsCards(csvData);
+  }
+
+  if (currentPdfBytes && currentPdfBytes.byteLength > 0) {
+    loadPDF(currentPdfBytes);
+  }
+
+  if (locData && Object.keys(locData).length > 0) {
+    renderLocAll(); // draw markers for current page
+  }
 };
 
 // CSV
@@ -60,7 +72,9 @@ async function loadCachedPDF() {
 async function loadCachedLocData() {
   try {
     locData = (await idbGet(LOC_KEY)) || {};
-    log("Loaded cached locations.");
+    if (locData && Object.keys(locData).length > 0) {
+      log("Loaded cached locations.");
+    }
   } catch (err) {
     log("Error loading locations: " + (err?.message || err));
   }
@@ -130,3 +144,71 @@ function idbGet(key) {
 async function getCachedCSV() { return idbGet(CSV_KEY); }
 async function getCachedPDF() { return idbGet(PDF_KEY); }
 async function getCachedLoc() { return idbGet(LOC_KEY); }
+
+
+
+
+
+
+
+
+
+// Clear IndexedDB
+
+function clearFiles() {
+  if (!confirm(`Remove all PDF/CSV data`)) {
+    return;
+  }
+
+  // Delete the IndexedDB database
+  const req = indexedDB.deleteDatabase("PDFCache");
+
+  try {
+    if (db && typeof db.close === "function") {
+      console.log("Closing open IndexedDB connection...");
+      db.close();
+    }
+  } catch (err) {
+    console.warn("Could not close db safely, continuing to delete db:", err);
+  }
+
+
+  req.onsuccess = () => {
+    let msg = "✅ PDFCache database deleted successfully."
+    alert(msg);
+    console.log(msg);
+    clearGlobals();
+    location.reload(); // reloads the page
+  };
+
+  req.onerror = (e) => {
+    let msg = "❌ Error deleting PDFCache database:";
+    log(msg);
+    alert(msg);
+    console.error(msg, e.target.error);
+  };
+
+  req.onblocked = () => {
+    let msg = "⚠️ Database deletion is blocked (maybe other tabs open).";
+    log(msg);
+    console.warn(msg);
+    alert("Please close other tabs of this app and try again.");
+    location.reload();
+  };
+
+
+  clearGlobals();
+}
+
+function clearGlobals() {
+  csvData = [];
+  locData = {};
+  selectedColIndex = null;
+  pdfDoc = null;            // cached PDF as pdfjsLib document for viewing
+  editDoc = null;           // PDF-Lib document with fonts
+  editDocFonts = null;
+  renderDoc = null;         // PDF-Lib document with edits
+  currentPage = 1;
+  totalPages = 0;
+  currentPdfBytes = null;   // base pdf we render pages from
+}

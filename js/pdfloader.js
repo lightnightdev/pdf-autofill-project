@@ -230,16 +230,16 @@ async function isEditingAllowed(ab) {
   return canModify;
 }
 
-// No Longer Used
+// // No Longer Used
 
-function dumpSizeHeaderFooter(ab) {
-  console.log("AB size:", ab.byteLength);
-  const u8 = new Uint8Array(ab);
-  const head = new TextDecoder("ascii").decode(u8.slice(0, 16));
-  const tail = new TextDecoder("ascii").decode(
-    u8.slice(Math.max(0, u8.length - 2048))
-  );
-  console.log("HEAD:", head); // should start with %PDF-1.x
-  console.log("Has %%EOF:", tail.includes("%%EOF")); // must be true
-  console.log("Has startxref:", tail.includes("startxref")); // must be true
-}
+// function dumpSizeHeaderFooter(ab) {
+//   console.log("AB size:", ab.byteLength);
+//   const u8 = new Uint8Array(ab);
+//   const head = new TextDecoder("ascii").decode(u8.slice(0, 16));
+//   const tail = new TextDecoder("ascii").decode(
+//     u8.slice(Math.max(0, u8.length - 2048))
+//   );
+//   console.log("HEAD:", head); // should start with %PDF-1.x
+//   console.log("Has %%EOF:", tail.includes("%%EOF")); // must be true
+//   console.log("Has startxref:", tail.includes("startxref")); // must be true
+// }
