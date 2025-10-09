@@ -1,11 +1,86 @@
 // markers.js
 
 
-let locData = {};
+let locData = [];
 let selectedColIndex = null;
 let selectedFont = "monospace";
 let selectedSize = "12px";
+let selectedSpacing = "0";
 const canvas = document.getElementById("pdf-canvas");
+
+function ensureLocDataArray() {
+  if (!Array.isArray(locData)) {
+    locData = [];
+  }
+}
+
+function getPageMarkers(pageNum, create = false) {
+  ensureLocDataArray();
+  const pageIndex = Number(pageNum);
+  if (!Number.isFinite(pageIndex) || pageIndex < 0) {
+    return [];
+  }
+  if (!Array.isArray(locData[pageIndex])) {
+    if (create) {
+      locData[pageIndex] = [];
+    } else {
+      return [];
+    }
+  }
+  return locData[pageIndex];
+}
+
+function findMarkerEntryByCol(colIndex) {
+  if (!Array.isArray(locData)) return null;
+  const target = Number(colIndex);
+  for (let page = 0; page < locData.length; page++) {
+    const pageMarkers = locData[page];
+    if (!Array.isArray(pageMarkers)) continue;
+    for (let idx = 0; idx < pageMarkers.length; idx++) {
+      const marker = pageMarkers[idx];
+      if (marker && Number(marker.colIndex) === target) {
+        return { marker, page, index: idx };
+      }
+    }
+  }
+  return null;
+}
+
+function getMarkerData(colIndex) {
+  const entry = findMarkerEntryByCol(colIndex);
+  return entry ? entry.marker : null;
+}
+
+function removeMarkerData(colIndex) {
+  const entry = findMarkerEntryByCol(colIndex);
+  if (!entry) return;
+  const { page, index } = entry;
+  const pageMarkers = locData[page];
+  pageMarkers.splice(index, 1);
+  if (pageMarkers.length === 0) {
+    locData[page] = [];
+  }
+}
+
+function columnHasMarker(colIndex) {
+  return !!getMarkerData(colIndex);
+}
+
+function hasAnyLocMarkers() {
+  return Array.isArray(locData) && locData.some((page) => Array.isArray(page) && page.length > 0);
+}
+
+function forEachMarker(callback) {
+  if (!Array.isArray(locData)) return;
+  for (let page = 0; page < locData.length; page++) {
+    const pageMarkers = locData[page];
+    if (!Array.isArray(pageMarkers)) continue;
+    pageMarkers.forEach((marker, idx) => {
+      if (!marker) return;
+      callback(marker, idx, page);
+    });
+  }
+}
 
 
 
@@ -20,7 +95,8 @@ function newMarker(x, y, pageNum) {
   selectedSpacing = selectedSpacingInput.value ? selectedSpacingInput.value : "0";
 
   // Save to locData
-  locData[selectedColIndex] = {
+  const marker = {
+    colIndex: selectedColIndex,
     x: x,
     y: y,
     page: pageNum,
@@ -30,6 +106,10 @@ function newMarker(x, y, pageNum) {
     stageW: canvas?.width || 1,     // 👈 store capture canvas size
     stageH: canvas?.height || 1,
   };
+
+  removeMarkerData(selectedColIndex);
+  const pageMarkers = getPageMarkers(pageNum, true);
+  pageMarkers.push(marker);
 
   // Add element to card
   const card = document.querySelector(`[data-col-idx="${selectedColIndex}"]`)
@@ -44,7 +124,7 @@ function newMarker(x, y, pageNum) {
 }
 
 function removeMarker(colIndx) {
-  delete locData[colIndx];
+  removeMarkerData(colIndx);
   const card = document.getElementById('card-col' + String(colIndx));
   card.classList.remove("loc-data-exists");
   updateMarker(selectedColIndex);
@@ -55,10 +135,10 @@ function removeMarker(colIndx) {
 // checks for markers on current page & doesn't have spacing data
 function renderAllMarkers() {
   // spacing data should be rendered with page, per renderAll();
-  Object.keys(locData).forEach((key) => {
-    const data = locData[key];
-    if (data && data.page === currentPage && Number(data.spacing) <= 0) {
-      renderMarker(key, data);
+  const pageMarkers = getPageMarkers(currentPage);
+  pageMarkers.forEach((marker) => {
+    if (marker && Number(marker.spacing) <= 0) {
+      renderMarker(marker.colIndex, marker);
     }
   });
 }
@@ -69,7 +149,7 @@ function updateMarker(colIndex) {
   if (existing) existing.remove();
 
   // check if marker exists on current page
-  const data = locData?.[colIndex];
+  const data = getMarkerData(colIndex);
   if (!data) return;
   if (typeof currentPage !== 'number' || data.page !== currentPage) return;
   if (!syncOverlayBoxToCanvas()) { log('no overlay or canvas'); return; }
@@ -129,11 +209,10 @@ function getTextContent(colIndex) {
 
 // Check if page has 
 function pageHasNonZeroSpacing(pageNum) {
-  if (!locData) return false;
-  for (const key of Object.keys(locData)) {
-    const d = locData[key];
-    if (!d || d.page !== pageNum) continue;
-    if (Number(d.spacing) > 0) return true;
+  const pageMarkers = getPageMarkers(pageNum);
+  for (const marker of pageMarkers) {
+    if (!marker) continue;
+    if (Number(marker.spacing) > 0) return true;
   }
   return false;
 }
@@ -176,8 +255,9 @@ function addSelectClassColIdx(parentContainer, colIdx) {
 function setFontSizeSelectors(colIdx) {
 
   // ✅ Prefill font + size if this column already has locData
-  if (locData?.[colIdx]) {
-    const cfg = locData[colIdx];
+  const marker = getMarkerData(colIdx);
+  if (marker) {
+    const cfg = marker;
 
     const fontSelect = document.getElementById("font-select");
     if (cfg.font) {
@@ -219,10 +299,10 @@ function initFontSizeHandlers() {
 
 function onStyleInputChange() {
   if (selectedColIndex == null) { return; }
-  if (!locData) locData = {};
+  if (!locData) locData = [];
 
   // Return if entry doesn't exist
-  const markerData = locData[selectedColIndex];
+  const markerData = getMarkerData(selectedColIndex);
   if (!markerData) { return; }
 
   // read inputs

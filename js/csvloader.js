@@ -53,7 +53,7 @@ function displayCSVPreviewAsCards(data) {
     card.style.cursor = "pointer";
 
     // ✅ If locData has this column, mark it
-    if (locData && locData[colIdx]) {
+    if (columnHasMarker(colIdx)) {
       card.classList.add("loc-data-exists");
     }
 

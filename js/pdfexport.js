@@ -28,7 +28,7 @@ async function generateAndExportPDFs() {
     log("No base PDF loaded.");
     return;
   }
-  if (!locData || Object.keys(locData).length === 0) {
+  if (!hasAnyLocMarkers()) {
     log("No markers set.");
     return;
   }
@@ -42,6 +42,8 @@ async function generateAndExportPDFs() {
     const combinedDoc = exportSingle
       ? await PDFLib.PDFDocument.create()
       : null;
+
+    const flattenedCheckmarks = getAllCheckmarks();
 
     // Iterate through each data row in the CSV (skipping header)
     for (let r = 1; r < csvData.length; r++) {
@@ -62,8 +64,8 @@ async function generateAndExportPDFs() {
 
       // 4) Draw placements for this row
       drawRowText(outDoc, fonts, r);
-      if (Array.isArray(checkmarks) && checkmarks.length > 0) {
-        await drawCheckmarks(outDoc, checkmarks);
+      if (flattenedCheckmarks.length > 0) {
+        await drawCheckmarks(outDoc, flattenedCheckmarks);
       }
 
       if (exportSingle) {

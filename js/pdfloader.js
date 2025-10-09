@@ -67,15 +67,16 @@ function removePage() {
   }
 
   // 3) Remove all locData for that page
-  if (locData && typeof locData === "object") {
-    for (const key of Object.keys(locData)) {
-      const cfg = locData[key];
-      if (cfg && Number(cfg.page) === Number(currentPage)) {
-        delete locData[key];
-      }
-    }
+  const pageMarkers = getPageMarkers(currentPage);
+  if (pageMarkers.length > 0) {
+    locData[currentPage] = [];
   }
   saveLocData();
+  const pageCheckmarks = getCheckmarksForPage(currentPage);
+  if (pageCheckmarks.length > 0) {
+    checkmarks[currentPage] = [];
+    saveCheckmarks();
+  }
   removePageBytes(currentPage)
   displayCSVPreviewAsCards(csvData);
   renderAll();
