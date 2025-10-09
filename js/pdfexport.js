@@ -43,28 +43,20 @@ async function generateAndExportPDFs() {
       ? await PDFLib.PDFDocument.create()
       : null;
 
+    const fonts = await embedFontsForDoc(srcDoc);
+    drawCustText(srcDoc, fonts);
+
+
     // Iterate through each data row in the CSV (skipping header)
     for (let r = 1; r < csvData.length; r++) {
       log(`Generating row ${r} of ${total}…`);
 
       // 1) New output doc with copied pages
-      const outDoc = await PDFLib.PDFDocument.create();
-      const srcPages = await outDoc.copyPages(srcDoc, srcDoc.getPageIndices());
-      srcPages.forEach((p) => outDoc.addPage(p));
-      // TODO let user select pages
-
-      // 2) Deep Sanitize again (just in case)
-      await deepSanitizePdf(outDoc);
-
-      // 3) Embed your custom fonts for THIS doc
+      const outDoc = await srcDoc.copy();
       const fonts = await embedFontsForDoc(outDoc);
-
 
       // 4) Draw placements for this row
       drawRowText(outDoc, fonts, r);
-      if (Array.isArray(checkmarks) && checkmarks.length > 0) {
-        await drawCheckmarks(outDoc, checkmarks);
-      }
 
       if (exportSingle) {
         const copiedPages = await combinedDoc.copyPages(
@@ -119,7 +111,7 @@ async function generateAndExportPDFs() {
 
 
 function cloneFontBytes(rawBytes) {
-  const requiredKeys = ["_signature", "_normal", "_monospace"];
+  const requiredKeys = ["_signature", "_normal", "_monospace", "_symbol"];
   const cloned = {};
 
   for (const key of requiredKeys) {
@@ -156,6 +148,7 @@ async function embedFontsForDoc(doc) {
   let sig = null,
     norm = null,
     mono = null;
+    symb = null;
   try {
     const bytes = await loadAllCustomFontBytes();
 
@@ -164,17 +157,20 @@ async function embedFontsForDoc(doc) {
     sig = await doc.embedFont(bytes._signature, { subset: false });
     norm = await doc.embedFont(bytes._normal, { subset: false });
     mono = await doc.embedFont(bytes._monospace, { subset: false });
+    symb = await doc.embedFont(bytes._symbol, { subset: false });
   } catch (e) {
     console.warn("Falling back to standard fonts:", e);
     sig = await doc.embedFont(PDFLib.StandardFonts.HelveticaOblique);
     norm = await doc.embedFont(PDFLib.StandardFonts.Helvetica);
     mono = await doc.embedFont(PDFLib.StandardFonts.Courier);
+    symb = await doc.embedFont(PDFLib.StandardFonts.Courier);
   }
 
   return {
     _signature: sig,
     _normal: norm,
     _monospace: mono,
+    _symbol: symb,
   };
 }
 
@@ -184,6 +180,8 @@ function pickFontForPdf(fontKey, embedded) {
       return embedded._signature;
     case "_monospace":
       return embedded._monospace;
+    case "_symbol":
+      return embedded._symbol;
     case "_normal":
     default:
       return embedded._normal;

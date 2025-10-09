@@ -10,14 +10,7 @@ const canvas = document.getElementById("pdf-canvas");
 
 
 
-function newMarker(x, y, pageNum) {
-  // Get selected elements
-  const selectedSizeInput = document.getElementById('size-select');
-  const selectedFontInput = document.getElementById('font-select');
-  const selectedSpacingInput = document.getElementById('spacing-select');
-  selectedSize = selectedSizeInput.value ? selectedSizeInput.value : "12";
-  selectedFont = selectedFontInput.value;
-  selectedSpacing = selectedSpacingInput.value ? selectedSpacingInput.value : "0";
+function newMarker(x, y, pageNum, selectedSize, selectedFont, selectedSpacing) {
 
   // Save to locData
   locData[selectedColIndex] = {
@@ -94,22 +87,23 @@ function renderMarker(colIndex, markerData) {
   el.style.position = 'absolute';
   el.style.pointerEvents = 'auto';
 
-  applyDataToMarker(el, markerData, colIndex);
+  applyDataToMarker(el, markerData);
+  el.textContent = getTextContent(parseInt(colIndex, 10));
   overlay.appendChild(el);
 }
 
-function applyDataToMarker(el, markerData, colIndex) {
+/// ALSO USED BY CUSTOMTEXT
+function applyDataToMarker(el, markerData) {
   // anchor bottom-left corner at (x, y)
   el.style.left = (markerData.x || 0) + 'px';
   el.style.top = (markerData.y || 0) + 'px';
   // el.style.transform = 'translate(0, -100%)'; <-- already in css
 
-  let font = markerData.font || CreatoDisplay;
+  let font = markerData.font || "_normal";
 
   el.style.fontFamily = font;
   el.style.fontSize = (parseInt(markerData.size, 10) || 12) + 'px';
   el.style.letterSpacing = (parseInt(markerData.spacing, 10) || 0) + 'pt';
-  el.textContent = getTextContent(parseInt(colIndex, 10));
 }
 
 function getTextContent(colIndex) {
@@ -149,14 +143,17 @@ function pageHasNonZeroSpacing(pageNum) {
 // 
 // This is the onClick for the cards!!!!!
 function selectCard(colIdx) {
-  selectedColIndex = colIdx;
-  unselectCheckmark();
-  const markers = document.getElementById("pdf-overlay");
-  const cards = document.getElementById("csv-cards");
+  unselectCustomTextCreate();
   selectMarkersAndCards(colIdx);
 }
 
 function selectMarkersAndCards(colIdx) {
+  if (colIdx == -1) {
+    selectedColIndex = null;
+  } else {
+    selectedColIndex = colIdx;
+  }
+
   const markers = document.getElementById("pdf-overlay");
   const cards = document.getElementById("csv-cards");
   addSelectClassColIdx(markers, colIdx)
@@ -218,12 +215,14 @@ function initFontSizeHandlers() {
 
 
 function onStyleInputChange() {
-  if (selectedColIndex == null) { return; }
-  if (!locData) locData = {};
+  if (selectedColIndex == null && selectedCustomTextId == null) { return; }
 
-  // Return if entry doesn't exist
-  const markerData = locData[selectedColIndex];
-  if (!markerData) { return; }
+  let markerData = {}
+  if (selectedCustomTextId !== null) {
+    markerData = customText[currentPage][selectedCustomTextId]
+  } else if (selectedColIndex !== null) {
+    markerData = locData[selectedColIndex];
+  }
 
   // read inputs
   const rawFont = document.getElementById('font-select').value;
@@ -239,11 +238,15 @@ function onStyleInputChange() {
   markerData.size = Number.isFinite(rawSize) && rawSize > 0 ? rawSize : 12;
   markerData.spacing = Number.isFinite(rawSpacing) && rawSpacing > 0 ? rawSpacing : 0;
 
-  // persist + update just this marker
-  try { saveLocData && saveLocData(); } catch { }
-
-  if (spacingToZero) { updateRenderDoc() };
-  updateMarker(selectedColIndex); // incremental re-render for this one
+  if (selectedCustomTextId !== null) {
+    saveCustomText();
+    updateCustomText(selectedCustomTextId);
+  } else if (selectedColIndex !== null) {
+    // persist + update just this marker
+    saveLocData();
+    if (spacingToZero) { updateRenderDoc() };
+    updateMarker(selectedColIndex); // incremental re-render for this one
+  }
 
 }
 
@@ -265,11 +268,11 @@ function onStyleInputChange() {
 // Assumes: db, STORE_NAME, LOC_KEY, locData, renderLocAll(), displayCSVPreviewAsCards(), log()
 
 async function clearAllLocData() {
-  if (!confirm("Delete all saved markers and checkmarks? This cannot be undone.")) return;
+  if (!confirm("Delete all saved columns/custom text on page? This cannot be undone.")) return;
 
-  // clears local and DB instance of LocData and checkmarks
+  // clears local and DB instance of LocData and customText
   await clearLocDB();
-  await clearAllCheckmarks();
+  await clearCustomText();
 
 
   // 3) Refresh UI: remove markers and unmark CSV cards

@@ -3,20 +3,37 @@
 // --------------------
 function initCanvasClicks() {
     canvas.addEventListener("click", (e) => {
+        if (!inputSelection && selectedColIndex === null) {
+            log("ERROR: no column or custom text selected.");
+            return;
+        }
+
+
         // Get click coordinates relative to the canvas
         const rect = canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
+        // Get selected elements
+        const selectedSizeInput = document.getElementById('size-select');
+        const selectedFontInput = document.getElementById('font-select');
+        const selectedSpacingInput = document.getElementById('spacing-select');
+        selectedSize = selectedSizeInput.value ? selectedSizeInput.value : "12";
+        selectedFont = selectedFontInput.value;
+        selectedSpacing = selectedSpacingInput.value ? selectedSpacingInput.value : "0";
 
-        if (selectedCheckmark) {
-            newCheckmark(x, y, currentPage);
+
+        if (inputSelection == "checkmark") {
+            let currentText = CHECKMARK; // 
+            newCustomText(currentPage, x, y, currentText, selectedSize, '_symbol', selectedSpacing);
             return;
-        } else if (selectedColIndex === null) {
-            log("ERROR: no checkmark or column selected");
+        } else if (inputSelection == "custom_text") {
+            let currentText = 'RH - JosephChang'; //  TO DO!!!!
+            newCustomText(currentPage, x, y, currentText, selectedSize, selectedFont, selectedSpacing);
             return;
-        } else {
-            newMarker(x, y, currentPage);
+        } else if (selectedColIndex !== null) {
+            newMarker(x, y, currentPage, selectedSize, selectedFont, selectedSpacing);
+            return;
         }
 
     })
@@ -28,7 +45,7 @@ function initCanvasClicks() {
 //
 async function renderAll() {
     // If current page has any elements with spacing, render those elements on the page, not the overlay
-    if (typeof currentPage !== 'number' || !locData) { log('No page/text to render.'); return; }
+    if (typeof currentPage !== 'number') { log('No page/text to render.'); return; }
 
     if (pageHasNonZeroSpacing(currentPage)) {
         try {
@@ -49,8 +66,8 @@ async function renderAll() {
     // Recreate markers for this page
     renderAllMarkers();
 
-    // Render checkmarks
-    renderAllCheckmarks();
+    // Render CustomText
+    renderAllCustomText();
 }
 
 

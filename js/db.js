@@ -7,7 +7,7 @@ const STORE_NAME = "files";
 const PDF_KEY = "currentPDF"; // Only ever store one PDF
 const CSV_KEY = "csvData";
 const LOC_KEY = "locData";
-const CHK_KEY = "checkmarkData";
+const TXT_KEY = "customTextData";
 const RENDER_KEY = 'render_pdf'; // idb key for preview pdf
 
 let db; // IDBDatabase
@@ -75,7 +75,7 @@ async function loadCache() {
     loadCachedCSV(),
     loadCachedPDF(),
     loadCachedLocData(),
-    loadCachedCheckmarks(),
+    loadCachedCustomText(),
   ]);
 
   if (Array.isArray(csvData) && csvData.length > 0) {
@@ -123,15 +123,15 @@ async function loadCachedLocData() {
   }
 }
 
-// ===== Checkmarks =====
-async function loadCachedCheckmarks() {
+// ===== Custom Text =====
+async function loadCachedCustomText() {
   try {
-    checkmarks = (await idbGet(CHK_KEY)) || [];
-    if (Array.isArray(checkmarks) && checkmarks.length > 0) {
-      log(" - Loaded checkmarks.");
+    customText = (await idbGet(TXT_KEY)) || {};
+    if (Array.isArray(customText) && customText.length > 0) {
+      log(" - Loaded custom text.");
     }
   } catch (err) {
-    log("Error loading checkmarks: " + (err?.message || err));
+    log("Error loading custom text: " + (err?.message || err));
   }
 }
 
@@ -140,15 +140,15 @@ async function saveLocData() {
   try {
     await idbPut(LOC_KEY, locData);
   } catch (err) {
-    log("Error saving markers: " + (err?.message || err));
+    log("Error saving " + String(LOC_KEY) + ":" + (err?.message || err));
   }
 }
 
-async function saveCheckmarks() {
+async function saveCustomText() {
   try {
-    await idbPut(CHK_KEY, checkmarks);
+    await idbPut(TXT_KEY, customText);
   } catch (err) {
-    log("Error saving checkmarks: " + (err?.message || err));
+    log("Error saving custom text: " + (err?.message || err));
   }
 }
 
@@ -243,6 +243,26 @@ async function clearLocDB() {
 
 
 
+async function clearCustomText() {
+  customText = [];
+  try {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+    store.delete(TXT_KEY);
+
+    await new Promise((resolve, reject) => {
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+
+  } catch (err) {
+    log("Error deleting custom text data: " + (err?.message || err));
+  }
+}
+
+
+
 
 
 
@@ -250,7 +270,7 @@ async function clearLocDB() {
 function clearGlobals() {
   csvData = [];
   locData = {};
-  checkmarks = []
+  customText = []
   selectedColIndex = null;
   pdfDoc = null;            // cached PDF as pdfjsLib document for viewing
   editDoc = null;           // PDF-Lib document with fonts
