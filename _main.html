@@ -118,6 +118,12 @@
         <!-- Table column -->
         <div class="">
           <div class="table-responsive">
+            <div id="checkmark-card" class="card p-2 text-center checkmark-card m-3" style="cursor: pointer;" onclick="checkmarkCreate()">
+              <div class="fw-bold mb-1 text-start" >Add a Checkmark</div>
+            </div>
+            <div id="checkmark-card" class="card p-2 text-center checkmark-card m-3" style="cursor: pointer;" onclick="customTextCreate()">
+              <div class="fw-bold mb-1 text-start" >Add custom text</div>
+            </div>
             <div id="csv-cards" class="d-flex flex-column gap-2">
             </div>
           </div>
@@ -149,8 +155,10 @@
   <script src="js/pdfloader.js"></script>
   <script src="js/csvloader.js"></script>
   <script src="js/db.js"></script>
+  <script src="js/overlay.js"></script>
   <script src="js/markers.js"></script>
   <script src="js/pdfexport.js"></script>
+  <script src="js/checkmarks.js"></script>
 
   <!-- Startup Script -->
   <script src="js/_startup.js"></script>

@@ -114,12 +114,12 @@ body {
   border-left: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-.card.card-select {
+.card.select {
   font-weight: bold;
   background-color: #ffc107;
 }
 
-.card.card-select.loc-data-exists {
+.card.select.loc-data-exists {
   background-color: #1f1 !important;
 }
 
@@ -157,6 +157,11 @@ body {
   font-weight: bold;
 }
 
+
+.checkmark-card.select {
+  background: rgba(100,255,193,0.5);
+}
+
 /* Main content area */
 .content {
   padding: 32px;
@@ -176,7 +181,17 @@ body {
   background: rgba(255, 193, 7, 0.5);
 }
 
-.loc-data-el.card-select {
+.loc-data-el.select {
+  background: rgba(100,255,193,0.5);
+}
+
+.checkmark {
+  line-height: 1;
+  transform: translate(0%, -100%);
+  background: rgba(255, 193, 7, 0.5);
+}
+
+.checkmark.select {
   background: rgba(100,255,193,0.5);
 }
 
