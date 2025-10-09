@@ -9,8 +9,11 @@ async function generateAndExportPDFs() {
     log("CSV has no data rows.");
     return;
   }
-  if (!confirm(`Generate and download ${total} flattened PDF(s) as a ZIP?`))
-    return;
+  const exportSingle = document.getElementById("export-single-pdf")?.checked;
+  const confirmMessage = exportSingle
+    ? `Generate and download ${total} flattened PDF(s) as a single merged PDF?`
+    : `Generate and download ${total} flattened PDF(s) as a ZIP?`;
+  if (!confirm(confirmMessage)) return;
 
   // Validate environment and inputs
   if (!currentPdfBytes) {
@@ -34,8 +37,11 @@ async function generateAndExportPDFs() {
     log("Preparing source PDF…");
     const srcDoc = await PDFLib.PDFDocument.load(currentPdfBytes);
 
-    // collect files for zipping
+    // collect files for zipping or merged export
     const filesForZip = [];
+    const combinedDoc = exportSingle
+      ? await PDFLib.PDFDocument.create()
+      : null;
 
     // Iterate through each data row in the CSV (skipping header)
     for (let r = 1; r < csvData.length; r++) {
@@ -60,28 +66,49 @@ async function generateAndExportPDFs() {
         await drawCheckmarks(outDoc, checkmarks);
       }
 
-      // 5) Save and queue this file for the ZIP (no per-file download)
-      const bytes = await outDoc.save({
+      if (exportSingle) {
+        const copiedPages = await combinedDoc.copyPages(
+          outDoc,
+          outDoc.getPageIndices()
+        );
+        copiedPages.forEach((p) => combinedDoc.addPage(p));
+      } else {
+        // 5) Save and queue this file for the ZIP (no per-file download)
+        const bytes = await outDoc.save({
+          useObjectStreams: false,
+          compress: true,
+        });
+        const stemRaw = (csvData[r]?.[0] || "").toString();
+        // To get leading 0's if more than 9 rows
+        const paddedRow = String(r).padStart(String(total).length, "0");
+        const sanitized = sanitizeStem(stemRaw);
+        const stem = sanitized ? `${paddedRow}-${sanitized}` : `Row-${paddedRow}`;
+
+        filesForZip.push({ name: `${stem}.pdf`, data: bytes });
+      }
+    }
+
+    if (exportSingle) {
+      const mergedBytes = await combinedDoc.save({
         useObjectStreams: false,
         compress: true,
       });
-      const stemRaw = (csvData[r]?.[0] || "").toString();
-      // To get leading 0's if more than 9 rows
-      const paddedRow = String(r).padStart(String(total).length, '0');
-      const sanitized = sanitizeStem(stemRaw);
-      const stem = sanitized ? `${paddedRow}-${sanitized}` : `Row-${paddedRow}`;
+      const mergedName = `autofilled_pdfs_${new Date()
+        .toISOString()
+        .slice(0, 19)
+        .replace(/[:T]/g, "-")}.pdf`;
+      downloadPdf(mergedBytes, mergedName);
+      log(`All ${total} flattened PDFs generated and merged into ${mergedName}.`);
+    } else {
+      // 6) Generate and download a single ZIP
+      const zipName = `autofilled_pdfs_${new Date()
+        .toISOString()
+        .slice(0, 19)
+        .replace(/[:T]/g, "-")}.zip`;
+      await downloadZip(filesForZip, zipName);
 
-      filesForZip.push({ name: `${stem}.pdf`, data: bytes });
+      log(`All ${total} flattened PDFs generated and zipped into ${zipName}.`);
     }
-
-    // 6) Generate and download a single ZIP
-    const zipName = `autofilled_pdfs_${new Date()
-      .toISOString()
-      .slice(0, 19)
-      .replace(/[:T]/g, "-")}.zip`;
-    await downloadZip(filesForZip, zipName);
-
-    log(`All ${total} flattened PDFs generated and zipped into ${zipName}.`);
   } catch (err) {
     console.error(err);
     log("Export error: " + (err?.message || err));
@@ -287,4 +314,12 @@ async function downloadZip(files, zipName = "output.zip") {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function downloadPdf(data, filename = "output.pdf") {
+  const blob =
+    data instanceof Blob
+      ? data
+      : new Blob([data], { type: "application/pdf" });
+  downloadBlob(blob, filename);
 }
