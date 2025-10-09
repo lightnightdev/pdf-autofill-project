@@ -114,8 +114,23 @@ async function loadCachedPDF() {
 // ===== Locations =====
 async function loadCachedLocData() {
   try {
-    locData = (await idbGet(LOC_KEY)) || {};
-    if (locData && Object.keys(locData).length > 0) {
+    locData = (await idbGet(LOC_KEY)) || [];
+    if (locData && !Array.isArray(locData)) {
+      const migrated = [];
+      for (const key of Object.keys(locData)) {
+        const cfg = locData[key];
+        if (!cfg || typeof cfg !== "object") continue;
+        const page = Number(cfg.page);
+        if (!Number.isFinite(page) || page < 0) continue;
+        if (!Array.isArray(migrated[page])) migrated[page] = [];
+        migrated[page].push({ ...cfg, colIndex: Number(key) });
+      }
+      locData = migrated;
+      try { await saveLocData(); } catch (err) { console.warn("Failed to migrate locData:", err); }
+    } else if (Array.isArray(locData)) {
+      locData = locData.map((page) => (Array.isArray(page) ? page.filter(Boolean) : []));
+    }
+    if (Array.isArray(locData) && locData.some((page) => Array.isArray(page) && page.length > 0)) {
       log(" - Loaded markers.");
     }
   } catch (err) {
@@ -127,7 +142,21 @@ async function loadCachedLocData() {
 async function loadCachedCheckmarks() {
   try {
     checkmarks = (await idbGet(CHK_KEY)) || [];
-    if (Array.isArray(checkmarks) && checkmarks.length > 0) {
+    if (Array.isArray(checkmarks) && checkmarks.length > 0 && !Array.isArray(checkmarks[0])) {
+      const migrated = [];
+      checkmarks.forEach((chk) => {
+        if (!chk || typeof chk !== "object") return;
+        const page = Number(chk.page);
+        if (!Number.isFinite(page) || page < 0) return;
+        if (!Array.isArray(migrated[page])) migrated[page] = [];
+        migrated[page].push(chk);
+      });
+      checkmarks = migrated;
+      try { await saveCheckmarks(); } catch (err) { console.warn("Failed to migrate checkmarks:", err); }
+    } else if (Array.isArray(checkmarks)) {
+      checkmarks = checkmarks.map((page) => (Array.isArray(page) ? page.filter(Boolean) : []));
+    }
+    if (Array.isArray(checkmarks) && checkmarks.some((page) => Array.isArray(page) && page.length > 0)) {
       log(" - Loaded checkmarks.");
     }
   } catch (err) {
@@ -224,7 +253,7 @@ function clearFiles() {
 
 
 async function clearLocDB() {
-  loc = {};
+  locData = [];
   try {
     const tx = db.transaction(STORE_NAME, "readwrite");
     const store = tx.objectStore(STORE_NAME);
@@ -249,8 +278,10 @@ async function clearLocDB() {
 // ===== Reset in-memory state (kept as-is) =====
 function clearGlobals() {
   csvData = [];
-  locData = {};
-  checkmarks = []
+  locData = [];
+  checkmarks = [];
+  selectedCheckmarkId = null;
+  selectedCheckmark = false;
   selectedColIndex = null;
   pdfDoc = null;            // cached PDF as pdfjsLib document for viewing
   editDoc = null;           // PDF-Lib document with fonts

@@ -277,34 +277,32 @@ g
 }
 
 function drawRowText(doc, docFonts, row) {
-  for (const key of Object.keys(locData)) {
-    const cfg = locData[key];
-    if (!cfg) continue;
+  forEachMarker((cfg) => {
+    if (!cfg) return;
 
     const pageIndex = (cfg.page || 1) - 1;
     const page = doc.getPage(pageIndex);
-    if (!page) continue;
+    if (!page) return;
 
-    const text = getCellOrBlank(row, parseInt(key, 10));
+    const text = getCellOrBlank(row, parseInt(cfg.colIndex, 10));
     drawPlacedText(page, cfg, text, docFonts); // <--- single call now
-  }
+  });
 }
 
 
 // essentially drawRowText but Row 1 only (after header) and checks for sizing
 function drawSizingText(doc, docFonts) {
-  for (const key of Object.keys(locData)) {
-    const cfg = locData[key];
-    if (!cfg) continue;
-    if (!Number.isFinite(Number(cfg.spacing) || cfg.spacing <= 0)) continue;
+  forEachMarker((cfg) => {
+    if (!cfg) return;
+    if (!Number.isFinite(Number(cfg.spacing)) || Number(cfg.spacing) <= 0) return;
 
     const pageIndex = (cfg.page || 1) - 1;
     const page = doc.getPage(pageIndex);
-    if (!page) continue;
+    if (!page) return;
 
-    const text = getCellOrHeader(1, parseInt(key, 10));
+    const text = getCellOrHeader(1, parseInt(cfg.colIndex, 10));
     drawPlacedText(page, cfg, text, docFonts); // <--- single call now
-  }
+  });
 }
 
 function initKeyCaptures() {
@@ -339,7 +337,7 @@ function initKeyCaptures() {
 function colAction(move) {
   if (selectedColIndex == null || !locData) { return; }
 
-  const markerData = locData[selectedColIndex];
+  const markerData = getMarkerData(selectedColIndex);
   if (!markerData) { return; }
 
   switch (move) {
@@ -378,35 +376,42 @@ function checkmarkAction(move) {
 
   if (selectedCheckmarkId == null || !checkmarks) { return; }
 
-  const checkmarkData = checkmarks[selectedCheckmarkId];
+  const checkmarkData = getCheckmarkById(selectedCheckmarkId);
   if (!checkmarkData) { return; }
 
   switch (move) {
     case "x+":
-      checkmarks[selectedCheckmarkId].x += 1;
+      checkmarkData.x += 1;
       break;
     case "x-":
-      checkmarks[selectedCheckmarkId].x -= 1;
+      checkmarkData.x -= 1;
       break;
     case "y+":
-      checkmarks[selectedCheckmarkId].y += 1;
+      checkmarkData.y += 1;
       break;
     case "y-":
-      checkmarks[selectedCheckmarkId].y -= 1;
+      checkmarkData.y -= 1;
       break;
     case "s-":
-      checkmarks[selectedCheckmarkId].scale = Number(checkmarks[selectedCheckmarkId].scale) - 0.1;
+      checkmarkData.scale = Number(checkmarkData.scale) - 0.1;
       break;
     case "s+":
-      checkmarks[selectedCheckmarkId].scale = Number(checkmarks[selectedCheckmarkId].scale) + 0.1;
+      checkmarkData.scale = Number(checkmarkData.scale) + 0.1;
       break;
     case "d":
       deleteCheckmark(selectedCheckmarkId);
-      break;
+      return;
     default:
       console.warn("Move error: unknown direction", move);
   }
 
+  const canvasEl = document.getElementById('pdf-canvas');
+  if (canvasEl) {
+    checkmarkData.stageW = canvasEl.width;
+    checkmarkData.stageH = canvasEl.height;
+  }
+
+  try { saveCheckmarks && saveCheckmarks(); } catch { }
   updateCheckmark(selectedCheckmarkId); // incremental re-render for this one
 
 }

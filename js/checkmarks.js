@@ -6,25 +6,111 @@ let selectedCheckmark = false;
 const checkSvgPath = 'M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z';
 let selectedCheckmarkId = null;
 
+function ensureCheckmarkArray() {
+    if (!Array.isArray(checkmarks)) {
+        checkmarks = [];
+    }
+}
+
+function getCheckmarksForPage(pageNum, create = false) {
+    ensureCheckmarkArray();
+    const pageIndex = Number(pageNum);
+    if (!Number.isFinite(pageIndex) || pageIndex < 0) {
+        return [];
+    }
+    if (!Array.isArray(checkmarks[pageIndex])) {
+        if (create) {
+            checkmarks[pageIndex] = [];
+        } else {
+            return [];
+        }
+    }
+    return checkmarks[pageIndex];
+}
+
+function createCheckmarkId(pageNum, index) {
+    return `${pageNum}:${index}`;
+}
+
+function parseCheckmarkId(chkId) {
+    if (chkId == null) return null;
+    const [pageStr, idxStr] = String(chkId).split(':');
+    const page = Number(pageStr);
+    const index = Number(idxStr);
+    if (!Number.isFinite(page) || !Number.isFinite(index)) {
+        return null;
+    }
+    return { page, index };
+}
+
+function getCheckmarkById(chkId) {
+    const parsed = parseCheckmarkId(chkId);
+    if (!parsed) return null;
+    const pageArr = checkmarks?.[parsed.page];
+    if (!Array.isArray(pageArr)) return null;
+    return pageArr[parsed.index] || null;
+}
+
+function hasAnyCheckmarks() {
+    return Array.isArray(checkmarks) && checkmarks.some((page) => Array.isArray(page) && page.length > 0);
+}
+
+function getAllCheckmarks() {
+    const results = [];
+    if (!Array.isArray(checkmarks)) return results;
+    for (let page = 0; page < checkmarks.length; page++) {
+        const pageArr = checkmarks[page];
+        if (!Array.isArray(pageArr)) continue;
+        pageArr.forEach((chk) => {
+            if (chk) {
+                results.push(chk);
+            }
+        });
+    }
+    return results;
+}
+
+function forEachCheckmark(callback) {
+    if (!Array.isArray(checkmarks)) return;
+    for (let page = 0; page < checkmarks.length; page++) {
+        const pageArr = checkmarks[page];
+        if (!Array.isArray(pageArr)) continue;
+        pageArr.forEach((chk, idx) => {
+            if (!chk) return;
+            callback(chk, idx, page);
+        });
+    }
+}
+
 
 
 function newCheckmark(x, y, page) {
+
+    const canvasEl = document.getElementById('pdf-canvas');
+    const stageW = canvasEl?.width || 1;
+    const stageH = canvasEl?.height || 1;
 
     const chk = {
         x: x,
         y: y,
         page: page,
         scale: 1,
+        stageW: stageW,
+        stageH: stageH,
     }
-    selectedCheckmarkId = checkmarks.push(chk) - 1;
-    const chkId = selectedCheckmarkId;
+    const pageArr = getCheckmarksForPage(page, true);
+    const idx = pageArr.push(chk) - 1;
+    const chkId = createCheckmarkId(page, idx);
+    selectedCheckmarkId = chkId;
     saveCheckmarks();
     renderCheckmark(chkId);
 }
 
 function clearAllCheckmarks() {
     checkmarks = [];
+    selectedCheckmarkId = null;
     saveCheckmarks();
+    renderAllCheckmarks();
 }
 
 function renderAllCheckmarks() {
@@ -32,16 +118,34 @@ function renderAllCheckmarks() {
     chkmks.forEach(element => {
         element.remove();
     });
-    for (i = 0; i < checkmarks.length; i++) {
-        if (checkmarks[i].page == currentPage) {
-            renderCheckmark(i)
+    const pageArr = getCheckmarksForPage(currentPage);
+    pageArr.forEach((chk, idx) => {
+        if (chk) {
+            const chkId = createCheckmarkId(currentPage, idx);
+            renderCheckmark(chkId);
+        }
+    });
+    if (selectedCheckmarkId) {
+        const parsed = parseCheckmarkId(selectedCheckmarkId);
+        if (parsed && parsed.page === currentPage) {
+            selectCheckmark(selectedCheckmarkId);
         }
     }
 }
 
 function deleteCheckmark(chkId) {
     console.log('deleting: ' + String(chkId));
-    checkmarks.splice(chkId, 1);
+    const parsed = parseCheckmarkId(chkId);
+    if (!parsed) return;
+    const pageArr = getCheckmarksForPage(parsed.page);
+    if (!Array.isArray(pageArr)) return;
+    pageArr.splice(parsed.index, 1);
+    if (pageArr.length === 0) {
+        checkmarks[parsed.page] = [];
+    }
+    if (selectedCheckmarkId === chkId) {
+        selectedCheckmarkId = null;
+    }
     saveCheckmarks();
     renderAllCheckmarks();
 }
@@ -83,7 +187,7 @@ function selectCheckmark(chkId) {
 
 function addSelectClassChkId(parentContainer, datasetChkId) {
     Array.from(parentContainer.children).forEach((card) => {
-        if (parseInt(card.dataset.chkId) === datasetChkId) {
+        if (card.dataset.chkId === String(datasetChkId)) {
             card.classList.add("select");
         } else {
             card.classList.remove("select");
@@ -92,7 +196,8 @@ function addSelectClassChkId(parentContainer, datasetChkId) {
 }
 
 async function renderCheckmark(chkId) {
-    const chk = checkmarks[chkId];
+    const chk = getCheckmarkById(chkId);
+    if (!chk) return;
 
     const overlay = document.getElementById('pdf-overlay');
 
@@ -106,7 +211,7 @@ async function renderCheckmark(chkId) {
     dv.style.height = `${24 * (chk.scale || 1)}px`;
     dv.style.transform = 'translate(-0%, -100%)'
     dv.id = `chk-${chkId}`;
-    dv.addEventListener('click', () => selectCheckmark(parseInt(chkId, 10)));
+    dv.addEventListener('click', () => selectCheckmark(chkId));
     dv.style.pointerEvents = 'auto';
 
     // Use createElementNS for SVG elements
@@ -127,11 +232,11 @@ async function renderCheckmark(chkId) {
 }
 
 
-function drawCheckmarks(pdfDoc, checkmarks, canvasWidth, canvasHeight) {
+function drawCheckmarks(pdfDoc, checkmarksList, canvasWidth, canvasHeight) {
     // Get pages
     const pdfDocPages = pdfDoc.getPages();
 
-    checkmarks.forEach(chk => {
+    checkmarksList.forEach(chk => {
         // Get the page for this checkmark (assuming 0-indexed page numbers)
         const pdfPage = pdfDocPages[chk.page];
 
@@ -145,8 +250,8 @@ function drawCheckmarks(pdfDoc, checkmarks, canvasWidth, canvasHeight) {
             x: chk.x,
             y: chk.y,
             scale: chk.scale,
-            stageW: canvasWidth,
-            stageH: canvasHeight
+            stageW: chk.stageW || canvasWidth,
+            stageH: chk.stageH || canvasHeight
         });
 
         // Draw the SVG path
