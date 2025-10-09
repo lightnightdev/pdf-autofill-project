@@ -218,7 +218,6 @@ async function rasterizeFile(input, opts = {}) {
 // --- coordinate + font helpers reused by preview + export for character spacing ---
 
 function computeExportCoords(page, cfg) {
-  console.log(page, cfg);
   const pageW = page.getWidth();
   const pageH = page.getHeight();
 
@@ -252,7 +251,14 @@ function getCorrectYCoordinate(exportYTop, fontSize, fontKey) {
 
 
 
-
+function copyArrayColumn(arr, idx) {
+  let i = arr.length;
+  while (i--) {
+    const row = arr[i];
+    row[row.length] = row[idx];
+  }
+  return arr[0].length - 1;
+}
 
 
 
@@ -284,7 +290,6 @@ function drawCustText(doc, docFonts) {
     let pgNum = parseInt(pgNumRaw, 10);
     const page = doc.getPage(pgNum - 1);
     const cTextsOnPg = customText[pgNum];
-    console.log(pgNum);
     for (cTexts of cTextsOnPg) {
       drawPlacedText(page, cTexts, cTexts.text, docFonts)
     }

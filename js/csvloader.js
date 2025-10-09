@@ -27,9 +27,13 @@ function initCsvFileListener() {
 
         // Save to local environment
         csvData = data;
+        if (locData) {
+          locData = {};
+          renderAll();
+        };
 
         // Save to IndexedDB
-        saveCsvData(data);
+        saveCsvData();
       },
       header: false, // we parse manually
     });

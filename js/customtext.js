@@ -120,3 +120,20 @@ function selectCustomText(ctId) {
     const el = document.getElementById(`ct-${ctId}`)
     el.classList.add('select');
 }
+
+function removePageFromCustomText() {
+  const newArr = [];
+  const kys = Object.keys(customText);
+  for (ky of kys) {
+    i = parseInt(ky, 10);
+    if (i < currentPage) {
+      // keep everything before the deleted page the same
+      newArr[i] = customText[i];
+    } else if (i > currentPage) {
+      // shift everything after down by one
+      newArr[i - 1] = customText[i];
+    }
+  }
+
+  customText = newArr;
+}

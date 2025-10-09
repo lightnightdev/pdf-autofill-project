@@ -62,7 +62,7 @@ function removePage() {
     return;
   }
 
-  if (!confirm(`Hide page ${currentPage}? This will remove all placed fields and remove it from the exported document.`)) {
+  if (!confirm(`Hide page ${currentPage}? This will remove all fields place on the page and remove it from the exported document.`)) {
     return;
   }
 
@@ -75,6 +75,9 @@ function removePage() {
       }
     }
   }
+  // Remove all customText on that page, shift it down
+  removePageFromCustomText();
+
   saveLocData();
   removePageBytes(currentPage)
   displayCSVPreviewAsCards(csvData);

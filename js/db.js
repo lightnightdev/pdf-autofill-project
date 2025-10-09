@@ -152,11 +152,11 @@ async function saveCustomText() {
   }
 }
 
-async function saveCsvData(data) {
+async function saveCsvData() {
   try {
-    await idbPut(CSV_KEY, data);
+    await idbPut(CSV_KEY, csvData);
     log("CSV data saved.");
-    displayCSVPreviewAsCards(data);
+    displayCSVPreviewAsCards(csvData);
   } catch (err) {
     log("Error saving CSV: " + (err?.message || err));
   }
@@ -223,7 +223,7 @@ function clearFiles() {
 
 
 async function clearLocDB() {
-  loc = {};
+  locData = {};
   try {
     const tx = db.transaction(STORE_NAME, "readwrite");
     const store = tx.objectStore(STORE_NAME);

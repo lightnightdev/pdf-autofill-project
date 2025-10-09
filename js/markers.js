@@ -134,15 +134,24 @@ function pageHasNonZeroSpacing(pageNum) {
 
 
 
-
-
-
+async function copyRow(colIdx) {
+  let newIdx = copyArrayColumn(csvData, colIdx);
+  await saveCsvData();
+  unselectCustomTextCreate();
+  selectMarkersAndCards(newIdx);
+}
 
 // 
 // Selecting Cards, Changing Font/Size/Loc
 // 
 // This is the onClick for the cards!!!!!
 function selectCard(colIdx) {
+  if (selectedColIndex === colIdx) {
+    if (confirm("Double this column?")) {
+      copyRow(colIdx);
+      return;
+    }
+  }
   unselectCustomTextCreate();
   selectMarkersAndCards(colIdx);
 }
@@ -236,7 +245,7 @@ function onStyleInputChange() {
   // normalize values
   markerData.font = rawFont
   markerData.size = Number.isFinite(rawSize) && rawSize > 0 ? rawSize : 12;
-  
+
   if (selectedCustomTextId !== null) {
     saveCustomText();
     updateCustomText(selectedCustomTextId);
@@ -277,7 +286,7 @@ async function clearAllLocData() {
 
 
   // 3) Refresh UI: remove markers and unmark CSV cards
-  renderAll(); // overlay reconcile will remove markers
+  await renderAll(); // overlay reconcile will remove markers
 
   // If your CSV cards are already rendered, strip the "loc-data-exists" class:
   const container = document.getElementById("csv-cards");

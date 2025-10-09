@@ -21,18 +21,18 @@ function initCanvasClicks() {
     const stageH = canvas.height;
 
     // Read controls & normalize
-    const sizeEl    = document.getElementById('size-select');
-    const fontEl    = document.getElementById('font-select');
+    const sizeEl = document.getElementById('size-select');
+    const fontEl = document.getElementById('font-select');
     const spacingEl = document.getElementById('spacing-select');
 
-    const selectedSize    = Number.parseInt(sizeEl?.value, 10) || 12;
-    const selectedFont    = (fontEl?.value || 'monospace');
+    const selectedSize = Number.parseInt(sizeEl?.value, 10) || 12;
+    const selectedFont = (fontEl?.value || 'monospace');
     const selectedSpacing = Number.parseFloat(spacingEl?.value) || 0;
 
     if (inputSelection === 'checkmark') {
       // example uses CHECKMARK and your symbol font key
       const currentText = CHECKMARK;
-      newCustomText(currentPage, x, y, currentText, selectedSize, '_symbol', selectedSpacing, { stageW, stageH });
+      newCustomText(currentPage, x, y, currentText, 24, '_symbol', selectedSpacing, { stageW, stageH });
       return;
     }
 
@@ -77,30 +77,32 @@ function sanitizePlainString(input, maxLen = 200) {
 // Rendering elements
 //
 async function renderAll() {
-    // If current page has any elements with spacing, render those elements on the page, not the overlay
-    if (typeof currentPage !== 'number') { log('No page/text to render.'); return; }
+  // If current page has any elements with spacing, render those elements on the page, not the overlay
+  if (typeof currentPage !== 'number') { log('No page/text to render.'); return; }
 
-    if (pageHasNonZeroSpacing(currentPage)) {
-        try {
-            await renderPage(currentPage);
-        } catch (e) {
-            console.error(e);
-            log('Issue with non-zero spacing columns on page.');
-        }
+  if (pageHasNonZeroSpacing(currentPage)) {
+    try {
+      await renderPage(currentPage);
+    } catch (e) {
+      console.error(e);
+      log('Issue with non-zero spacing columns on page.');
     }
+  }
 
-    if (!syncOverlayBoxToCanvas()) { log('no overlay or canvas'); return; }
+  if (!syncOverlayBoxToCanvas()) { log('no overlay or canvas'); return; }
 
-    const overlay = document.getElementById('pdf-overlay');
+  const overlay = document.getElementById('pdf-overlay');
 
-    // Clear everything
-    overlay.innerHTML = '';
+  // Clear everything
+  overlay.innerHTML = '';
+  while (overlay.firstChild) {
+    overlay.removeChild(overlay.firstChild);
+  }
+  // Recreate markers for this page
+  renderAllMarkers();
 
-    // Recreate markers for this page
-    renderAllMarkers();
-
-    // Render CustomText
-    renderAllCustomText();
+  // Render CustomText
+  renderAllCustomText();
 }
 
 
@@ -108,18 +110,18 @@ async function renderAll() {
 
 
 function syncOverlayBoxToCanvas() {
-    const overlay = document.getElementById('pdf-overlay');
-    const canvas = document.getElementById('pdf-canvas');
-    if (!overlay || !canvas) return false;
+  const overlay = document.getElementById('pdf-overlay');
+  const canvas = document.getElementById('pdf-canvas');
+  if (!overlay || !canvas) return false;
 
-    overlay.style.width = canvas.width + 'px';
-    overlay.style.height = canvas.height + 'px';
-    overlay.style.left = '0px';
-    overlay.style.top = '0px';
-    overlay.style.position = 'absolute';
-    overlay.style.zIndex = 10;
-    overlay.style.pointerEvents = 'none'; // markers can re-enable selectively
-    return true;
+  overlay.style.width = canvas.width + 'px';
+  overlay.style.height = canvas.height + 'px';
+  overlay.style.left = '0px';
+  overlay.style.top = '0px';
+  overlay.style.position = 'absolute';
+  overlay.style.zIndex = 10;
+  overlay.style.pointerEvents = 'none'; // markers can re-enable selectively
+  return true;
 }
 
 
