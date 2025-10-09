@@ -198,8 +198,7 @@ function clearFiles() {
 
   req.onsuccess = () => {
     const msg = "✅ PDFCache database deleted successfully.";
-    alert(msg);
-    console.log(msg);
+    log(msg);
     clearGlobals();
     location.reload();
   };

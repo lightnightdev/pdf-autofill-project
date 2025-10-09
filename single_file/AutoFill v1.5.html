@@ -1242,7 +1242,7 @@ AAEAAAAQAQAABAAAR0RFRgSHCHMAAAGQAAAAPEdTVUL+MPU1AAAI9AAAA85PUy8ycMiKKAAAAcwAAABg
 
       req.onsuccess = () => {
         let msg = "✅ PDFCache database deleted successfully."
-        alert(msg);
+        log(msg);
         console.log(msg);
         clearGlobals();
         location.reload(); // reloads the page
