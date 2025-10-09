@@ -236,12 +236,13 @@ function onStyleInputChange() {
   // normalize values
   markerData.font = rawFont
   markerData.size = Number.isFinite(rawSize) && rawSize > 0 ? rawSize : 12;
-  markerData.spacing = Number.isFinite(rawSpacing) && rawSpacing > 0 ? rawSpacing : 0;
-
+  
   if (selectedCustomTextId !== null) {
     saveCustomText();
     updateCustomText(selectedCustomTextId);
   } else if (selectedColIndex !== null) {
+    // 
+    markerData.spacing = Number.isFinite(rawSpacing) && rawSpacing > 0 ? rawSpacing : 0;
     // persist + update just this marker
     saveLocData();
     if (spacingToZero) { updateRenderDoc() };

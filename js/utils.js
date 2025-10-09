@@ -438,3 +438,27 @@ function customTextAction(move) {
   updateCustomText(selectedCustomTextId); // incremental re-render for this one
 
 }
+
+
+
+// Remove control chars, normalize, cap length
+function sanitizePlainString(input, maxLen = 200) {
+  if (input == null) return null;
+  // strip control chars (except newline/tab if you want to keep them)
+  const withoutControls = String(input).replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+  // trim & normalize unicode
+  const trimmed = withoutControls.trim().normalize('NFC');
+  // cap length
+  return trimmed.slice(0, maxLen);
+}
+
+// If you MUST inject via innerHTML (prefer textContent!), escape first:
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+

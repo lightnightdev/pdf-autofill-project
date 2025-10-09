@@ -2,42 +2,75 @@
 // Track clicks on canvas
 // --------------------
 function initCanvasClicks() {
-    canvas.addEventListener("click", (e) => {
-        if (!inputSelection && selectedColIndex === null) {
-            log("ERROR: no column or custom text selected.");
-            return;
-        }
+  const canvas = document.getElementById('pdf-canvas');
+  if (!canvas) { log('No canvas'); return; }
 
+  canvas.addEventListener('click', async (e) => {
+    if (!inputSelection && (selectedColIndex == null)) {
+      log('ERROR: no column or custom text selected.');
+      return;
+    }
 
-        // Get click coordinates relative to the canvas
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+    // Click coordinates in canvas CSS pixel space
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
 
-        // Get selected elements
-        const selectedSizeInput = document.getElementById('size-select');
-        const selectedFontInput = document.getElementById('font-select');
-        const selectedSpacingInput = document.getElementById('spacing-select');
-        selectedSize = selectedSizeInput.value ? selectedSizeInput.value : "12";
-        selectedFont = selectedFontInput.value;
-        selectedSpacing = selectedSpacingInput.value ? selectedSpacingInput.value : "0";
+    // Current canvas render size (store with placements!)
+    const stageW = canvas.width;
+    const stageH = canvas.height;
 
+    // Read controls & normalize
+    const sizeEl    = document.getElementById('size-select');
+    const fontEl    = document.getElementById('font-select');
+    const spacingEl = document.getElementById('spacing-select');
 
-        if (inputSelection == "checkmark") {
-            let currentText = CHECKMARK; // 
-            newCustomText(currentPage, x, y, currentText, selectedSize, '_symbol', selectedSpacing);
-            return;
-        } else if (inputSelection == "custom_text") {
-            let currentText = 'RH - JosephChang'; //  TO DO!!!!
-            newCustomText(currentPage, x, y, currentText, selectedSize, selectedFont, selectedSpacing);
-            return;
-        } else if (selectedColIndex !== null) {
-            newMarker(x, y, currentPage, selectedSize, selectedFont, selectedSpacing);
-            return;
-        }
+    const selectedSize    = Number.parseInt(sizeEl?.value, 10) || 12;
+    const selectedFont    = (fontEl?.value || 'monospace');
+    const selectedSpacing = Number.parseFloat(spacingEl?.value) || 0;
 
-    })
-};
+    if (inputSelection === 'checkmark') {
+      // example uses CHECKMARK and your symbol font key
+      const currentText = CHECKMARK;
+      newCustomText(currentPage, x, y, currentText, selectedSize, '_symbol', selectedSpacing, { stageW, stageH });
+      return;
+    }
+
+    if (inputSelection === 'custom_text') {
+      await userInputCustomText(x, y, selectedSize, selectedFont, selectedSpacing, stageW, stageH);
+      return;
+    }
+
+    if (selectedColIndex != null) {
+      // place a CSV marker
+      newMarker(x, y, currentPage, selectedSize, selectedFont, selectedSpacing, { stageW, stageH });
+      return;
+    }
+  });
+}
+
+// Ask user for string, sanitize, and place
+async function userInputCustomText(x, y, size, font, spacing, stageW, stageH) {
+  const currentText = await promptForSafeString('Enter text', 200);
+  if (!currentText) { log('Canceled or empty text'); return; }
+  newCustomText(currentPage, x, y, currentText, size, font, spacing, { stageW, stageH });
+}
+
+// Simple prompt + sanitize
+async function promptForSafeString(message = 'Enter text', maxLen = 200) {
+  const raw = window.prompt(message, '');
+  if (raw == null) return null; // canceled
+  const safe = sanitizePlainString(raw, maxLen);
+  return safe || null;
+}
+
+// Example sanitizer (keep yours if you already defined it)
+function sanitizePlainString(input, maxLen = 200) {
+  if (input == null) return null;
+  const withoutControls = String(input).replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+  const trimmed = withoutControls.trim().normalize('NFC');
+  return trimmed.slice(0, maxLen);
+}
 
 
 //
