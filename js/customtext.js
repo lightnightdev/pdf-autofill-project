@@ -2,7 +2,7 @@ const CHECKMARK = "✓" // unicode 2713
 let inputSelection = null;
 let selectedCustomTextId = null;
 
-let customText = []
+let customText = {}
 // customText[pageNumber] = [{x: 25, y: 30, text: "hello", size: 24, spacing: 12, font: _monospace]
 //
 //
@@ -136,4 +136,5 @@ function removePageFromCustomText() {
   }
 
   customText = newArr;
+  saveCustomText();
 }

@@ -4,8 +4,10 @@
 const DB_NAME = "PDFCache";
 const DB_VERSION = 1;
 const STORE_NAME = "files";
-const PDF_KEY = "currentPDF"; // Only ever store one PDF
+const PDF_KEY = "currentPDF";
+const PDF_NAME_KEY = "pdfName";
 const CSV_KEY = "csvData";
+const CSV_NAME_KEY = "csvName";
 const LOC_KEY = "locData";
 const TXT_KEY = "customTextData";
 const RENDER_KEY = 'render_pdf'; // idb key for preview pdf
@@ -80,10 +82,12 @@ async function loadCache() {
 
   if (Array.isArray(csvData) && csvData.length > 0) {
     displayCSVPreviewAsCards(csvData);
+    csvButton(true, await getCsvNameFromDb())
   }
 
   if (currentPdfBytes && currentPdfBytes.byteLength > 0) {
     loadPDF(currentPdfBytes);
+    pdfButton(true, await getPdfNameFromDb())
   }
 }
 
@@ -136,6 +140,7 @@ async function loadCachedCustomText() {
 }
 
 // ===== Save helpers =====
+
 async function saveLocData() {
   try {
     await idbPut(LOC_KEY, locData);
@@ -152,11 +157,13 @@ async function saveCustomText() {
   }
 }
 
-async function saveCsvData() {
+async function saveCsvData(csvName) {
   try {
     await idbPut(CSV_KEY, csvData);
+    await idbPut(CSV_NAME_KEY, csvName);
     log("CSV data saved.");
     displayCSVPreviewAsCards(csvData);
+    csvButton(true, csvName);
   } catch (err) {
     log("Error saving CSV: " + (err?.message || err));
   }
@@ -171,15 +178,36 @@ async function savePdfRenderBlob(blob) {
   }
 }
 
-async function savePdfBlob(blob) {
+async function savePdfBlob(blob, pdfName) {
+  if (!pdfName || pdfName === "") { pdfName = "form.pdf" }
   try {
     await idbPut(PDF_KEY, blob);
+    await idbPut(PDF_NAME_KEY, pdfName);
     log("Saved PDF to IndexedDB (overwriting previous)");
   } catch (err) {
     log("IndexedDB save error: " + (err?.message || err));
   }
 }
 
+async function getPdfNameFromDb() {
+  try {
+    const pdfName = await idbGet(PDF_NAME_KEY)
+    return pdfName;
+  } catch (err) {
+    log('Unable to get PDF name.');
+    return 'x.pdf';
+  }
+}
+
+async function getCsvNameFromDb() {
+  try {
+    const csvName = await idbGet(CSV_NAME_KEY)
+    return csvName;
+  } catch (err) {
+    log('Unable to get CSV name.');
+    return 'x.csv';
+  }
+}
 // ===== Clear IndexedDB =====
 function clearFiles() {
   if (!confirm(`Remove all PDF/CSV data`)) return;
@@ -222,7 +250,7 @@ function clearFiles() {
 
 
 
-async function clearLocDB() {
+async function clearLocData() {
   locData = {};
   try {
     const tx = db.transaction(STORE_NAME, "readwrite");
@@ -243,7 +271,7 @@ async function clearLocDB() {
 
 
 async function clearCustomText() {
-  customText = [];
+  customText = {};
   try {
     const tx = db.transaction(STORE_NAME, "readwrite");
     const store = tx.objectStore(STORE_NAME);
@@ -269,7 +297,7 @@ async function clearCustomText() {
 function clearGlobals() {
   csvData = [];
   locData = {};
-  customText = []
+  customText = {};
   selectedColIndex = null;
   pdfDoc = null;            // cached PDF as pdfjsLib document for viewing
   editDoc = null;           // PDF-Lib document with fonts
@@ -278,4 +306,8 @@ function clearGlobals() {
   currentPage = 1;
   totalPages = 0;
   currentPdfBytes = null;   // base pdf we render pages from
+  clearCustomText();
+  clearLocData();
+  pdfButton(false);
+  csvButton(false);
 }

@@ -25,16 +25,18 @@
 
     <aside class="sidebar left">
       <h1>PDF-CSV Autofiller</h1>
-      <span id="webapp_version_id">v1.6.2</span>
+      <span id="webapp_version_id">v1.6.3</span>
       <h2>Select Files</h2>
       <div class="file-input">
         <div class="file-row">
-          <label for="pdf-file">PDF:</label>
-          <input id="pdf-file" type="file" accept="application/pdf" />
+          <button id="pdf-input" class="btn btn-outline-success w-100 fw-bold" onclick=uploadPDF()>
+            Select a PDF
+          </button>
         </div>
         <div class="file-row">
-          <label for="csv-file">CSV:</label>
-          <input id="csv-file" type="file" accept="text/csv,text/plain" />
+          <button id="csv-input" class="btn btn-outline-success w-100 fw-bold" onclick=uploadCSV()>
+            Select a CSV
+          </button>
         </div>
       </div>
       <div>
@@ -49,15 +51,31 @@
       <div id="pdf-page-info">
         <span id="page-info">Page 0 / 0</span>
       </div>
-      <div id="pdf-page-buttons"><br>
-        <button id="prev-page" class="btn btn-secondary btn-sm">Previous Page</button>
-        <button id="next-page" class="btn btn-secondary btn-sm">Next Page</button>
-      </div>
-
-      <div class="text-center mt-5">
-        <button id="btn-clear-loc" class="btn btn-danger m-2" type="button" onclick="removePage()">
+      <div class="text-center">
+        <div id="pdf-page-buttons"><br>
+          <button id="prev-page" class="btn btn-secondary btn-sm">Previous Page</button>
+          <button id="next-page" class="btn btn-secondary btn-sm">Next Page</button>
+        </div>
+        <button id="btn-clear-loc" class="btn btn-danger m-3 w-50" type="button" onclick="removePage()">
           <i class="bi bi-trash"></i> Remove Current Page
+        </button><br>
+      </div>
+      <hr>
+      <div class="text-center m2-5">
+        <button id="btn-clear-loc" class="btn btn-danger m-2 w-50" type="button" onclick="clearAllLocData()">
+          <i class="bi bi-trash"></i> Clear All Markers
         </button>
+        <div class="adf">
+
+          <button id="btn-clear-loc" class="btn btn-outline-success m-2 w-25" type="button" onclick="downloadMarkers()">
+            <i class="bi bi-trash"></i> Download Markers
+          </button>
+
+          <button id="btn-clear-loc" class="btn btn-success m-2 w-25" type="button" onclick="uploadMarkers()">
+            <i class="bi bi-trash"></i> Upload Markers
+          </button>
+
+        </div>
       </div>
 
       <br>
@@ -65,11 +83,8 @@
 
 
       <div>
-        <button id="btn-clear-loc" class="btn btn-danger m-2" type="button" onclick="clearAllLocData()">
-          <i class="bi bi-trash"></i> Clear All Markers
-        </button>
 
-        <button id="btn-make-pdfs" class="btn btn-success m-2" type="button" onclick="generateAndExportPDFs()">
+        <button id="btn-make-pdfs" class="btn btn-outline-success m-2" type="button" onclick="generateAndExportPDFs()">
           Generate PDFs
         </button>
         <div class="form-check m-2">
@@ -124,11 +139,13 @@
         <!-- Table column -->
         <div class="">
           <div class="table-responsive">
-            <div id="checkmark-card" class="card p-2 text-center custom-text-card m-3" style="cursor: pointer;" onclick="checkmarkCreate()">
-              <div class="fw-bold mb-1 text-start" >Add checkmark ✓</div>
+            <div id="checkmark-card" class="card p-2 text-center custom-text-card m-3" style="cursor: pointer;"
+              onclick="checkmarkCreate()">
+              <div class="fw-bold mb-1 text-start">Add checkmark ✓</div>
             </div>
-            <div id="custom-text-card" class="card p-2 text-center custom-text-card m-3" style="cursor: pointer;" onclick="customTextCreate()">
-              <div class="fw-bold mb-1 text-start" >Add custom text</div>
+            <div id="custom-text-card" class="card p-2 text-center custom-text-card m-3" style="cursor: pointer;"
+              onclick="customTextCreate()">
+              <div class="fw-bold mb-1 text-start">Add custom text</div>
             </div>
             <div id="csv-cards" class="d-flex flex-column gap-2">
             </div>

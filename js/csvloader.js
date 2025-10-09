@@ -6,8 +6,13 @@
 let csvData;
 
 
-function initCsvFileListener() {
-  document.getElementById("csv-file").addEventListener("change", (e) => {
+async function uploadCSV() {
+
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.csv';
+
+  input.onchange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -27,17 +32,33 @@ function initCsvFileListener() {
 
         // Save to local environment
         csvData = data;
-        if (locData) {
-          locData = {};
-          renderAll();
-        };
+        csvButton(true, file.name);
+        clearCustomText();
+        clearLocData();
 
         // Save to IndexedDB
-        saveCsvData();
+        saveCsvData(file.name);
       },
       header: false, // we parse manually
     });
-  });
+  }
+  input.click();
+}
+
+function csvButton(isUpload, fileName = "csv_file.csv") {
+  const pdfBtn = document.getElementById('csv-input');
+  if (isUpload) {
+    pdfBtn.classList.remove('btn-outline-success');
+    pdfBtn.classList.add('btn-success');
+    pdfBtn.classList.add('file-loaded');
+    pdfBtn.textContent = fileName;
+  } else {
+    pdfBtn.classList.add('btn-outline-success');
+    pdfBtn.classList.remove('btn-success');
+    pdfBtn.classList.remove('file-loaded');
+    pdfBtn.textContent = "Select CSV";
+
+  }
 }
 
 function displayCSVPreviewAsCards(data) {

@@ -11,12 +11,12 @@ let renderDoc = null;         // PDF-Lib document with edits
 let currentPage = 1;
 let totalPages = 0;
 
-function initPdfControlListeners() {
+async function uploadPDF() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.pdf';
 
-  // --------------------
-  // File handling
-  // --------------------
-  document.getElementById("pdf-file").addEventListener("change", async (e) => {
+  input.onchange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -33,28 +33,49 @@ function initPdfControlListeners() {
         ? await flattenAndCompressFile(file_ab) // return processed bytes/blob
         : await rasterizeFile(file_ab, { dpi: 100 }); // return processed bytes/blob
 
+      savePdfToIndexedDb(processed, file.name); // pass processed output
+      pdfButton(true, file.name);
+      clearCustomText();
+      clearLocData();
       loadPDF(processed); // pass processed output
-      savePdfToIndexedDb(processed); // pass processed output
     } catch (err) {
       log("Error: " + (err?.message || err));
       console.error(err);
     }
-  });
+  }
 
+  input.click();
+};
 
-  // --------------------
-  // Navigation buttons
-  // --------------------
-  document.getElementById("prev-page").addEventListener("click", () => {
-    if (currentPage <= 1) return;
-    renderPage(currentPage - 1);
-  });
+function pdfButton(isUpload, fileName = "file.pdf") {
+  const pdfBtn = document.getElementById('pdf-input');
+  if (isUpload) {
+    pdfBtn.classList.remove('btn-outline-success');
+    pdfBtn.classList.add('btn-success');
+    pdfBtn.classList.add('file-loaded');
+    pdfBtn.textContent = fileName;
+  } else {
+    pdfBtn.classList.add('btn-outline-success');
+    pdfBtn.classList.remove('btn-success');
+    pdfBtn.classList.remove('file-loaded');
+    pdfBtn.textContent = "Select PDF";
 
-  document.getElementById("next-page").addEventListener("click", () => {
-    if (currentPage >= totalPages) return;
-    renderPage(currentPage + 1);
-  });
+  }
 }
+
+
+// --------------------
+// Navigation buttons
+// --------------------
+document.getElementById("prev-page").addEventListener("click", () => {
+  if (currentPage <= 1) return;
+  renderPage(currentPage - 1);
+});
+
+document.getElementById("next-page").addEventListener("click", () => {
+  if (currentPage >= totalPages) return;
+  renderPage(currentPage + 1);
+});
 
 function removePage() {
   if (pdfDoc.totalPages == 1) {
@@ -66,7 +87,7 @@ function removePage() {
     return;
   }
 
-  // 3) Remove all locData for that page
+  // Remove all locData for that page
   if (locData && typeof locData === "object") {
     for (const key of Object.keys(locData)) {
       const cfg = locData[key];
@@ -75,10 +96,11 @@ function removePage() {
       }
     }
   }
+  saveLocData();
   // Remove all customText on that page, shift it down
   removePageFromCustomText();
 
-  saveLocData();
+
   removePageBytes(currentPage)
   displayCSVPreviewAsCards(csvData);
   renderAll();
@@ -205,10 +227,10 @@ function saveRenderPdfToIndexedDb(arrayBuffer) {
   savePdfRenderBlob(blob);
 }
 
-function savePdfToIndexedDb(arrayBuffer) {
+function savePdfToIndexedDb(arrayBuffer, pdfName) {
   const blob = new Blob([arrayBuffer], { type: "application/pdf" });
   log(` Saving: PDF: ${(arrayBuffer.byteLength / 1024).toFixed(1)} KB`);
-  savePdfBlob(blob);
+  savePdfBlob(blob, pdfName);
 }
 
 

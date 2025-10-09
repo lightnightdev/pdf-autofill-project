@@ -10,5 +10,3 @@ loadCachedData();
 initFontSizeHandlers();
 
 initKeyCaptures();
-initPdfControlListeners();
-initCsvFileListener();

@@ -136,7 +136,7 @@ function pageHasNonZeroSpacing(pageNum) {
 
 async function copyRow(colIdx) {
   let newIdx = copyArrayColumn(csvData, colIdx);
-  await saveCsvData();
+  await saveCsvData("updated_ " + await getCsvNameFromDb());
   unselectCustomTextCreate();
   selectMarkersAndCards(newIdx);
 }
@@ -281,7 +281,7 @@ async function clearAllLocData() {
   if (!confirm("Delete all saved columns/custom text on page? This cannot be undone.")) return;
 
   // clears local and DB instance of LocData and customText
-  await clearLocDB();
+  await clearLocData();
   await clearCustomText();
 
 
@@ -299,4 +299,54 @@ async function clearAllLocData() {
   const sizeInput = document.getElementById("size-select");
   if (fontSelect) fontSelect.value = "monospace";
   if (sizeInput) sizeInput.value = 12;
+}
+
+
+
+
+
+
+async function downloadMarkers() {
+  let pdfName = await getPdfNameFromDb()
+  if (!confirm(`Download PDF locations for file ${pdfName}?`)) return;
+  const out = [customText, locData]
+  const jsonString = JSON.stringify(out, null, 2); // null for replacer, 2 for indentation
+  const blob = new Blob([jsonString], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${pdfName}-markers.json`; // or whatever filename you want
+  a.click();
+  URL.revokeObjectURL(url); // cleanup
+}
+
+
+async function uploadMarkers() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'application/json';
+  
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    try {
+      const text = await file.text();
+      const [customTextData, locDataData] = JSON.parse(text);
+      
+      customText = customTextData;
+      locData = locDataData;
+      
+      await saveLocData();
+      await saveCustomText();
+      
+      log('Markers uploaded successfully');
+      renderAll();
+      
+    } catch (error) {
+      alert('Error loading markers file: ' + error.message);
+    }
+  };
+  
+  input.click();
 }

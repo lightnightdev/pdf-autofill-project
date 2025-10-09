@@ -99,9 +99,6 @@ function registerBase64Font(fontName, base64Data) {
 
 
 
-
-
-
 /**
  * Rasterize a PDF into an image-only PDF.
  * Requires pdfjsLib (PDF.js) and PDFLib (pdf-lib) to be loaded globally.
