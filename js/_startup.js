@@ -1,4 +1,4 @@
-// _startup.js
+// _startup.js / hi
 // --------------------
 // IndexedDB setup
 // --------------------

@@ -78,7 +78,7 @@ document.getElementById("next-page").addEventListener("click", () => {
 });
 
 function removePage() {
-  if (pdfDoc.totalPages == 1) {
+  if (pdfDoc.numPages == 1) {
     log('Only one page!');
     return;
   }
