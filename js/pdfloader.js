@@ -114,11 +114,11 @@ async function removeCurrentPage() {
       }
     }
   }
+
   saveLocData();
   // Remove all customText on that page, shift it down
-  removePageFromCustomText();
+  removeCustomTextFromPage();
 
-  const goToPage = currentPage - 1
   removePageBytes(currentPage)
   displayCSVPreviewAsCards(csvData);
   log('Page hidden and removed.')
@@ -126,13 +126,16 @@ async function removeCurrentPage() {
 }
 
 async function removePageBytes(pageNum) {
-  const goToPage = pageNum == totalPages ? pageNum - 1 : pageNum;
+  const goToPage = (pageNum == totalPages) ? pageNum - 1 : pageNum;
   doc = await PDFLib.PDFDocument.load(currentPdfBytes);
   if (doc.totalPages == 1) { return; }
   doc.removePage(pageNum - 1);
   currentPdfBytes = await doc.save();
   const currentPdfName = await getPdfNameFromDb() || 'unknown.pdf';
-  savePdfToIndexedDb(currentPdfBytes, `edited_${currentPdfName}`)
+  const newPdfName = currentPdfName.startsWith('edited_') ? currentPdfName : 'edited_' + currentPdfName;
+
+  savePdfToIndexedDb(currentPdfBytes, newPdfName)
+  log('loading, going to ' + goToPage)
   loadPDF(currentPdfBytes, goToPage);
 }
 
@@ -150,20 +153,20 @@ async function loadPDF(arrayBuffer, pageNum = 1) {
 // Turn PDF bytes into editable PDFLib object (editDoc)
 // Edit Doc is the template w/ fonts -- renderDoc will copy EditDoc 
 // --------------------
-async function createEditDoc(arrayBuffer) {
+async function createEditDoc(arrayBuffer, pageNum = 1) {
   editDoc = await PDFLib.PDFDocument.load(arrayBuffer);
   editDocFonts = await embedFontsForDoc(editDoc); // embedding fonts
-  queueUpdateRenderDoc();
+  queueUpdateRenderDoc(pageNum);
 }
 
 let updateQueued = false;
 
-function queueUpdateRenderDoc() {
+function queueUpdateRenderDoc(pageNum = currentPage) {
   if (updateQueued) return;
   updateQueued = true;
   Promise.resolve().then(async () => {
     updateQueued = false;
-    await updateRenderDoc();
+    await updateRenderDoc(pageNum);
   });
 }
 

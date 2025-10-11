@@ -121,7 +121,7 @@ function selectCustomText(ctId) {
     el.classList.add('select');
 }
 
-function removePageFromCustomText() {
+function removeCustomTextFromPage() {
   const newArr = [];
   const kys = Object.keys(customText);
   for (ky of kys) {

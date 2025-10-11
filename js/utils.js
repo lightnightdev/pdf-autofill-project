@@ -258,6 +258,7 @@ function initKeyCaptures() {
       case '=': action = "s+"; break;
       case '+': action = "s+"; break;
       case 'Delete': action = "d"; break;
+      case 'Backspace': action = "d"; break;
       default: return;
     }
     event.preventDefault();

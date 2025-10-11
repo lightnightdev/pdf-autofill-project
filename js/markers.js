@@ -146,7 +146,10 @@ function pageHasNonZeroSpacing(pageNum) {
 
 async function copyRow(colIdx) {
   let newIdx = copyArrayColumn(csvData, colIdx);
-  await saveCsvData("updated_ " + await getCsvNameFromDb());
+  const oldName = await getCsvNameFromDb();
+  const newName = oldName.startsWith('edited_') ? oldName : 'edited_' + oldName;
+
+  await saveCsvData(newName);
   unselectCustomTextCreate();
   selectMarkersAndCards(newIdx);
 }
