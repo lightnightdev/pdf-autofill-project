@@ -90,12 +90,15 @@ async function loadCache() {
 
   if (pdfIsValid) {
     loadPDF(currentPdfBytes);
-    pdfButton(true, await getPdfNameFromDb())
+    pdfButton(true, currentPdfName)
   }
 
   if (csvIsValid && pdfIsValid ) {
-    closeMenu(1)
-    openMenu(2)
+    setTimeout( function () {
+      closeMenu(1)
+      openMenu(2)
+    },
+    1000);
   }
 }
 
@@ -118,6 +121,7 @@ async function loadCachedPDF() {
     if (!blob) return;
     log(` - Loaded PDF: ${(blob.size / 1024).toFixed(1)} KB`);
     currentPdfBytes = await blob.arrayBuffer();
+    currentPdfName = await getPdfNameFromDb();
   } catch (err) {
     log("Error loading cached PDF: " + (err?.message || err));
   }
@@ -199,7 +203,7 @@ async function savePdfBlob(blob, pdfName) {
 
 async function getPdfNameFromDb() {
   try {
-    const pdfName = await idbGet(PDF_NAME_KEY)
+    const pdfName = await idbGet(PDF_NAME_KEY) || "unknown.pdf"
     return pdfName;
   } catch (err) {
     log('Unable to get PDF name.');
@@ -209,7 +213,7 @@ async function getPdfNameFromDb() {
 
 async function getCsvNameFromDb() {
   try {
-    const csvName = await idbGet(CSV_NAME_KEY)
+    const csvName = await idbGet(CSV_NAME_KEY) || "unknown.csv"
     return csvName;
   } catch (err) {
     log('Unable to get CSV name.');

@@ -80,15 +80,6 @@ async function renderAll() {
   // If current page has any elements with spacing, render those elements on the page, not the overlay
   if (typeof currentPage !== 'number') { log('No page/text to render.'); return; }
 
-  if (pageHasNonZeroSpacing(currentPage)) {
-    try {
-      await renderPage(currentPage);
-    } catch (e) {
-      console.error(e);
-      log('Issue with non-zero spacing columns on page.');
-    }
-  }
-
   if (!syncOverlayBoxToCanvas()) { log('no overlay or canvas'); return; }
 
   const overlay = document.getElementById('pdf-overlay');

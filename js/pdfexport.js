@@ -9,11 +9,16 @@ async function generateAndExportPDFs() {
     log("CSV has no data rows.");
     return;
   }
-  const exportSingle = document.getElementById("export-single-pdf")?.checked;
+  const exportSingle = document.getElementById("export-single-pdf")?.checked ?? true;
+  const rasterizeOutput = document.getElementById("rasterize-output")?.checked ?? false;
   const confirmMessage = exportSingle
     ? `Generate and download ${total} flattened PDF(s) as a single merged PDF?`
     : `Generate and download ${total} flattened PDF(s) as a ZIP?`;
   if (!confirm(confirmMessage)) return;
+
+  if (rasterizeOutput) {
+    if (!confirm('Files size will be a bit larger but more compatible. Continue?')) return;
+  }
 
   // Validate environment and inputs
   if (!currentPdfBytes) {
@@ -51,25 +56,35 @@ async function generateAndExportPDFs() {
     for (let r = 1; r < csvData.length; r++) {
       log(`Generating row ${r} of ${total}…`);
 
-      // 1) New output doc with copied pages
+      // New output doc with copied pages
       const outDoc = await srcDoc.copy();
       const fonts = await embedFontsForDoc(outDoc);
 
-      // 4) Draw placements for this row
+      // Draw placements for this row
       drawRowText(outDoc, fonts, r);
 
       if (exportSingle) {
+        // Save output to combinedDoc -- will rasterize all at end!
         const copiedPages = await combinedDoc.copyPages(
           outDoc,
           outDoc.getPageIndices()
         );
         copiedPages.forEach((p) => combinedDoc.addPage(p));
       } else {
-        // 5) Save and queue this file for the ZIP (no per-file download)
-        const bytes = await outDoc.save({
-          useObjectStreams: false,
-          compress: true,
-        });
+        // Save and queue this file for the ZIP (no per-file download)
+        let bytes;
+        if (rasterizeOutput) {
+          bytes = rasterizeFile(await outDoc.save({
+            useObjectStreams: false,
+            compress: true,
+          }), { dpi: 100 })
+        } else {
+          bytes = await outDoc.save({
+            useObjectStreams: false,
+            compress: true,
+          });
+        };
+
         const stemRaw = (csvData[r]?.[0] || "").toString();
         // To get leading 0's if more than 9 rows
         const paddedRow = String(r).padStart(String(total).length, "0");
@@ -89,8 +104,15 @@ async function generateAndExportPDFs() {
         .toISOString()
         .slice(0, 19)
         .replace(/[:T]/g, "-")}.pdf`;
-      downloadPdf(mergedBytes, mergedName);
-      log(`All ${total} flattened PDFs generated and merged into ${mergedName}.`);
+      if (rasterizeOutput) {
+        log('Rasterizing output file...')
+        const rasterizedMergedBytes = await rasterizeFile(mergedBytes)
+        downloadPdf(rasterizedMergedBytes, mergedName);
+        log(`All ${total} PDFs generated, merged, and rasterized into ${mergedName}.`);
+      } else {
+        downloadPdf(mergedBytes, mergedName);
+        log(`All ${total} PDFs generated and merged into ${mergedName}.`);
+      }
     } else {
       // 6) Generate and download a single ZIP
       const zipName = `autofilled_pdfs_${new Date()
@@ -148,7 +170,7 @@ async function embedFontsForDoc(doc) {
   let sig = null,
     norm = null,
     mono = null;
-    symb = null;
+  symb = null;
   try {
     const bytes = await loadAllCustomFontBytes();
 

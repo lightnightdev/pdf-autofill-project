@@ -359,6 +359,7 @@ function customTextAction(move) {
 }
 
 
+const logicalXOR = (a, b) => (a || b) && !(a && b);
 
 // Remove control chars, normalize, cap length
 function sanitizePlainString(input, maxLen = 200) {

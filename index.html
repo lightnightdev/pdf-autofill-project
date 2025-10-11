@@ -96,7 +96,7 @@
         <div id="menu-content-3" class="menu-content text-center collapse">
           <div>
             <button id="btn-clear-loc" class="btn btn-danger m-2" style="width: 40%" type="button" style="width: 30%;"
-              onclick="clearAllLocData()">
+              onclick="clearAllMarkers()">
               <i class="bi bi-trash"></i> Clear All Markers
             </button>
 
@@ -126,10 +126,16 @@
           onclick="generateAndExportPDFs()">
           Generate PDFs
         </button>
-        <div class="form-check m-2">
-          <input class="form-check-input" type="checkbox" id="export-single-pdf">
+        <div class="form-check m-3 output-options-checkbox selected" onclick="toggleCheckbox(this)">
+          <input class="form-check-input" type="checkbox" id="export-single-pdf" checked>
           <label class="form-check-label" for="export-single-pdf">
             Export all rows as one PDF (for printing)
+          </label>
+        </div>
+        <div class="form-check m-3 output-options-checkbox" onclick="toggleCheckbox(this)">
+          <input class="form-check-input" type="checkbox" id="rasterize-output">
+          <label class="form-check-label" for="rasterize-output">
+            Rasterize output. Removes any compatibility issues, but increases file size.
           </label>
         </div>
       </div>
@@ -137,12 +143,38 @@
       <hr>
       <div id="logbox" class="logbox"></div>
 
+
+
+      <div class="menu-block">
+
+        <div id="menu-header-4" class="menu-header d-flex justify-content-between align-items-center"
+          style="background-color: #ddd;" data-bs-toggle="collapse" data-bs-target="#menu-content-4"
+          onclick="menuToggleExtra(4)" aria-expanded="true">
+          <h2 class="mb-0 fs-6">
+            Tips / Shortcuts
+          </h2>
+          <i class="bi bi-caret-down-fill"></i>
+        </div>
+        <div id="menu-content-4" class="menu-content collapse">
+          <span>
+            Placing a marker:
+            - Choose a column on the right<br>
+            - Click to place a marker
+            Editing a marker:
+            - Click an existing marker or it's column card to selected it<br>
+            - Use (+/=) and - keys to adjust font size<br>
+            - Use arrow keys to adjust the location<br>
+            - Press the Delete key to delete that marker
+          </span>
+
+        </div>
+      </div>
     </aside>
 
     <!-- Main PDF Display -->
     <div class="wrapper">
       <main class="content">
-        <div id="pdf-stage" style="position:relative; display:inline-block;">
+        <div id="pdf-stage" style="position: relative; display:inline-block;">
           <canvas id="pdf-canvas"></canvas>
           <div id="pdf-overlay" style="position:absolute; left:0; top:0; pointer-events:none;"></div>
         </div>
@@ -170,23 +202,36 @@
 
           <div class="d-flex align-items-center m-2">
             <label for="spacing-select" class="form-label mb-0">Spacing:</label>
-            <input type="number" class="form-control" id="spacing-select" placeholder="0">
+            <input type="number" class="form-control" id="spacing-select" value="0">
           </div>
         </div>
 
         <!-- Table column -->
         <div class="">
           <div class="table-responsive">
-            <div id="checkmark-card" class="card p-2 text-center custom-text-card m-3" style="cursor: pointer;"
-              onclick="checkmarkCreate()">
-              <div class="fw-bold mb-1 text-start">Add checkmark ✓</div>
+
+
+            <div class="d-flex justify-content-between">
+              <div id="checkmark-card" class="card p-2 text-center custom-text-card m-3 flex-fill me-2"
+                style="cursor: pointer;" onclick="checkmarkCreate()">
+                <div class="fw-bold mb-1 text-start">Add checkmark ✓</div>
+              </div>
+
+              <div id="custom-text-card" class="card p-2 text-center custom-text-card m-3 flex-fill ms-2"
+                style="cursor: pointer;" onclick="customTextCreate()">
+                <div class="fw-bold mb-1 text-start">Add custom text</div>
+              </div>
             </div>
-            <div id="custom-text-card" class="card p-2 text-center custom-text-card m-3" style="cursor: pointer;"
-              onclick="customTextCreate()">
-              <div class="fw-bold mb-1 text-start">Add custom text</div>
-            </div>
+
+
+
+
             <div id="csv-cards" class="d-flex flex-column gap-2">
             </div>
+
+            <div id="custom-cards" class="d-flex flex-column gap-2">
+            </div>
+
           </div>
 
         </div>

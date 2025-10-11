@@ -33,3 +33,8 @@ async function closeMenu(id) {
 function menuIsOpen(id) {
     return document.getElementById(`menu-header-${id}`).classList.contains('header-open')
 }
+
+function toggleCheckbox(parentEl) {
+    const checkbox = parentEl.querySelector('input[type="checkbox"]');
+    parentEl.classList.toggle('selected', checkbox.checked);
+};

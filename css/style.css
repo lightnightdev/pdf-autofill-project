@@ -27,6 +27,7 @@
   --menu-txt: #010;
   --menu-select: #330;
 }
+
 /* Reset-ish */
 * {
   box-sizing: border-box;
@@ -86,9 +87,11 @@ body {
   margin: 0;
   cursor: pointer;
 }
+
 .menu-header:hover {
   color: var(--menu-select);
 }
+
 .menu-header.header-open {
   border-radius: var(--menu-br);
   border-bottom-left-radius: 0;
@@ -131,6 +134,20 @@ body {
   white-space: nowrap;
   transition: background-color 0.2s ease, transform 0.1s ease;
 }
+
+.output-options-checkbox {
+  background-color: #eee;
+  border: #888;
+  border-style: solid;
+  border-width: 0.5px;
+  padding: 5px;
+  border-radius: 3px;
+}
+
+.output-options-checkbox.selected {
+  background-color:#efe;
+}
+
 
 .logbox {
   white-space: pre-wrap;

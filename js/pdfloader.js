@@ -131,7 +131,7 @@ async function removePageBytes(pageNum) {
   if (doc.totalPages == 1) { return; }
   doc.removePage(pageNum - 1);
   currentPdfBytes = await doc.save();
-  const currentPdfName = await getPdfNameFromDb();
+  const currentPdfName = await getPdfNameFromDb() || 'unknown.pdf';
   savePdfToIndexedDb(currentPdfBytes, `edited_${currentPdfName}`)
   loadPDF(currentPdfBytes, goToPage);
 }
@@ -150,14 +150,24 @@ async function loadPDF(arrayBuffer, pageNum = 1) {
 // Turn PDF bytes into editable PDFLib object (editDoc)
 // Edit Doc is the template w/ fonts -- renderDoc will copy EditDoc 
 // --------------------
-async function createEditDoc(arrayBuffer, pageNum) {
+async function createEditDoc(arrayBuffer) {
   editDoc = await PDFLib.PDFDocument.load(arrayBuffer);
   editDocFonts = await embedFontsForDoc(editDoc); // embedding fonts
-  await updateRenderDoc(pageNum, true);
-
+  queueUpdateRenderDoc();
 }
 
-async function updateRenderDoc(pageNum, logLoad = false) {
+let updateQueued = false;
+
+function queueUpdateRenderDoc() {
+  if (updateQueued) return;
+  updateQueued = true;
+  Promise.resolve().then(async () => {
+    updateQueued = false;
+    await updateRenderDoc();
+  });
+}
+
+async function updateRenderDoc(pageNum = currentPage, logLoad = false) {
   renderDoc = null;
   const editDocBytes = await editDoc.save();                  // serialize the current in-memory PDF
   renderDoc = await PDFLib.PDFDocument.load(editDocBytes);    // load a new independent copy
@@ -165,7 +175,7 @@ async function updateRenderDoc(pageNum, logLoad = false) {
   await showRenderDoc(pageNum, logLoad);
 }
 
-async function showRenderDoc(pageNum, logLoad = false) {
+async function showRenderDoc(pageNum = currentPage, logLoad = false) {
   const renderArrayBuffer = await renderDoc.save({
     useObjectStreams: false,
     compress: false,
@@ -181,29 +191,41 @@ async function showRenderDoc(pageNum, logLoad = false) {
 // --------------------
 // Render a page
 // --------------------
-async function renderPage(pageNum) {
-  if (!pdfDoc) return;
+let renderInProgress = false;
 
-  const page = await pdfDoc.getPage(pageNum);
-  const viewport = page.getViewport({ scale: 1.5 });
-  const canvas = document.getElementById("pdf-canvas");
-  const ctx = canvas.getContext("2d");
+async function renderPage(pageNum = currentPage) {
+  if (renderInProgress) {
+    console.warn("Render skipped: already in progress");
+    return;
+  }
+  renderInProgress = true;
 
-  canvas.width = viewport.width;
-  canvas.height = viewport.height;
+  try {
+    if (!pdfDoc) return;
 
-  await page.render({ canvasContext: ctx, viewport }).promise;
-  initCanvasClicks();
+    const page = await pdfDoc.getPage(pageNum);
+    const viewport = page.getViewport({ scale: 1.5 });
+    const canvas = document.getElementById("pdf-canvas");
+    const ctx = canvas.getContext("2d");
 
-  // Update page info
-  totalPages = pdfDoc.numPages;
-  currentPage = pageNum;
-  document.getElementById(
-    "page-info"
-  ).textContent = `Page ${currentPage} / ${totalPages}`;
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
 
-  // sync overlay
-  renderAll();
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    initCanvasClicks();
+
+    // update info
+    totalPages = pdfDoc.numPages;
+    currentPage = pageNum;
+    document.getElementById("page-info").textContent =
+      `Page ${currentPage} / ${totalPages}`;
+
+    await renderAll();
+  } catch (err) {
+    console.error("renderPage error:", err);
+  } finally {
+    renderInProgress = false;
+  }
 }
 
 
