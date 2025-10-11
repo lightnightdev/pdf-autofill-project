@@ -19,33 +19,51 @@ async function uploadPDF() {
   input.onchange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const maxSize = 2 * 1024 * 1024 * 1024; // 2GB in bytes
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
 
-    const file_ab = await file.arrayBuffer();
-
-    try {
-      log(` Selected file: ${file.name}`);
-      log(` Original size: ${(file.size / 1024).toFixed(1)} KB`);
-      const canEdit = await isEditingAllowed(file_ab); // or drop await if truly sync
-      if (!canEdit) {
-        log("PDF modifications not allowed. Rasterizing...");
-      }
-      const processed = canEdit
-        ? await flattenAndCompressFile(file_ab) // return processed bytes/blob
-        : await rasterizeFile(file_ab, { dpi: 100 }); // return processed bytes/blob
-
-      savePdfToIndexedDb(processed, file.name); // pass processed output
-      pdfButton(true, file.name);
-      clearCustomText();
-      clearLocData();
-      loadPDF(processed); // pass processed output
-    } catch (err) {
-      log("Error: " + (err?.message || err));
-      console.error(err);
+    if (!isPdf) {
+      alert('Please select a valid PDF file.');
+      return;
     }
+
+    if (file.size > maxSize) {
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      alert(`File too large (${sizeMB} MB). The limit is 2048 MB.`);
+      return;
+    }
+
+
+    await processPDF(file);
   }
 
   input.click();
 };
+
+async function processPDF(file) {
+  const file_ab = await file.arrayBuffer();
+
+  try {
+    log(` Selected file: ${file.name}`);
+    log(` Original size: ${(file.size / 1024).toFixed(1)} KB`);
+    const canEdit = await isEditingAllowed(file_ab); // or drop await if truly sync
+    if (!canEdit) {
+      log("PDF modifications not allowed. Rasterizing...");
+    }
+    const processed = canEdit
+      ? await flattenAndCompressFile(file_ab) // return processed bytes/blob
+      : await rasterizeFile(file_ab, { dpi: 100 }); // return processed bytes/blob
+
+    savePdfToIndexedDb(processed, file.name); // pass processed output
+    pdfButton(true, file.name);
+    clearCustomText();
+    clearLocData();
+    loadPDF(processed); // pass processed output
+  } catch (err) {
+    log("Error: " + (err?.message || err));
+    console.error(err);
+  }
+}
 
 function pdfButton(isUpload, fileName = "file.pdf") {
   const pdfBtn = document.getElementById('pdf-input');
@@ -77,7 +95,7 @@ document.getElementById("next-page").addEventListener("click", () => {
   renderPage(currentPage + 1);
 });
 
-function removePage() {
+async function removeCurrentPage() {
   if (pdfDoc.numPages == 1) {
     log('Only one page!');
     return;
@@ -100,29 +118,31 @@ function removePage() {
   // Remove all customText on that page, shift it down
   removePageFromCustomText();
 
-
+  const goToPage = currentPage - 1
   removePageBytes(currentPage)
   displayCSVPreviewAsCards(csvData);
-  renderAll();
   log('Page hidden and removed.')
-
+  renderAll();
 }
 
 async function removePageBytes(pageNum) {
+  const goToPage = pageNum == totalPages ? pageNum - 1 : pageNum;
   doc = await PDFLib.PDFDocument.load(currentPdfBytes);
   if (doc.totalPages == 1) { return; }
   doc.removePage(pageNum - 1);
   currentPdfBytes = await doc.save();
-  loadPDF(currentPdfBytes);
+  const currentPdfName = await getPdfNameFromDb();
+  savePdfToIndexedDb(currentPdfBytes, `edited_${currentPdfName}`)
+  loadPDF(currentPdfBytes, goToPage);
 }
 
 // --------------------
 // Load PDF into pdfDoc and render first page - startup enters here too
 // typedarray is Uint8Array(arrayBuffer)
 // --------------------
-async function loadPDF(arrayBuffer) {
+async function loadPDF(arrayBuffer, pageNum = 1) {
   currentPdfBytes = arrayBuffer;
-  createEditDoc(arrayBuffer);
+  createEditDoc(arrayBuffer, pageNum);
   // on error, renderPage with pdfDoc
 }
 
@@ -130,14 +150,14 @@ async function loadPDF(arrayBuffer) {
 // Turn PDF bytes into editable PDFLib object (editDoc)
 // Edit Doc is the template w/ fonts -- renderDoc will copy EditDoc 
 // --------------------
-async function createEditDoc(arrayBuffer) {
+async function createEditDoc(arrayBuffer, pageNum) {
   editDoc = await PDFLib.PDFDocument.load(arrayBuffer);
   editDocFonts = await embedFontsForDoc(editDoc); // embedding fonts
-  await updateRenderDoc(1, true);
+  await updateRenderDoc(pageNum, true);
 
 }
 
-async function updateRenderDoc(pageNum = 1, logLoad = false) {
+async function updateRenderDoc(pageNum, logLoad = false) {
   renderDoc = null;
   const editDocBytes = await editDoc.save();                  // serialize the current in-memory PDF
   renderDoc = await PDFLib.PDFDocument.load(editDocBytes);    // load a new independent copy
@@ -231,6 +251,7 @@ function savePdfToIndexedDb(arrayBuffer, pdfName) {
   const blob = new Blob([arrayBuffer], { type: "application/pdf" });
   log(` Saving: PDF: ${(arrayBuffer.byteLength / 1024).toFixed(1)} KB`);
   savePdfBlob(blob, pdfName);
+  pdfButton(true, pdfName);
 }
 
 

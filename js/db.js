@@ -80,14 +80,22 @@ async function loadCache() {
     loadCachedCustomText(),
   ]);
 
-  if (Array.isArray(csvData) && csvData.length > 0) {
+  const csvIsValid = Array.isArray(csvData) && csvData.length > 0
+  const pdfIsValid = currentPdfBytes && currentPdfBytes.byteLength > 0
+
+  if (csvIsValid) {
     displayCSVPreviewAsCards(csvData);
     csvButton(true, await getCsvNameFromDb())
   }
 
-  if (currentPdfBytes && currentPdfBytes.byteLength > 0) {
+  if (pdfIsValid) {
     loadPDF(currentPdfBytes);
     pdfButton(true, await getPdfNameFromDb())
+  }
+
+  if (csvIsValid && pdfIsValid ) {
+    closeMenu(1)
+    openMenu(2)
   }
 }
 
