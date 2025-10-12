@@ -9,7 +9,10 @@ const downloadModalState = {
 const DOWNLOAD_API_ENDPOINTS = {
   login: 'api/auth/login',
   list: 'api/autofill/list',
+  create: 'api/autofill',
 };
+
+setupSendToServerButton();
 
 function openQueryModal() {
   const modalEl = ensureDownloadModalSetup();
@@ -232,6 +235,132 @@ function appendTableCell(row, text) {
 function clearDownloadTable() {
   if (!downloadModalElements) return;
   downloadModalElements.tableBody.innerHTML = '';
+}
+
+function setupSendToServerButton() {
+  const sendButton = document.getElementById('send-to-server-btn');
+  if (!sendButton) return;
+
+  sendButton.addEventListener('click', handleSendToServerClick);
+}
+
+async function handleSendToServerClick(event) {
+  event.preventDefault();
+
+  if (!currentPdfBytes) {
+    alert('Please upload a PDF before sending to the server.');
+    return;
+  }
+
+  if (!confirm('Send the current PDF and markers to the server?')) {
+    return;
+  }
+
+  const button = event.currentTarget;
+  const restoreDisabled = typeof button?.disabled === 'boolean';
+
+  try {
+    if (restoreDisabled) button.disabled = true;
+    log('Uploading PDF and marker data to the server...');
+
+    const payload = await buildAutofillCreateFormData();
+    if (!payload) return;
+
+    const response = await submitAutofillCreate(payload.formData);
+
+    const entryId = response?.id;
+    const pdfName = payload.pdfFileName;
+    const successMsg = entryId
+      ? `Upload complete for ${pdfName} (server id: ${entryId}).`
+      : `Upload complete for ${pdfName}.`;
+    log(successMsg);
+  } catch (err) {
+    console.error(err);
+    const message = err?.message || 'Failed to send data to the server.';
+    alert(message);
+    log(`Error uploading to server: ${message}`);
+  } finally {
+    if (restoreDisabled) button.disabled = false;
+  }
+}
+
+async function buildAutofillCreateFormData() {
+  const pdfBytes = getPdfBytesForUpload(currentPdfBytes);
+  if (!pdfBytes) {
+    alert('PDF data is unavailable. Please re-upload the PDF and try again.');
+    return null;
+  }
+
+  const [pdfFileName, csvFileName] = await Promise.all([
+    typeof getPdfNameFromDb === 'function' ? getPdfNameFromDb() : Promise.resolve('document.pdf'),
+    typeof getCsvNameFromDb === 'function' ? getCsvNameFromDb() : Promise.resolve(''),
+  ]);
+
+  const markerJson = typeof serializeMarkerBundle === 'function'
+    ? serializeMarkerBundle()
+    : JSON.stringify([customText || {}, locData || {}]);
+
+  const formData = new FormData();
+  const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+  formData.append('PdfFile', pdfBlob, pdfFileName || 'document.pdf');
+
+  const hasCsv = Array.isArray(csvData) && csvData.length > 0;
+  if (!hasCsv && typeof log === 'function') {
+    log('No CSV loaded; sending only PDF and marker data.');
+  }
+  if (hasCsv && csvFileName && csvFileName !== 'unknown.csv') {
+    formData.append('CsvFileName', csvFileName);
+  }
+
+  formData.append('CsvMarkerData', markerJson);
+
+  if (hasCsv && csvData.length > 1) {
+    const carrierValue = csvData[1]?.[0];
+    if (carrierValue) {
+      formData.append('CarrierName', carrierValue);
+    }
+  }
+
+  return { formData, pdfFileName: pdfFileName || 'document.pdf', csvFileName };
+}
+
+function getPdfBytesForUpload(bytes) {
+  if (!bytes) return null;
+
+  if (bytes instanceof ArrayBuffer) {
+    return bytes;
+  }
+
+  if (ArrayBuffer.isView(bytes)) {
+    return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+  }
+
+  return null;
+}
+
+async function submitAutofillCreate(formData) {
+  const fetchOptions = {
+    method: 'POST',
+    body: formData,
+  };
+
+  if (downloadModalState?.token) {
+    fetchOptions.headers = {
+      Authorization: `Bearer ${downloadModalState.token}`,
+    };
+  }
+
+  const response = await fetch(DOWNLOAD_API_ENDPOINTS.create, fetchOptions);
+  if (!response.ok) {
+    const errorText = await extractErrorText(response);
+    throw new Error(errorText || 'Server rejected the upload request.');
+  }
+
+  try {
+    return await response.json();
+  } catch (err) {
+    return null;
+  }
 }
 
 async function extractErrorText(response) {

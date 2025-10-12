@@ -320,11 +320,45 @@ async function clearAllMarkers() {
 
 
 
+function buildMarkerExportBundle() {
+  const safeCustomText = (typeof customText === 'object' && customText !== null) ? customText : {};
+  const safeLocData = (typeof locData === 'object' && locData !== null) ? locData : {};
+  return [safeCustomText, safeLocData];
+}
+
+function serializeMarkerBundle(options = {}) {
+  const pretty = options.pretty === true;
+  return JSON.stringify(buildMarkerExportBundle(), null, pretty ? 2 : 0);
+}
+
+function parseMarkerBundle(jsonText) {
+  let parsed;
+  try {
+    parsed = JSON.parse(jsonText);
+  } catch (err) {
+    throw new Error('Invalid JSON format.');
+  }
+
+  if (!Array.isArray(parsed) || parsed.length < 2) {
+    throw new Error('Markers file has an unexpected structure.');
+  }
+
+  const [customTextData, locDataData] = parsed;
+  return {
+    customTextData: (typeof customTextData === 'object' && customTextData !== null) ? customTextData : {},
+    locDataData: (typeof locDataData === 'object' && locDataData !== null) ? locDataData : {},
+  };
+}
+
+function applyMarkerBundle(customTextData, locDataData) {
+  customText = customTextData || {};
+  locData = locDataData || {};
+}
+
 async function downloadMarkers() {
   let pdfName = await getPdfNameFromDb()
   if (!confirm(`Download PDF locations for file ${pdfName}?`)) return;
-  const out = [customText, locData]
-  const jsonString = JSON.stringify(out, null, 2); // null for replacer, 2 for indentation
+  const jsonString = serializeMarkerBundle({ pretty: true });
   const blob = new Blob([jsonString], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -346,10 +380,9 @@ async function uploadMarkers() {
 
     try {
       const text = await file.text();
-      const [customTextData, locDataData] = JSON.parse(text);
+      const { customTextData, locDataData } = parseMarkerBundle(text);
 
-      customText = customTextData;
-      locData = locDataData;
+      applyMarkerBundle(customTextData, locDataData);
 
       await saveLocData();
       await saveCustomText();
