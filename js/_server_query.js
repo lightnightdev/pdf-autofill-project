@@ -6,9 +6,18 @@ const downloadModalState = {
   token: null,
 };
 
+const API_BASE_URL = (() => {
+  const { hostname } = window.location;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:5249/';
+  }
+
+  return 'https://www.lightnightdev.com/autofill/autofillapi/';
+})();
+
 const DOWNLOAD_API_ENDPOINTS = {
-  login: 'api/auth/login',
-  list: 'api/autofill/list',
+  login: `${API_BASE_URL}api/auth/login`,
+  list: `${API_BASE_URL}api/autofill/list`,
 };
 
 function openQueryModal() {
