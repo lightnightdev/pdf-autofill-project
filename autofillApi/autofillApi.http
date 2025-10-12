@@ -1,0 +1,52 @@
+@autofillApi_HostAddress = http://localhost:5249
+@BearerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImp0aSI6ImFjNzhkNzc3LTE2ODgtNDljMi1hMjgzLTRjNTA4YTVmMTI0ZiIsImV4cCI6MTc2MDMzMzE0NSwiaXNzIjoiYXV0b2ZpbGxhcGkiLCJhdWQiOiJhdXRvZmlsbGFwaSJ9.m63XspdYeY2Px-S3_2dsI8SlP7KIJQ-0c4-g4m3si9g
+
+### Login to get token
+POST {{autofillApi_HostAddress}}/api/Auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "Water Dread 23"
+}
+
+### Access protected route
+GET {{autofillApi_HostAddress}}/api/Auth/test
+Authorization: Bearer {{BearerToken}}
+
+
+### Get list (no PDF blobs)
+GET {{autofillApi_HostAddress}}/api/autofill/list
+
+### Get one PDF
+GET {{autofillApi_HostAddress}}/api/autofill/data/3
+
+### Create
+POST {{autofillApi_HostAddress}}/api/autofill
+Content-Type: multipart/form-data; boundary=MyBoundary
+
+--MyBoundary
+Content-Disposition: form-data; name="CarrierName"
+
+Test Carrier
+
+--MyBoundary
+Content-Disposition: form-data; name="CsvFileName"
+
+data.csv
+
+--MyBoundary
+Content-Disposition: form-data; name="CsvMarkerData"
+
+{ "x": 100, "y": 200 }
+
+--MyBoundary
+Content-Disposition: form-data; name="PdfFile"; filename="file.pdf"
+Content-Type: application/pdf
+
+< ./test.pdf
+
+--MyBoundary--
+
+### Delete
+DELETE {{autofillApi_HostAddress}}/api/autofill/5
