@@ -1,252 +1,122 @@
-let downloadModalInstance;
-let downloadModalInitialized = false;
-let downloadModalElements = null;
+const API_BASE = "https://www.lightnightdev.com/autofill/api";
 
-const downloadModalState = {
-  token: null,
+const API_ENDPOINTS = {
+  login: `${API_BASE}/Auth/login`,
+  test: `${API_BASE}/Auth/test`,
+  getData: (id) => `${API_BASE}/autofill/data/${id}`,
+  getPdf: (id) => `${API_BASE}/autofill/pdf/${id}`,
+  create: `${API_BASE}/autofill`,
+  delete: (id) => `${API_BASE}/autofill/${id}`,
+  list: `${API_BASE}/autofill/list`,
 };
 
-const DOWNLOAD_API_ENDPOINTS = {
-  login: 'api/auth/login',
-  list: 'api/autofill/list',
-};
-
-function openQueryModal() {
-  const modalEl = ensureDownloadModalSetup();
-  if (!modalEl) {
-    console.warn('Download modal element not found.');
-    return;
-  }
-
-  resetDownloadModalState();
-  downloadModalInstance.show();
-}
-
-function ensureDownloadModalSetup() {
-  const modalEl = document.getElementById('downloadModal');
-  if (!modalEl) {
-    return null;
-  }
-
-  if (downloadModalInitialized) {
-    return modalEl;
-  }
-
-  downloadModalElements = {
-    modalEl,
-    form: document.getElementById('download-auth-form'),
-    usernameInput: document.getElementById('download-username'),
-    passwordInput: document.getElementById('download-password'),
-    submitBtn: document.getElementById('download-auth-submit'),
-    spinner: document.getElementById('download-auth-spinner'),
-    errorMessage: document.getElementById('download-auth-error'),
-    loginSection: document.getElementById('download-login-section'),
-    tableSection: document.getElementById('download-table-section'),
-    tableStatus: document.getElementById('download-table-status'),
-    tableBody: document.querySelector('#download-data-table tbody'),
-    logoutBtn: document.getElementById('download-logout-btn'),
-  };
-
-  downloadModalInstance = bootstrap.Modal.getOrCreateInstance(modalEl, {
-    backdrop: true,
-    keyboard: true,
-    focus: true,
+async function apiLogin(username, password) {
+  const res = await fetch(`${API_BASE}/Auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
   });
 
-  downloadModalElements.form?.addEventListener('submit', handleDownloadAuthSubmit);
-  downloadModalElements.logoutBtn?.addEventListener('click', () => {
-    resetDownloadModalState();
-    focusDownloadUsername();
+  if (!res.ok) {
+    const msg = await res.text();
+    console.error(`Login Failed: ${msg}`)
+    throw new Error(`Login failed: ${msg}`);
+  }
+
+  const data = await res.json();
+  localStorage.setItem("token", data.token);
+  return data;
+}
+
+async function apiTestAuth() {
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${API_BASE}/Auth/test`, {
+    headers: { Authorization: `Bearer ${token}` },
   });
 
-  modalEl.addEventListener('shown.bs.modal', () => {
-    document.body.classList.add('download-modal-open');
-    focusDownloadUsername();
+  if (!res.ok) throw new Error(`Auth test failed: ${res.status}`);
+  return await res.json(); // { message: "You are authorized!" }
+}
+
+async function apiGetList() {
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${API_BASE}/Autofill/list`, {
+    headers: { Authorization: `Bearer ${token}` },
   });
 
-  modalEl.addEventListener('hidden.bs.modal', () => {
-    document.body.classList.remove('download-modal-open');
-    resetDownloadModalState();
+  if (!res.ok) throw new Error(`List fetch failed: ${res.status}`);
+  return await res.json();
+}
+
+async function apiGetData(id) {
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${API_BASE}/autofill/data/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
   });
 
-  downloadModalInitialized = true;
-  return modalEl;
+  if (!res.ok) throw new Error(`Failed to fetch data: ${res.status}`);
+  return await res.json();
 }
 
-function focusDownloadUsername() {
-  if (!downloadModalElements) return;
-  setTimeout(() => {
-    downloadModalElements.usernameInput?.focus();
-  }, 150);
-}
-
-function resetDownloadModalState() {
-  if (!downloadModalElements) return;
-
-  downloadModalState.token = null;
-  downloadModalElements.form?.reset();
-  downloadModalElements.errorMessage.textContent = '';
-  setDownloadAuthLoading(false);
-
-  downloadModalElements.tableStatus.textContent = '';
-  downloadModalElements.tableStatus.classList.remove('text-danger');
-  clearDownloadTable();
-
-  downloadModalElements.loginSection.classList.remove('d-none');
-  downloadModalElements.tableSection.classList.add('d-none');
-}
-
-function setDownloadAuthLoading(isLoading) {
-  if (!downloadModalElements) return;
-
-  downloadModalElements.submitBtn.disabled = isLoading;
-  downloadModalElements.usernameInput.disabled = isLoading;
-  downloadModalElements.passwordInput.disabled = isLoading;
-  downloadModalElements.spinner.classList.toggle('d-none', !isLoading);
-}
-
-async function handleDownloadAuthSubmit(event) {
-  event.preventDefault();
-  if (!downloadModalElements) return;
-
-  const username = downloadModalElements.usernameInput.value.trim();
-  const password = downloadModalElements.passwordInput.value.trim();
-
-  if (!username || !password) {
-    downloadModalElements.errorMessage.textContent = 'Please enter both username and password.';
-    return;
-  }
-
-  downloadModalElements.errorMessage.textContent = '';
-  setDownloadAuthLoading(true);
-
-  try {
-    const loginResponse = await fetch(DOWNLOAD_API_ENDPOINTS.login, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username, password }),
-    });
-
-    if (!loginResponse.ok) {
-      const errorText = await extractErrorText(loginResponse);
-      throw new Error(errorText || 'Unable to authenticate.');
-    }
-
-    const loginData = await loginResponse.json();
-    if (!loginData?.token) {
-      throw new Error('Authentication token missing in response.');
-    }
-
-    downloadModalState.token = loginData.token;
-
-    switchToDownloadTable();
-    await loadDownloadTableData();
-  } catch (err) {
-    console.error(err);
-    downloadModalElements.errorMessage.textContent = err.message || 'Login failed. Please try again.';
-    downloadModalState.token = null;
-  } finally {
-    setDownloadAuthLoading(false);
-  }
-}
-
-function switchToDownloadTable() {
-  if (!downloadModalElements) return;
-
-  downloadModalElements.loginSection.classList.add('d-none');
-  downloadModalElements.tableSection.classList.remove('d-none');
-  downloadModalElements.tableStatus.textContent = 'Loading available downloads…';
-  downloadModalElements.tableStatus.classList.remove('text-danger');
-  clearDownloadTable();
-}
-
-async function loadDownloadTableData() {
-  if (!downloadModalElements || !downloadModalState.token) return;
-
-  try {
-    const listResponse = await fetch(DOWNLOAD_API_ENDPOINTS.list, {
-      headers: {
-        Authorization: `Bearer ${downloadModalState.token}`,
-      },
-    });
-
-    if (!listResponse.ok) {
-      const errorText = await extractErrorText(listResponse);
-      throw new Error(errorText || 'Failed to retrieve PDF list.');
-    }
-
-    const listData = await listResponse.json();
-    renderDownloadTable(Array.isArray(listData) ? listData : []);
-  } catch (err) {
-    console.error(err);
-    downloadModalElements.tableStatus.classList.add('text-danger');
-    downloadModalElements.tableStatus.textContent = err.message || 'Unable to load data.';
-  }
-}
-
-function renderDownloadTable(items) {
-  if (!downloadModalElements) return;
-
-  clearDownloadTable();
-
-  if (!items.length) {
-    downloadModalElements.tableStatus.textContent = 'No PDF marker exports found.';
-    return;
-  }
-
-  downloadModalElements.tableStatus.textContent = '';
-
-  const fragment = document.createDocumentFragment();
-
-  items.forEach((item) => {
-    const row = document.createElement('tr');
-
-    appendTableCell(row, item.carrierName ?? item.CarrierName ?? '—');
-    appendTableCell(row, item.pdfFileName ?? item.PdfFileName ?? '—');
-
-    const pdfSizeBytes = item.pdfFileSize ?? item.PdfFileSize ?? 0;
-    const pdfSizeKb = pdfSizeBytes ? (pdfSizeBytes / 1024).toFixed(1) : '0.0';
-    appendTableCell(row, pdfSizeKb);
-
-    appendTableCell(row, item.csvFileName ?? item.CsvFileName ?? '—');
-    appendTableCell(row, item.notes ?? item.Notes ?? '—');
-
-    const createdValue = item.createdUtc ?? item.CreatedUtc;
-    const createdDate = createdValue ? new Date(createdValue).toLocaleString() : '—';
-    appendTableCell(row, createdDate);
-
-    fragment.appendChild(row);
+async function apiGetPdf(id) {
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${API_BASE}/autofill/pdf/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
   });
 
-  downloadModalElements.tableBody.appendChild(fragment);
-}
+  if (!res.ok) throw new Error(`Failed to fetch PDF: ${res.status}`);
+  const contentDisposition = res.headers.get("Content-Disposition");
+  let filename = "download.pdf";
 
-function appendTableCell(row, text) {
-  const cell = document.createElement('td');
-  cell.textContent = text ?? '—';
-  row.appendChild(cell);
-}
-
-function clearDownloadTable() {
-  if (!downloadModalElements) return;
-  downloadModalElements.tableBody.innerHTML = '';
-}
-
-async function extractErrorText(response) {
-  try {
-    const data = await response.clone().json();
-    if (data?.message) return data.message;
-    if (typeof data === 'string') return data;
-  } catch (err) {
-    // ignore json parse errors
+  if (contentDisposition && contentDisposition.includes("filename=")) {
+    filename = contentDisposition
+      .split("filename=")[1]
+      .replace(/["']/g, "")
+      .trim();
   }
 
-  try {
-    const text = await response.clone().text();
-    return text;
-  } catch (err) {
-    return null;
+  const ab = await res.arrayBuffer();
+  return { filename, ab}
+}
+
+async function apiCreateAutofill({
+  carrierName,
+  csvFileName,
+  csvMarkerData,
+  notes,
+  pdfFile,
+}) {
+  const token = localStorage.getItem("token");
+  const form = new FormData();
+  form.append("CarrierName", carrierName || "");
+  form.append("CsvFileName", csvFileName || "");
+  form.append("CsvMarkerData", csvMarkerData || "");
+  form.append("Notes", notes || "");
+  form.append("PdfFile", pdfFile);
+
+  const res = await fetch(`${API_BASE}/autofill`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+
+  if (!res.ok) {
+    const msg = await res.text();
+    throw new Error(`Create failed: ${msg}`);
   }
+
+  const data = await res.json(); // { id: number }
+  return data.id;
+}
+
+async function apiDeleteAutofill(id) {
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${API_BASE}/autofill/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (res.status === 404) throw new Error(`Record ${id} not found`);
+  if (res.status !== 204) throw new Error(`Delete failed: ${res.status}`);
+  return true;
 }

@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace autofillApi.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     public class AuthController : ControllerBase
     {
         private readonly JwtHelper _jwtHelper;
@@ -16,7 +16,7 @@ namespace autofillApi.Controllers
         private readonly Dictionary<string, string> _users = new()
         {
             { "admin", "Water Dread 23" }, // plain-text for example only
-            { "demo", "Password123" }
+            { "read-only", "read-only" }
         };
 
         public AuthController(IConfiguration config)
@@ -38,8 +38,8 @@ namespace autofillApi.Controllers
             return Ok(new { token });
         }
 
-        [HttpGet("test")]
         [Authorize]
+        [HttpGet("test")]
         public IActionResult TestAuth()
         {
             return Ok(new { message = "You are authorized!" });

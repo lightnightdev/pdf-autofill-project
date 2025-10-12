@@ -1,5 +1,10 @@
+C:\Users\Joseph Chang\Documents\Work\PDF Autofill Project\autofillApi\bin\Debug\net8.0\publish\web.config
 C:\Users\Joseph Chang\Documents\Work\PDF Autofill Project\autofillApi\bin\Debug\net8.0\appsettings.Development.json
 C:\Users\Joseph Chang\Documents\Work\PDF Autofill Project\autofillApi\bin\Debug\net8.0\appsettings.json
+C:\Users\Joseph Chang\Documents\Work\PDF Autofill Project\autofillApi\bin\Debug\net8.0\publish\appsettings.Development.json
+C:\Users\Joseph Chang\Documents\Work\PDF Autofill Project\autofillApi\bin\Debug\net8.0\publish\appsettings.json
+C:\Users\Joseph Chang\Documents\Work\PDF Autofill Project\autofillApi\bin\Debug\net8.0\publish\autofillApi.deps.json
+C:\Users\Joseph Chang\Documents\Work\PDF Autofill Project\autofillApi\bin\Debug\net8.0\publish\autofillApi.runtimeconfig.json
 C:\Users\Joseph Chang\Documents\Work\PDF Autofill Project\autofillApi\bin\Debug\net8.0\autofillApi.exe
 C:\Users\Joseph Chang\Documents\Work\PDF Autofill Project\autofillApi\bin\Debug\net8.0\autofillApi.deps.json
 C:\Users\Joseph Chang\Documents\Work\PDF Autofill Project\autofillApi\bin\Debug\net8.0\autofillApi.runtimeconfig.json
@@ -7,6 +12,7 @@ C:\Users\Joseph Chang\Documents\Work\PDF Autofill Project\autofillApi\bin\Debug\
 C:\Users\Joseph Chang\Documents\Work\PDF Autofill Project\autofillApi\bin\Debug\net8.0\autofillApi.pdb
 C:\Users\Joseph Chang\Documents\Work\PDF Autofill Project\autofillApi\bin\Debug\net8.0\Azure.Core.dll
 C:\Users\Joseph Chang\Documents\Work\PDF Autofill Project\autofillApi\bin\Debug\net8.0\Azure.Identity.dll
+C:\Users\Joseph Chang\Documents\Work\PDF Autofill Project\autofillApi\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
 C:\Users\Joseph Chang\Documents\Work\PDF Autofill Project\autofillApi\bin\Debug\net8.0\Microsoft.AspNetCore.OpenApi.dll
 C:\Users\Joseph Chang\Documents\Work\PDF Autofill Project\autofillApi\bin\Debug\net8.0\Microsoft.Bcl.AsyncInterfaces.dll
 C:\Users\Joseph Chang\Documents\Work\PDF Autofill Project\autofillApi\bin\Debug\net8.0\Microsoft.Bcl.Cryptography.dll
@@ -77,4 +83,3 @@ C:\Users\Joseph Chang\Documents\Work\PDF Autofill Project\autofillApi\obj\Debug\
 C:\Users\Joseph Chang\Documents\Work\PDF Autofill Project\autofillApi\obj\Debug\net8.0\autofillApi.pdb
 C:\Users\Joseph Chang\Documents\Work\PDF Autofill Project\autofillApi\obj\Debug\net8.0\autofillApi.genruntimeconfig.cache
 C:\Users\Joseph Chang\Documents\Work\PDF Autofill Project\autofillApi\obj\Debug\net8.0\ref\autofillApi.dll
-C:\Users\Joseph Chang\Documents\Work\PDF Autofill Project\autofillApi\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll

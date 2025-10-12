@@ -1,8 +1,9 @@
-@autofillApi_HostAddress = https://www.lightnightdev.com/autofill/autofillApi
-@BearerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImp0aSI6ImFjNzhkNzc3LTE2ODgtNDljMi1hMjgzLTRjNTA4YTVmMTI0ZiIsImV4cCI6MTc2MDMzMzE0NSwiaXNzIjoiYXV0b2ZpbGxhcGkiLCJhdWQiOiJhdXRvZmlsbGFwaSJ9.m63XspdYeY2Px-S3_2dsI8SlP7KIJQ-0c4-g4m3si9g
+@autofillApi_HostAddress = https://www.lightnightdev.com/autofill/api
+# @autofillApi_HostAddress = http://localhost:5249
+@BearerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImp0aSI6ImE5MTdhN2ZlLWFlMzEtNGI4NC04MGRmLTUyNjI0ZWViOWMzNCIsImV4cCI6MTc2MDM5MTk0MiwiaXNzIjoiYXV0b2ZpbGxhcGkiLCJhdWQiOiJhdXRvZmlsbGFwaSJ9.Zja3sTEOQOl5MjWfMnsS6kC-8j2vx6UlFLGIV3OI7n0
 
 ### Login to get token
-POST {{autofillApi_HostAddress}}/api/Auth/login
+POST {{autofillApi_HostAddress}}/Auth/login
 Content-Type: application/json
 
 {
@@ -10,19 +11,33 @@ Content-Type: application/json
   "password": "Water Dread 23"
 }
 
+### 
+# POST https://www.lightnightdev.com/autofill/api/api/Auth/login
+# GET https://www.lightnightdev.com/autofill/api/api/Auth/test
+# GET https://www.lightnightdev.com/autofill/api/api/autofill/data/${id}
+# POST https://www.lightnightdev.com/autofill/api/api/autofill
+# DELETE https://www.lightnightdev.com/autofill/api/api/autofill/${id}
+# GET https://www.lightnightdev.com/autofill/api/api/list
 ### Access protected route
-GET {{autofillApi_HostAddress}}/api/Auth/test
+GET {{autofillApi_HostAddress}}/Auth/test
 Authorization: Bearer {{BearerToken}}
 
 
 ### Get list (no PDF blobs)
-GET {{autofillApi_HostAddress}}/api/autofill/list
+GET {{autofillApi_HostAddress}}/autofill/list
+Authorization: Bearer {{BearerToken}}
 
 ### Get one PDF
-GET {{autofillApi_HostAddress}}/api/autofill/data/3
+GET {{autofillApi_HostAddress}}/autofill/pdf/3
+Authorization: Bearer {{BearerToken}}
+
+## Get Data
+GET {{autofillApi_HostAddress}}/autofill/data/3
+Authorization: Bearer {{BearerToken}}
 
 ### Create
-POST {{autofillApi_HostAddress}}/api/autofill
+POST {{autofillApi_HostAddress}}/autofill
+Authorization: Bearer {{BearerToken}}
 Content-Type: multipart/form-data; boundary=MyBoundary
 
 --MyBoundary
