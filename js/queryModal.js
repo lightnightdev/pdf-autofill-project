@@ -53,6 +53,7 @@ function ensureDownloadModalSetup() {
     tableStatus: document.getElementById("download-table-status"),
     tableBody: document.querySelector("#download-data-table tbody"),
     logoutBtn: document.getElementById("download-logout-btn"),
+    infoBanner: document.getElementById("download-table-info"),
   };
 
   downloadModalInstance = bootstrap.Modal.getOrCreateInstance(modalEl, {
@@ -71,6 +72,11 @@ function ensureDownloadModalSetup() {
     resetDownloadModalState();
     focusDownloadUsername();
   });
+
+  downloadModalElements.tableBody?.addEventListener(
+    "click",
+    handleDownloadTableClick
+  );
 
   modalEl.addEventListener("shown.bs.modal", () => {
     document.body.classList.add("download-modal-open");
@@ -104,12 +110,12 @@ function resetDownloadModalState() {
   downloadModalElements.errorMessage.textContent = "";
   setDownloadAuthLoading(false);
 
-  downloadModalElements.tableStatus.textContent = "";
-  downloadModalElements.tableStatus.classList.remove("text-danger");
+  updateDownloadTableStatus("");
   clearDownloadTable();
 
   downloadModalElements.loginSection.classList.remove("d-none");
   downloadModalElements.tableSection.classList.add("d-none");
+  downloadModalElements.infoBanner?.classList.add("d-none");
 }
 
 function setDownloadAuthLoading(isLoading) {
@@ -167,9 +173,8 @@ function switchToDownloadTable() {
 
   downloadModalElements.loginSection.classList.add("d-none");
   downloadModalElements.tableSection.classList.remove("d-none");
-  downloadModalElements.tableStatus.textContent =
-    "Loading available downloads…";
-  downloadModalElements.tableStatus.classList.remove("text-danger");
+  downloadModalElements.infoBanner?.classList.remove("d-none");
+  updateDownloadTableStatus("Loading available downloads…");
   clearDownloadTable();
 }
 
@@ -182,9 +187,10 @@ async function loadDownloadTableData() {
     renderDownloadTable(Array.isArray(listData) ? listData : []);
   } catch (err) {
     console.error(err);
-    downloadModalElements.tableStatus.classList.add("text-danger");
-    downloadModalElements.tableStatus.textContent =
-      err.message || "Unable to load data.";
+    updateDownloadTableStatus(
+      err.message || "Unable to load data.",
+      true
+    );
   }
 }
 
@@ -194,12 +200,11 @@ function renderDownloadTable(items) {
   clearDownloadTable();
 
   if (!items.length) {
-    downloadModalElements.tableStatus.textContent =
-      "No PDF marker exports found.";
+    updateDownloadTableStatus("No PDF marker exports found.");
     return;
   }
 
-  downloadModalElements.tableStatus.textContent = "";
+  updateDownloadTableStatus("");
 
   const fragment = document.createDocumentFragment();
 
@@ -222,6 +227,8 @@ function renderDownloadTable(items) {
       : "—";
     appendTableCell(row, createdDate);
 
+    appendActionCell(row, item);
+
     fragment.appendChild(row);
   });
 
@@ -234,9 +241,99 @@ function appendTableCell(row, text) {
   row.appendChild(cell);
 }
 
+function appendActionCell(row, item) {
+  const cell = document.createElement("td");
+  cell.classList.add("text-end");
+
+  const id =
+    item?.id ?? item?.Id ?? item?.autofillId ?? item?.AutofillId ?? null;
+
+  if (!id) {
+    cell.textContent = "—";
+    row.appendChild(cell);
+    return;
+  }
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "btn btn-outline-danger btn-sm";
+  button.textContent = "Delete";
+  button.dataset.deleteId = String(id);
+
+  const label =
+    item.pdfFileName ??
+    item.PdfFileName ??
+    item.csvFileName ??
+    item.CsvFileName ??
+    item.carrierName ??
+    item.CarrierName;
+
+  if (label) {
+    button.dataset.deleteLabel = String(label);
+  }
+
+  cell.appendChild(button);
+  row.appendChild(cell);
+}
+
 function clearDownloadTable() {
   if (!downloadModalElements) return;
   downloadModalElements.tableBody.innerHTML = "";
+}
+
+function updateDownloadTableStatus(message, isError = false) {
+  if (!downloadModalElements) return;
+  downloadModalElements.tableStatus.textContent = message || "";
+  if (isError && message) {
+    downloadModalElements.tableStatus.classList.add("text-danger");
+  } else {
+    downloadModalElements.tableStatus.classList.remove("text-danger");
+  }
+}
+
+async function handleDownloadTableClick(event) {
+  if (!downloadModalElements) return;
+
+  const button = event.target.closest("button[data-delete-id]");
+  if (!button || button.disabled) return;
+
+  const id = button.dataset.deleteId;
+  if (!id) return;
+
+  const label = button.dataset.deleteLabel
+    ? `"${button.dataset.deleteLabel}"`
+    : `record ${id}`;
+
+  const confirmed = window.confirm(
+    `Are you sure you want to delete ${label}? This action cannot be undone.`
+  );
+
+  if (!confirmed) return;
+
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = "Deleting…";
+
+  try {
+    updateDownloadTableStatus(`Deleting ${label}…`);
+    await apiDeleteAutofill(id);
+    await loadDownloadTableData();
+    const hadError = downloadModalElements.tableStatus.classList.contains(
+      "text-danger"
+    );
+    if (!hadError) {
+      updateDownloadTableStatus(`${label} deleted successfully.`);
+    }
+  } catch (err) {
+    console.error(err);
+    updateDownloadTableStatus(
+      err.message || `Failed to delete ${label}.`,
+      true
+    );
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText;
+  }
 }
 
 // ========================
