@@ -1,8 +1,8 @@
 Write-Host "Merging and minifying all JS files..."
 
 # Path to your JS folder
-$jsPath = ".\js"
-$outFile = "bundle.min.js"
+$jsPath = ".\js_src"
+$outFile = "autofill.min.js"
 
 # Combine all JS files in order (alphabetical)
 $files = Get-ChildItem -Path $jsPath -Filter *.js | Sort-Object Name
