@@ -109,6 +109,18 @@ async function apiCreateAutofill({
   return data.id;
 }
 
+async function apiDeleteAutofill_POST(id) {
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${API_BASE}/autofill/delete/${id}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (res.status === 404) throw new Error(`Record ${id} not found`);
+  if (res.status !== 204) throw new Error(`Delete failed: ${res.status}`);
+  return true;
+}
+
 async function apiDeleteAutofill(id) {
   const token = localStorage.getItem("token");
   const res = await fetch(`${API_BASE}/autofill/${id}`, {

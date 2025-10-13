@@ -316,7 +316,7 @@ async function handleDownloadTableClick(event) {
 
   try {
     updateDownloadTableStatus(`Deleting ${label}…`);
-    await apiDeleteAutofill(id);
+    await apiDeleteAutofill_POST(id);
     await loadDownloadTableData();
     const hadError = downloadModalElements.tableStatus.classList.contains(
       "text-danger"
