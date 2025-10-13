@@ -1,3 +1,5 @@
+// TEST
+
 function initFontBytes() {
   if (typeof FONT_BYTES !== 'undefined') {
     return FONT_BYTES;
