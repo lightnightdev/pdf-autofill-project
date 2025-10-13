@@ -246,6 +246,11 @@ function onStyleInputChange() {
 
   if (!markerData) return;
 
+  const entryType = isCustomText ? getCustomElementType(markerData) : null;
+  if (isCustomText) {
+    selectedCustomTextType = entryType;
+  }
+
   // read inputs
   const rawFont = document.getElementById('font-select').value;
   const rawSize = parseInt(document.getElementById('size-select').value, 10);
@@ -259,10 +264,10 @@ function onStyleInputChange() {
   markerData.spacing = Number.isFinite(rawSpacing) && rawSpacing > 0 ? rawSpacing : 0;
 
   if (isCustomText) {
-    saveCustomText();
-    updateCustomText(selectedCustomTextId);
+    saveCustomElement(entryType || 'text');
+    updateCustomText(selectedCustomTextId, entryType || 'text');
   } else {
-    // 
+    //
     // persist + update just this marker
     saveLocData();
     updateMarker(selectedColIndex); // incremental re-render for this one
@@ -323,7 +328,7 @@ async function clearAllMarkers() {
 async function downloadMarkers() {
   let pdfName = await getPdfNameFromDb()
   if (!confirm(`Download PDF locations for file ${pdfName}?`)) return;
-  const out = [customText, locData]
+  const out = [customText, locData];
   const jsonString = JSON.stringify(out, null, 2); // null for replacer, 2 for indentation
   const blob = new Blob([jsonString], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -346,10 +351,33 @@ async function uploadMarkers() {
 
     try {
       const text = await file.text();
-      const [customTextData, locDataData] = JSON.parse(text);
+      const parsed = JSON.parse(text);
+      let customTextData;
+      let checkmarkData;
+      let locDataData;
 
-      customText = customTextData;
-      locData = locDataData;
+      if (Array.isArray(parsed)) {
+        if (parsed.length === 3) {
+          [customTextData, checkmarkData, locDataData] = parsed;
+        } else if (parsed.length === 2) {
+          [customTextData, locDataData] = parsed;
+        } else {
+          throw new Error('Unexpected marker file format.');
+        }
+      } else {
+        throw new Error('Invalid marker file format.');
+      }
+
+      customText = customTextData || {};
+      locData = locDataData || {};
+
+      if (typeof mergeLegacyCheckmarkCollection === 'function' && checkmarkData) {
+        mergeLegacyCheckmarkCollection(checkmarkData);
+      }
+
+      if (typeof migrateLegacyCheckmarks === 'function') {
+        migrateLegacyCheckmarks();
+      }
 
       await saveLocData();
       await saveCustomText();

@@ -1,8 +1,23 @@
 // utils.js
 
 // --- utils ---
+const CHECKMARK_SYMBOL = "\u2713"; // unicode 2713 ✓
+const CHECKMARK_TOKEN = "55e0ddeb-d702-40eb-b28d-13ddbbec2da7";
+
+function isCheckmarkText(value) {
+  return value === CHECKMARK_TOKEN || value === CHECKMARK_SYMBOL;
+}
+
+function resolveCustomTextValue(value) {
+  if (value == null) { return ""; }
+  return isCheckmarkText(value) ? CHECKMARK_SYMBOL : value;
+}
+
 function b64ToU8(base64) {
-  // Handle big strings safely
+  return base64ToUint8(base64);
+}
+
+function base64ToUint8(base64) {
   const binary = atob(base64);
   const len = binary.length;
   const bytes = new Uint8Array(len);
@@ -199,13 +214,20 @@ function drawPlacedText(page, cfg, text, fontsMap) {
 }
 
 function drawCustText(doc, docFonts) {
+  drawCustomCollection(doc, docFonts, customText);
+}
 
-  for (const pgNumRaw of Object.keys(customText)) {
-    let pgNum = parseInt(pgNumRaw, 10);
+function drawCustomCollection(doc, docFonts, collection) {
+  if (!collection) { return; }
+  for (const pgNumRaw of Object.keys(collection)) {
+    const pgNum = parseInt(pgNumRaw, 10);
+    if (!Number.isFinite(pgNum)) { continue; }
     const page = doc.getPage(pgNum - 1);
-    const cTextsOnPg = customText[pgNum];
-    for (cTexts of cTextsOnPg) {
-      drawPlacedText(page, cTexts, cTexts.text, docFonts)
+    const cTextsOnPg = collection[pgNum];
+    if (!page || !Array.isArray(cTextsOnPg)) { continue; }
+    for (const cTexts of cTextsOnPg) {
+      const textToDraw = resolveCustomTextValue(cTexts?.text);
+      drawPlacedText(page, cTexts, textToDraw, docFonts);
     }
   }
 }
@@ -318,10 +340,17 @@ function colAction(move) {
 
 function customTextAction(move) {
 
-  if (selectedCustomTextId == null || !customText) { return; }
+  if (selectedCustomTextId == null) { return; }
 
-  const customTextData = customText[currentPage][selectedCustomTextId];
+  const collection = typeof getCustomElementCollection === 'function'
+    ? getCustomElementCollection()
+    : customText;
+  if (!collection || !collection[currentPage]) { return; }
+
+  const customTextData = collection[currentPage][selectedCustomTextId];
   if (!customTextData) { return; }
+
+  const type = selectedCustomTextType || getCustomElementType(customTextData) || 'text';
 
 
   // Normalize numeric fields
@@ -349,13 +378,13 @@ function customTextAction(move) {
       customTextData.size += 1;
       break;
     case "d":
-      removeCustomText(currentPage, selectedCustomTextId);
+      removeCustomText(currentPage, selectedCustomTextId, type);
       return;
     default:
       console.warn("Custom Text move error: unknown direction", move);
   }
 
-  updateCustomText(selectedCustomTextId); // incremental re-render for this one
+  updateCustomText(selectedCustomTextId, type); // incremental re-render for this one
 
 }
 

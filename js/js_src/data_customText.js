@@ -1,44 +1,47 @@
-const CHECKMARK = "\u2713" // unicode 2713 ✓
 let inputSelection = null;
 let selectedCustomTextId = null;
+let selectedCustomTextType = null;
 
-let customText = {}
+let customText = {};
 // customText[pageNumber] = [{x: 25, y: 30, text: "hello", size: 24, spacing: 12, font: _monospace]
-//
-//
-//
 
 function checkmarkCreate() {
     inputSelection = "checkmark";
     selectedColIndex = null;
+    selectedCustomTextId = null;
+    selectedCustomTextType = null;
 
-    const cardC = document.getElementById('checkmark-card')
-    cardC.classList.add('select');
+    const cardC = document.getElementById('checkmark-card');
+    cardC?.classList.add('select');
 
-    const cardT = document.getElementById('custom-text-card')
-    cardT.classList.remove('select');
+    const cardT = document.getElementById('custom-text-card');
+    cardT?.classList.remove('select');
     selectMarkersAndCards(-1);
 }
 
 function customTextCreate() {
     inputSelection = "custom_text";
     selectedColIndex = null;
+    selectedCustomTextId = null;
+    selectedCustomTextType = null;
 
-    const cardT = document.getElementById('custom-text-card')
-    cardT.classList.add('select');
+    const cardT = document.getElementById('custom-text-card');
+    cardT?.classList.add('select');
 
-    const cardC = document.getElementById('checkmark-card')
-    cardC.classList.remove('select');
+    const cardC = document.getElementById('checkmark-card');
+    cardC?.classList.remove('select');
     selectMarkersAndCards(-1);
 }
 
 function unselectCustomTextCreate() {
     inputSelection = null;
     selectedCustomTextId = null;
-    const cardC = document.getElementById('checkmark-card')
-    const cardT = document.getElementById('custom-text-card')
-    cardC.classList.remove('select');
-    cardT.classList.remove('select');
+    selectedCustomTextType = null;
+
+    const cardC = document.getElementById('checkmark-card');
+    const cardT = document.getElementById('custom-text-card');
+    cardC?.classList.remove('select');
+    cardT?.classList.remove('select');
 
     const elements = document.querySelectorAll('.select.ct-data-el');
     if (elements.length) {
@@ -46,95 +49,203 @@ function unselectCustomTextCreate() {
             el.classList.remove('select');
         }
     }
-
 }
 
-function newCustomText(page, x, y, text, size, font, spacing = 0) {
+function newCustomText(page, x, y, text, size, font, spacing = 0, stage = {}) {
+    createCustomElement('text', page, x, y, text, size, font, spacing, stage);
+}
+
+function newCheckmark(page, x, y, size = 24, spacing = 0, stage = {}) {
+    createCustomElement('checkmark', page, x, y, CHECKMARK_TOKEN, size, '_symbol', spacing, stage);
+}
+
+function createCustomElement(type, page, x, y, text, size, font, spacing = 0, stage = {}) {
+    if (!customText[page]) { customText[page] = []; }
+
     const canvas = document.getElementById("pdf-canvas");
-    if (!customText[page]) { customText[page] = [] }
-    const ctData = {
-        x: x,
-        y: y,
-        text: text,
-        size: size,
-        font: font,
-        spacing: spacing,
-        stageW: canvas.width || 1,
-        stageH: canvas.height || 1,
-    }
-    let idx = customText[page].push(
-        ctData
-    )
-    idx -= 1
-    saveCustomText();
-    renderCustomText(idx, ctData);
-    selectCustomText(idx);
+    const stageW = stage.stageW || canvas?.width || 1;
+    const stageH = stage.stageH || canvas?.height || 1;
+
+    const storedText = type === 'checkmark' ? CHECKMARK_TOKEN : text;
+
+    const elementData = {
+        x,
+        y,
+        text: storedText,
+        size,
+        font,
+        spacing,
+        stageW,
+        stageH,
+    };
+
+    const idx = customText[page].push(elementData) - 1;
+    saveCustomElement(type);
+    const entryType = getCustomElementType(elementData);
+    renderCustomText(idx, elementData, entryType);
+    selectCustomText(idx, entryType);
 }
 
-function updateCustomText(ctId) {
-    saveCustomText();
-    const el = document.getElementById(`ct-${ctId}`)
-    if (el) { el.remove() }
+function updateCustomText(ctId, type = selectedCustomTextType || 'text') {
+    if (!customText[currentPage]) { return; }
 
-    renderCustomText(ctId, customText[currentPage][ctId]);
+    saveCustomElement(type);
+    const elementType = type || getCustomElementType(customText[currentPage][ctId]);
+    const el = document.getElementById(getCustomElementId(ctId, elementType));
+    if (el) { el.remove(); }
+
+    const data = customText[currentPage][ctId];
+    if (!data) { return; }
+    const entryType = getCustomElementType(data);
+    renderCustomText(ctId, data, entryType);
 }
 
-function removeCustomText(page, ctId) {
+function removeCustomText(page, ctId, type = selectedCustomTextType || 'text') {
+    if (!customText[page]) { return; }
+
+    const entryType = type || getCustomElementType(customText[page][ctId]);
     customText[page].splice(ctId, 1);
-    const el = document.getElementById(`ct-${ctId}`)
+    const el = document.getElementById(getCustomElementId(ctId, entryType));
     if (el) { el.remove(); }
     unselectCustomTextCreate();
-    saveCustomText();
+    saveCustomElement(type);
 }
 
 function renderAllCustomText() {
-    if (!customText[currentPage]) { return }
-    for (i = 0; i < customText[currentPage].length; i++) {
-        renderCustomText(i, customText[currentPage][i]);
+    renderAllCustomElements();
+}
+
+function renderAllCustomElements(type) {
+    if (!customText[currentPage]) { return; }
+    for (let i = 0; i < customText[currentPage].length; i++) {
+        const entry = customText[currentPage][i];
+        const entryType = getCustomElementType(entry);
+        if (type && entryType !== type) { continue; }
+        renderCustomText(i, entry, entryType);
     }
 }
 
-function renderCustomText(ctId, data) {
-    // add marker to page
+function renderCustomText(ctId, data, type) {
+    if (!data) { return; }
+    const entryType = type || getCustomElementType(data);
     const overlay = document.getElementById('pdf-overlay');
     const el = document.createElement('div');
-    el.id = `ct-${ctId}`;
-    el.classList.add('custom-text')
+    el.id = getCustomElementId(ctId, entryType);
+    el.classList.add('custom-text');
     el.classList.add('ct-data-el');
-    if (selectedCustomTextId == ctId) { el.classList.add('select') }
+    if (selectedCustomTextId === ctId && selectedCustomTextType === entryType) {
+        el.classList.add('select');
+    }
     el.dataset.ctId = String(ctId);
-    el.addEventListener('click', () => selectCustomText(parseInt(ctId, 10)));
+    el.dataset.ctType = entryType;
+    el.addEventListener('click', () => selectCustomText(parseInt(ctId, 10), entryType));
     el.style.position = 'absolute';
     el.style.pointerEvents = 'auto';
 
     applyDataToMarker(el, data);
-    el.textContent = data.text
+    el.textContent = resolveCustomTextValue(data.text);
     overlay.appendChild(el);
 }
 
-
-function selectCustomText(ctId) {
+function selectCustomText(ctId, type = null) {
     selectMarkersAndCards(-1);
-    unselectCustomTextCreate()
+    unselectCustomTextCreate();
+    const entry = customText[currentPage]?.[ctId];
+    const entryType = type || getCustomElementType(entry);
     selectedCustomTextId = ctId;
-    const el = document.getElementById(`ct-${ctId}`)
-    el.classList.add('select');
+    selectedCustomTextType = entryType;
+
+    const cardC = document.getElementById('checkmark-card');
+    const cardT = document.getElementById('custom-text-card');
+    if (entryType === 'checkmark') {
+        cardC?.classList.add('select');
+    } else {
+        cardT?.classList.add('select');
+    }
+
+    const el = document.getElementById(getCustomElementId(ctId, entryType));
+    el?.classList.add('select');
 }
 
 function removeCustomTextFromPage() {
+  customText = shiftCollectionAfterPage(customText);
+  saveCustomElement('text');
+}
+
+function shiftCollectionAfterPage(collection) {
   const newArr = [];
-  const kys = Object.keys(customText);
-  for (ky of kys) {
-    i = parseInt(ky, 10);
+  if (!collection) { return newArr; }
+  const kys = Object.keys(collection);
+  for (const ky of kys) {
+    const i = parseInt(ky, 10);
+    if (Number.isNaN(i)) { continue; }
     if (i < currentPage) {
-      // keep everything before the deleted page the same
-      newArr[i] = customText[i];
+      newArr[i] = collection[i];
     } else if (i > currentPage) {
-      // shift everything after down by one
-      newArr[i - 1] = customText[i];
+      newArr[i - 1] = collection[i];
     }
   }
 
-  customText = newArr;
-  saveCustomText();
+  return newArr;
+}
+
+function getCustomElementId(ctId, type = 'text') {
+  return `ce-${type}-${ctId}`;
+}
+
+function saveCustomElement(type = 'text') {
+  try {
+    saveCustomText && saveCustomText();
+  } catch { /* no-op */ }
+}
+
+function migrateLegacyCheckmarks() {
+  if (!customText) { return false; }
+  let migrated = false;
+
+  const pages = Object.keys(customText);
+  for (const page of pages) {
+    const entries = customText[page];
+    if (!Array.isArray(entries)) { continue; }
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
+      if (!entry) { continue; }
+      if (entry.text === CHECKMARK_SYMBOL) {
+        entries[i] = { ...entry, text: CHECKMARK_TOKEN };
+        migrated = true;
+      }
+    }
+  }
+
+  if (migrated) {
+    try { saveCustomText && saveCustomText(); } catch { }
+  }
+
+  return migrated;
+}
+
+function mergeLegacyCheckmarkCollection(legacyCheckmarks) {
+  if (!legacyCheckmarks) { return false; }
+  let merged = false;
+  const pages = Object.keys(legacyCheckmarks);
+  for (const page of pages) {
+    const entries = legacyCheckmarks[page];
+    if (!Array.isArray(entries)) { continue; }
+    if (!customText[page]) { customText[page] = []; }
+    for (const entry of entries) {
+      if (!entry) { continue; }
+      customText[page].push({ ...entry, text: CHECKMARK_TOKEN });
+      merged = true;
+    }
+  }
+
+  if (merged) {
+    try { saveCustomText && saveCustomText(); } catch { }
+  }
+
+  return merged;
+}
+
+function getCustomElementType(entry) {
+  return isCheckmarkText(entry?.text) ? 'checkmark' : 'text';
 }

@@ -10,6 +10,7 @@ const CSV_KEY = "csvData";
 const CSV_NAME_KEY = "csvName";
 const LOC_KEY = "locData";
 const TXT_KEY = "customTextData";
+const CHECKMARK_KEY = "checkmarkData";
 const RENDER_KEY = 'render_pdf'; // idb key for preview pdf
 
 let db; // IDBDatabase
@@ -80,6 +81,25 @@ async function loadCache() {
     loadCachedCustomText(),
   ]);
 
+  const legacyCheckmarks = await loadLegacyCheckmarks();
+  if (legacyCheckmarks && typeof mergeLegacyCheckmarkCollection === 'function') {
+    try {
+      const merged = mergeLegacyCheckmarkCollection(legacyCheckmarks);
+      await deleteLegacyCheckmarkData();
+      if (merged) {
+        log(' - Migrated legacy checkmarks into custom text.');
+      }
+    } catch (err) {
+      log("Error migrating legacy checkmarks: " + (err?.message || err));
+    }
+  }
+
+  try {
+    migrateLegacyCheckmarks && migrateLegacyCheckmarks();
+  } catch (err) {
+    log("Error migrating legacy checkmarks: " + (err?.message || err));
+  }
+
   const csvIsValid = Array.isArray(csvData) && csvData.length > 0
   const pdfIsValid = currentPdfBytes && currentPdfBytes.byteLength > 0
 
@@ -143,11 +163,25 @@ async function loadCachedLocData() {
 async function loadCachedCustomText() {
   try {
     customText = (await idbGet(TXT_KEY)) || {};
-    if (Array.isArray(customText) && customText.length > 0) {
+    if (customText && Object.keys(customText).length > 0) {
       log(" - Loaded custom text.");
     }
   } catch (err) {
     log("Error loading custom text: " + (err?.message || err));
+  }
+}
+
+// ===== Legacy checkmark migration =====
+async function loadLegacyCheckmarks() {
+  try {
+    const data = await idbGet(CHECKMARK_KEY);
+    if (data && Object.keys(data).length > 0) {
+      log(" - Found legacy checkmark data.");
+    }
+    return data || null;
+  } catch (err) {
+    log("Error loading legacy checkmarks: " + (err?.message || err));
+    return null;
   }
 }
 
@@ -295,8 +329,27 @@ async function clearCustomText() {
       tx.onabort = () => reject(tx.error);
     });
 
+    await deleteLegacyCheckmarkData();
+
   } catch (err) {
     log("Error deleting custom text data: " + (err?.message || err));
+  }
+}
+
+async function deleteLegacyCheckmarkData() {
+  try {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+    store.delete(CHECKMARK_KEY);
+
+    await new Promise((resolve, reject) => {
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+
+  } catch (err) {
+    log("Error deleting legacy checkmark data: " + (err?.message || err));
   }
 }
 
@@ -309,8 +362,10 @@ async function clearCustomText() {
 function clearGlobals() {
   csvData = [];
   locData = {};
-  customText = {};
+  if (typeof customText !== 'undefined') { customText = {}; }
   selectedColIndex = null;
+  if (typeof selectedCustomTextId !== 'undefined') { selectedCustomTextId = null; }
+  if (typeof selectedCustomTextType !== 'undefined') { selectedCustomTextType = null; }
   pdfDoc = null;            // cached PDF as pdfjsLib document for viewing
   editDoc = null;           // PDF-Lib document with fonts
   editDocFonts = null;

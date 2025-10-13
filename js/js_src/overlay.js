@@ -30,9 +30,7 @@ function initCanvasClicks() {
     const selectedSpacing = Number.parseFloat(spacingEl?.value) || 0;
 
     if (inputSelection === 'checkmark') {
-      // example uses CHECKMARK and your symbol font key
-      const currentText = CHECKMARK;
-      newCustomText(currentPage, x, y, currentText, 24, '_symbol', selectedSpacing, { stageW, stageH });
+      newCheckmark(currentPage, x, y, 24, selectedSpacing, { stageW, stageH });
       return;
     }
 
