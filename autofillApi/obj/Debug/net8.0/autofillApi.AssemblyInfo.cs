@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("autofillApi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+838ff0d7fe42ddce5daab75ff0e2fbccb8ba4744")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8b8442b582ec9d671a26d59238b6847184bbf0fa")]
 [assembly: System.Reflection.AssemblyProductAttribute("autofillApi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("autofillApi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
