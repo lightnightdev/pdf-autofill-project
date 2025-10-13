@@ -387,3 +387,22 @@ function escapeHtml(s) {
     .replace(/'/g, '&#39;');
 }
 
+function jsonToHtmlTable(jsonArray, options = {}) {
+  if (!jsonArray.length) return '';
+  const cols = Object.keys(jsonArray.reduce((acc, obj) => {
+    Object.keys(obj).forEach(k => acc[k] = true);
+    return acc;
+  }, {}));
+
+  let html = `<table${options.class ? ` class="${options.class}"` : ''}>`;
+  html += '<thead><tr>' + cols.map(c => `<th>${c}</th>`).join('') + '</tr></thead>';
+  html += '<tbody>';
+  jsonArray.forEach(row => {
+    html += '<tr>' + cols.map(c => {
+      let v = row[c] == null ? '' : row[c];
+      return `<td>${v}</td>`;
+    }).join('') + '</tr>';
+  });
+  html += '</tbody></table>';
+  return html;
+}
