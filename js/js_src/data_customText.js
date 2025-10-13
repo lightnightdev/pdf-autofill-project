@@ -1,4 +1,6 @@
-const CHECKMARK = "\u2713" // unicode 2713 ✓
+// const CHECKMARK = "\u2713" // unicode 2713 ✓
+// ^moved to font_data
+
 let inputSelection = null;
 let selectedCustomTextId = null;
 

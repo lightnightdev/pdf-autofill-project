@@ -1,4 +1,4 @@
-// TEST
+const CHECKMARK = "\u2713" // unicode 2713 ✓
 
 function initFontBytes() {
   if (typeof FONT_BYTES !== 'undefined') {
