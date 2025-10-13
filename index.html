@@ -103,8 +103,8 @@
               <i class="bi bi-trash"></i> Clear All Markers
             </button>
 
-            <button type="button" class="btn btn-primary m-2" style="width: 40%" data-bs-toggle="modal"
-              data-bs-target="#pdfRequestModal">
+            <button type="button" class="btn btn-primary m-2" style="width: 40%"
+              onclick="handleSendToServerClick()">
               Send to Server
             </button>
           </div>
@@ -257,8 +257,8 @@
         <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close">×</button>
         <div class="modal-header ps-0 pe-5">
           <div>
-            <h1 class="modal-title fs-4 mb-1">Download PDF / Markers</h1>
-            <p class="mb-0 text-muted">Authenticate to view the available PDF and marker exports.</p>
+            <h1 class="modal-title fs-4 mb-1" id="download-modal-title">Download PDF / Markers</h1>
+            <p class="mb-0 text-muted" id="download-modal-subtitle">Authenticate to view the available PDF and marker exports.</p>
           </div>
         </div>
         <div class="modal-body pt-3">
@@ -310,6 +310,42 @@
                 <tbody></tbody>
               </table>
             </div>
+          </div>
+          <div id="download-upload-section" class="d-none">
+            <div class="mb-3">
+              <h2 class="fs-5 mb-1">Send current PDF &amp; markers</h2>
+              <p class="mb-0 text-muted small">Review the bundle details before uploading to the server.</p>
+            </div>
+            <div class="mb-3">
+              <h3 class="fs-6">PDF Details</h3>
+              <dl class="row mb-0">
+                <dt class="col-sm-4">PDF Name</dt>
+                <dd class="col-sm-8" id="upload-pdf-name">—</dd>
+                <dt class="col-sm-4">PDF Size</dt>
+                <dd class="col-sm-8" id="upload-pdf-size">—</dd>
+              </dl>
+            </div>
+            <div class="mb-3">
+              <h3 class="fs-6">Column Headers</h3>
+              <div id="upload-first-column-headers" class="small text-break bg-light border rounded p-2"
+                style="white-space: pre-wrap;">None</div>
+            </div>
+            <div class="mb-3">
+              <h3 class="fs-6">locData</h3>
+              <pre id="upload-locdata-preview" class="bg-light border rounded small p-2 mb-0" style="max-height: 220px; overflow: auto;">{}</pre>
+            </div>
+            <div class="mb-3">
+              <h3 class="fs-6">customText</h3>
+              <pre id="upload-customtext-preview" class="bg-light border rounded small p-2 mb-0" style="max-height: 220px; overflow: auto;">{}</pre>
+            </div>
+            <div class="d-flex justify-content-end gap-2">
+              <button type="button" class="btn btn-outline-secondary" id="upload-cancel-btn">Cancel</button>
+              <button type="button" class="btn btn-primary" id="upload-confirm-btn">
+                <span id="upload-confirm-text">Send to Server</span>
+                <span class="spinner-border spinner-border-sm d-none ms-2" id="upload-confirm-spinner" role="status" aria-hidden="true"></span>
+              </button>
+            </div>
+            <div id="upload-status" class="status-message mt-2"></div>
           </div>
         </div>
       </div>
