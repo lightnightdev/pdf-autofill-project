@@ -226,7 +226,7 @@ function renderDownloadTable(items) {
       ? new Date(createdValue).toLocaleString()
       : "—";
     appendTableCell(row, createdDate);
-
+    appendLoadCell(row, item);
     appendActionCell(row, item);
 
     fragment.appendChild(row);
@@ -276,6 +276,39 @@ function appendActionCell(row, item) {
   row.appendChild(cell);
 }
 
+function appendLoadCell(row, item) {
+  const cell = document.createElement("td");
+  cell.classList.add("text-center");
+
+  const id =
+    item?.id ?? item?.Id ?? item?.autofillId ?? item?.AutofillId ?? null;
+
+  if (!id) {
+    cell.textContent = "—";
+    row.appendChild(cell);
+    return;
+  }
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "btn btn-success btn-sm";
+  button.textContent = "Load";
+  button.dataset.loadId = String(id);
+
+  const csvName = item.csvFileName ?? item.CsvFileName;
+  if (csvName) {
+    button.dataset.csvName = String(csvName);
+  }
+
+  const pdfName = item.pdfFileName ?? item.PdfFileName;
+  if (pdfName) {
+    button.dataset.pdfName = String(pdfName);
+  }
+
+  cell.appendChild(button);
+  row.appendChild(cell);
+}
+
 function clearDownloadTable() {
   if (!downloadModalElements) return;
   downloadModalElements.tableBody.innerHTML = "";
@@ -293,6 +326,13 @@ function updateDownloadTableStatus(message, isError = false) {
 
 async function handleDownloadTableClick(event) {
   if (!downloadModalElements) return;
+
+  const loadButton = event.target.closest("button[data-load-id]");
+  if (loadButton && !loadButton.disabled) {
+    event.preventDefault();
+    await handleLoadButtonClick(loadButton);
+    return;
+  }
 
   const button = event.target.closest("button[data-delete-id]");
   if (!button || button.disabled) return;
@@ -333,6 +373,145 @@ async function handleDownloadTableClick(event) {
   } finally {
     button.disabled = false;
     button.textContent = originalText;
+  }
+}
+
+async function handleLoadButtonClick(button) {
+  if (!button) return;
+
+  const id = button.dataset.loadId;
+  if (!id) return;
+
+  const originalText = button.textContent;
+  const csvNameFromButton = button.dataset.csvName || "";
+  const label = button.dataset.pdfName || csvNameFromButton || `record ${id}`;
+
+  try {
+    button.disabled = true;
+    button.textContent = "Loading…";
+    updateDownloadTableStatus(`Loading ${label}…`);
+
+    const [data, pdfResult] = await Promise.all([
+      apiGetData(id),
+      apiGetPdf(id),
+    ]);
+
+    if (!pdfResult || !pdfResult.ab) {
+      throw new Error("PDF response did not include file data.");
+    }
+
+    const pdfFilename = pdfResult.filename || "download.pdf";
+    const pdfBlob = new Blob([pdfResult.ab], { type: "application/pdf" });
+    const pdfFile =
+      typeof File === "function"
+        ? new File([pdfBlob], pdfFilename, { type: "application/pdf" })
+        : Object.assign(pdfBlob, { name: pdfFilename });
+
+    await processPDF(pdfFile);
+
+    const csvName =
+      data?.csvFileName ?? data?.CsvFileName ?? csvNameFromButton ?? "";
+    const markerPayload = data?.csvMarkerData ?? data?.CsvMarkerData ?? null;
+
+    await applyDownloadedMarkerData(markerPayload, csvName);
+
+    if (csvName) {
+      if (typeof log === "function") {
+        log(`Loaded CSV: ${csvName}`);
+      }
+      console.log("Loaded CSV:", csvName);
+    }
+
+    updateDownloadTableStatus("Load complete.");
+  } catch (err) {
+    console.error(err);
+    const message = err?.message || "Failed to load selection.";
+    updateDownloadTableStatus(message, true);
+    if (typeof log === "function") {
+      log(`Error loading selection: ${message}`);
+    }
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+}
+
+async function applyDownloadedMarkerData(markerJson, csvFileName) {
+  if (!markerJson) {
+    if (typeof log === "function") {
+      log("No marker data provided by server.");
+    }
+    return;
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(markerJson);
+  } catch (err) {
+    throw new Error("Unable to parse marker data from server.");
+  }
+
+  let nextCustomText = {};
+  let nextLocData = {};
+  let nextCsvData = null;
+
+  if (Array.isArray(parsed)) {
+    [nextCustomText, nextLocData, nextCsvData] = parsed;
+  } else if (parsed && typeof parsed === "object") {
+    nextCustomText =
+      parsed.customText ??
+      parsed.CustomText ??
+      parsed.markersCustomText ??
+      parsed[0] ??
+      {};
+    nextLocData =
+      parsed.locData ??
+      parsed.LocData ??
+      parsed.markers ??
+      parsed[1] ??
+      {};
+    nextCsvData =
+      parsed.csvData ??
+      parsed.CsvData ??
+      parsed.csv ??
+      parsed[2] ??
+      null;
+  }
+
+  if (!nextCustomText || typeof nextCustomText !== "object") {
+    nextCustomText = {};
+  }
+  if (!nextLocData || typeof nextLocData !== "object") {
+    nextLocData = {};
+  }
+
+  customText = nextCustomText;
+  locData = nextLocData;
+
+  if (typeof saveCustomText === "function") {
+    await saveCustomText();
+  }
+  if (typeof saveLocData === "function") {
+    await saveLocData();
+  }
+
+  let csvSaved = false;
+  if (Array.isArray(nextCsvData) && nextCsvData.length) {
+    csvData = nextCsvData;
+    if (typeof saveCsvData === "function") {
+      await saveCsvData(csvFileName || "server.csv");
+      csvSaved = true;
+    }
+  }
+
+  if (!csvSaved && Array.isArray(csvData)) {
+    if (typeof displayCSVPreviewAsCards === "function") {
+      displayCSVPreviewAsCards(csvData);
+    }
+  }
+
+  if (typeof renderAll === "function") {
+    await renderAll();
   }
 }
 
