@@ -10,3 +10,5 @@ loadCachedData();
 initFontSizeHandlers();
 
 initKeyCaptures();
+
+renderSavedCustomTextOptions();

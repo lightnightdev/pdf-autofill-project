@@ -10,21 +10,19 @@ let customText = {};
 
 function checkmarkCreate() {
     inputSelection = "checkmark";
-    selectedColIndex = null;
-    selectedCustomTextId = null;
-    deselectCheckmarkCustomText();
+    selectCustomInputs(true, false, false);
     selectMarkersAndCards(-1);
 }
 
 function customTextCreate() {
     inputSelection = "custom_text";
-    selectCheckmarkCustomText(true, false);
+    selectCustomInputs(false, true, false);
     selectMarkersAndCards(-1);
 }
 
 function unselectCustomTextCreate() {
     inputSelection = null;
-    selectCheckmarkCustomText(false, false);
+    selectCustomInputs(false, false, false);
 
     const elements = document.querySelectorAll('.select.ct-data-el');
     if (elements.length) {
@@ -35,13 +33,15 @@ function unselectCustomTextCreate() {
 
 }
 
-function selectCheckmarkCustomText(selectCheckmark, selectCustomText) {
+function selectCustomInputs(selectCheckmark, selectCustomText, selectSavedText) {
     selectedColIndex = null;
     selectedCustomTextId = null;
     const cardC = document.getElementById('checkmark-card');
     const cardT = document.getElementById('custom-text-card');
+    const cardS = document.getElementById('saved-text-card');
     selectCheckmark ? cardC?.classList.add('select') : cardC?.classList.remove('select');
     selectCustomText ? cardT?.classList.add('select') : cardT?.classList.remove('select');
+    selectSavedText ? cardS?.classList.add('select') : cardS?.classList.remove('select');
 }
 
 function newCustomText(page, x, y, text, size, font, spacing = 0) {
@@ -118,19 +118,19 @@ function selectCustomText(ctId) {
 }
 
 function removeCustomTextFromPage() {
-  const newArr = [];
-  const kys = Object.keys(customText);
-  for (ky of kys) {
-    i = parseInt(ky, 10);
-    if (i < currentPage) {
-      // keep everything before the deleted page the same
-      newArr[i] = customText[i];
-    } else if (i > currentPage) {
-      // shift everything after down by one
-      newArr[i - 1] = customText[i];
+    const newArr = [];
+    const kys = Object.keys(customText);
+    for (ky of kys) {
+        i = parseInt(ky, 10);
+        if (i < currentPage) {
+            // keep everything before the deleted page the same
+            newArr[i] = customText[i];
+        } else if (i > currentPage) {
+            // shift everything after down by one
+            newArr[i - 1] = customText[i];
+        }
     }
-  }
 
-  customText = newArr;
-  saveCustomText();
+    customText = newArr;
+    saveCustomText();
 }

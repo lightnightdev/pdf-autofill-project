@@ -1,30 +1,40 @@
 const CUSTOM_SYMBOLS = {
-    "__checkmark": "\u2713", // ✓
-    "__B_RoutingNumber": "011275484",
-    "__B_Name": "Bangore Savings Bank",
-    "__B_FullAdress": "11 Hamlin Way, Bangor, ME 04401",
-    "__B_Streeet": "11 Hamlin Way",
-    "__B_City": "Bangor",
-    "__B_State": "ME",
-    "__B_Zip": "04401",
+    // __Key: [Value, Label]
+    "__B_RoutingNumber": { textContent: "011275484", label: "BSB Routing" },
+    "__B_Name": { textContent: "Bangore Savings Bank", label: "BSB Name" },
+    "__B_FullAddress": { textContent: "11 Hamlin Way, Bangor, ME 04401", label: "BSB Full Address" },
+    "__B_Street": { textContent: "11 Hamlin Way", label: "BSB Street" },
+    "__B_City": { textContent: "Bangor", label: "BSB City" },
+    "__B_State": { textContent: "ME", label: "BSB State" },
+    "__B_Zip": { textContent: "04401", label: "BSB Zip" },
+    "__checkmark": { textContent: "\u2713", label: "Checkmark" },
 };
 
-// automatically build reverse lookup
-const CUSTOM_TOKENS = Object.fromEntries(
-    Object.entries(CUSTOM_SYMBOLS).map(([uuid, symbol]) => [symbol, uuid])
-);
-
 function resolveCustomTextValue(value) {
-    if (value == null) return "";
-    if (value == "__today") {
-        const date = new Date(); // Or any other Date object
-        const formattedDate = date.toLocaleDateString('en-US');
-        return formattedDate;
-    }
-    return CUSTOM_SYMBOLS[value] || value;
+  if (value == null) return "";
+
+  if (value === "__today") {
+    const date = new Date();
+    return date.toLocaleDateString("en-US");
+  }
+
+  // Safely return mapped text or the raw value if not found
+  const entry = CUSTOM_SYMBOLS[value];
+  return entry ? entry.textContent : value;
 }
 
-function resolveSymbolToToken(symbol) {
-    if (symbol == null) return "";
-    return CUSTOM_TOKENS[symbol] || symbol;
+function savedTextCreate() {
+    inputSelection = "saved_text";
+    selectCustomInputs(false, false, true);
+}
+
+function renderSavedCustomTextOptions() {
+  const select = document.getElementById('saved-text-input');
+  if (!select) return;
+
+  select.innerHTML = Object.entries(CUSTOM_SYMBOLS)
+    .map(([key, data], i) => 
+      `<option value="${key}"${i === 0 ? ' selected' : ''}>${data.label}</option>`
+    )
+    .join('');
 }

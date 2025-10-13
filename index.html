@@ -103,8 +103,7 @@
               <i class="bi bi-trash"></i> Clear All Markers
             </button>
 
-            <button type="button" class="btn btn-primary m-2" style="width: 40%"
-              onclick="handleSendToServerClick()">
+            <button type="button" class="btn btn-primary m-2" style="width: 40%" onclick="handleSendToServerClick()">
               Send to Server
             </button>
           </div>
@@ -222,14 +221,27 @@
 
 
             <div class="d-flex justify-content-between">
-              <div id="checkmark-card" class="card p-2 text-center custom-text-card m-3 flex-fill me-2"
-                style="cursor: pointer;" onclick="checkmarkCreate()">
+              <div id="checkmark-card" class="card text-center custom-input-card" style="cursor: pointer;"
+                onclick="checkmarkCreate()">
                 <div class="fw-bold mb-1 text-start">Add checkmark ✓</div>
               </div>
 
-              <div id="custom-text-card" class="card p-2 text-center custom-text-card m-3 flex-fill ms-2"
-                style="cursor: pointer;" onclick="customTextCreate()">
+              <div id="custom-text-card" class="card text-center custom-input-card" style="cursor: pointer;"
+                onclick="customTextCreate()">
                 <div class="fw-bold mb-1 text-start">Add custom text</div>
+              </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center">
+              <div id="saved-text-card" class="card text-center custom-input-card"
+              style="cursor: pointer; width: 40px"
+                onclick="savedTextCreate()">
+                <div class="fw-bold mb-1">Add:</div>
+              </div>
+              <div class="flex-fill" style="min-width: 40px">
+                <label for="saved-text-input" class="form-label d-none">Saved Text</label>
+                <select id="saved-text-input" class="form-select" onclick="savedTextCreate()">
+                  <optgroup label="Choose One">
+                </select>
               </div>
             </div>
 
@@ -258,7 +270,8 @@
         <div class="modal-header ps-0 pe-5">
           <div>
             <h1 class="modal-title fs-4 mb-1" id="download-modal-title">Download PDF / Markers</h1>
-            <p class="mb-0 text-muted" id="download-modal-subtitle">Authenticate to view the available PDF and marker exports.</p>
+            <p class="mb-0 text-muted" id="download-modal-subtitle">Authenticate to view the available PDF and marker
+              exports.</p>
           </div>
         </div>
         <div class="modal-body pt-3">
@@ -278,7 +291,8 @@
                   placeholder="Enter password" required>
               </div>
               <div class="col-12 d-flex align-items-center gap-3">
-                <button type="submit" class="btn btn-primary flex-grow-1" id="download-auth-submit">Authenticate</button>
+                <button type="submit" class="btn btn-primary flex-grow-1"
+                  id="download-auth-submit">Authenticate</button>
                 <div class="spinner-border text-primary d-none" role="status" id="download-auth-spinner">
                   <span class="visually-hidden">Loading...</span>
                 </div>
@@ -332,17 +346,20 @@
             </div>
             <div class="mb-3">
               <h3 class="fs-6">locData</h3>
-              <pre id="upload-locdata-preview" class="bg-light border rounded small p-2 mb-0" style="max-height: 220px; overflow: auto;">{}</pre>
+              <pre id="upload-locdata-preview" class="bg-light border rounded small p-2 mb-0"
+                style="max-height: 220px; overflow: auto;">{}</pre>
             </div>
             <div class="mb-3">
               <h3 class="fs-6">customText</h3>
-              <pre id="upload-customtext-preview" class="bg-light border rounded small p-2 mb-0" style="max-height: 220px; overflow: auto;">{}</pre>
+              <pre id="upload-customtext-preview" class="bg-light border rounded small p-2 mb-0"
+                style="max-height: 220px; overflow: auto;">{}</pre>
             </div>
             <div class="d-flex justify-content-end gap-2">
               <button type="button" class="btn btn-outline-secondary" id="upload-cancel-btn">Cancel</button>
               <button type="button" class="btn btn-primary" id="upload-confirm-btn">
                 <span id="upload-confirm-text">Send to Server</span>
-                <span class="spinner-border spinner-border-sm d-none ms-2" id="upload-confirm-spinner" role="status" aria-hidden="true"></span>
+                <span class="spinner-border spinner-border-sm d-none ms-2" id="upload-confirm-spinner" role="status"
+                  aria-hidden="true"></span>
               </button>
             </div>
             <div id="upload-status" class="status-message mt-2"></div>
@@ -367,7 +384,7 @@
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
-  
+
 
   <!-- My Dependencies -->
   <script src="js/font_data.js"></script>

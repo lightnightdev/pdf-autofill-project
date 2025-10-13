@@ -30,18 +30,18 @@ function initCanvasClicks() {
     const selectedSpacing = Number.parseFloat(spacingEl?.value) || 0;
 
     if (inputSelection === 'checkmark') {
-      // example uses CHECKMARK and your symbol font key
-      const currentText = CHECKMARK;
+      const currentText = "__checkmark";
       newCustomText(currentPage, x, y, currentText, 24, '_symbol', selectedSpacing, { stageW, stageH });
       return;
-    }
-
-    if (inputSelection === 'custom_text') {
+    } else if (inputSelection === 'custom_text') {
       await userInputCustomText(x, y, selectedSize, selectedFont, selectedSpacing, stageW, stageH);
       return;
-    }
-
-    if (selectedColIndex != null) {
+    } else if (inputSelection === 'saved_text') {
+      const el = document.getElementById('saved-text-input');
+      if (!el) { return; }
+      const currentText = el.value
+      newCustomText(currentPage, x, y, currentText, 24, selectedFont, selectedSpacing, { stageW, stageH });
+    } else if (selectedColIndex != null) {
       // place a CSV marker
       newMarker(x, y, currentPage, selectedSize, selectedFont, selectedSpacing, { stageW, stageH });
       return;

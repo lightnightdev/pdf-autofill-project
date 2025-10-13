@@ -213,8 +213,16 @@ body {
   font-weight: bold;
 }
 
+.custom-input-card{
+  flex: 1 1 auto;
+  padding: 5px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+  margin-left: 4px;
+  margin-right: 4px
+}
 
-.custom-text-card.select {
+.custom-input-card.select {
   background: rgba(100, 255, 193, 0.5);
 }
 
