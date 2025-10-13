@@ -85,6 +85,7 @@ async function apiCreateAutofill({
   csvMarkerData,
   notes,
   pdfFile,
+  pdfFileName,
 }) {
   const token = localStorage.getItem("token");
   const form = new FormData();
@@ -92,7 +93,16 @@ async function apiCreateAutofill({
   form.append("CsvFileName", csvFileName || "");
   form.append("CsvMarkerData", csvMarkerData || "");
   form.append("Notes", notes || "");
-  form.append("PdfFile", pdfFile);
+  if (!pdfFile) {
+    throw new Error("PDF file is required for upload.");
+  }
+
+  if (pdfFile instanceof Blob) {
+    const name = pdfFileName || pdfFile.name || "upload.pdf";
+    form.append("PdfFile", pdfFile, name);
+  } else {
+    form.append("PdfFile", pdfFile);
+  }
 
   const res = await fetch(`${API_BASE}/autofill`, {
     method: "POST",
