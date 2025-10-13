@@ -261,6 +261,10 @@ body {
   background: rgba(100, 255, 193, 0.5);
 }
 
+#saved-text-input.select {
+  background: rgba(200,255,200, 0.5);
+}
+
 /* Optional: make headers stand out */
 .sidebar h2 {
   margin-bottom: 12px;

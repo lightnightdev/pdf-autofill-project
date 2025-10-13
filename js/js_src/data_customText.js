@@ -11,13 +11,11 @@ let customText = {};
 function checkmarkCreate() {
     inputSelection = "checkmark";
     selectCustomInputs(true, false, false);
-    selectMarkersAndCards(-1);
 }
 
 function customTextCreate() {
     inputSelection = "custom_text";
     selectCustomInputs(false, true, false);
-    selectMarkersAndCards(-1);
 }
 
 function unselectCustomTextCreate() {
@@ -39,9 +37,14 @@ function selectCustomInputs(selectCheckmark, selectCustomText, selectSavedText) 
     const cardC = document.getElementById('checkmark-card');
     const cardT = document.getElementById('custom-text-card');
     const cardS = document.getElementById('saved-text-card');
+    const inputS = document.getElementById('saved-text-input');
     selectCheckmark ? cardC?.classList.add('select') : cardC?.classList.remove('select');
     selectCustomText ? cardT?.classList.add('select') : cardT?.classList.remove('select');
     selectSavedText ? cardS?.classList.add('select') : cardS?.classList.remove('select');
+    selectSavedText ? inputS?.classList.add('select') : inputS?.classList.remove('select');
+    if(selectCheckmark || selectCustomText || selectSavedText) {
+        selectMarkersAndCards(-1)
+    }
 }
 
 function newCustomText(page, x, y, text, size, font, spacing = 0) {
