@@ -19,6 +19,21 @@ const DOWNLOAD_MODAL_COPY = {
   },
 };
 
+const setTextContent = (el, text) => {
+  if (!el) return;
+  el.textContent = text ?? "";
+};
+
+const toggleDisabled = (elements, disabled) => {
+  elements.filter(Boolean).forEach((el) => {
+    el.disabled = !!disabled;
+  });
+};
+
+const toggleHidden = (el, hidden) => {
+  el?.classList.toggle("d-none", !!hidden);
+};
+
 // ========================
 // Modal open + auth check
 // ========================
@@ -152,86 +167,64 @@ function ensureDownloadModalSetup() {
 // UI Helpers
 // ========================
 function focusDownloadUsername() {
-  if (!downloadModalElements) return;
+  const els = downloadModalElements;
+  if (!els) return;
   setTimeout(() => {
-    if (
-      downloadModalElements.loginSection?.classList.contains("d-none")
-    ) {
-      return;
-    }
-    downloadModalElements.usernameInput?.focus();
+    if (els.loginSection?.classList.contains("d-none")) return;
+    els.usernameInput?.focus();
   }, 150);
 }
 
 function applyModalMode(mode) {
-  if (!downloadModalElements) return;
-  const copy = DOWNLOAD_MODAL_COPY[mode] || DOWNLOAD_MODAL_COPY.list;
-
-  if (downloadModalElements.modalTitle && copy?.title) {
-    downloadModalElements.modalTitle.textContent = copy.title;
-  }
-  if (downloadModalElements.modalSubtitle && copy?.subtitle) {
-    downloadModalElements.modalSubtitle.textContent = copy.subtitle;
-  }
+  const els = downloadModalElements;
+  if (!els) return;
+  const { title, subtitle } =
+    DOWNLOAD_MODAL_COPY[mode] || DOWNLOAD_MODAL_COPY.list;
+  setTextContent(els.modalTitle, title);
+  setTextContent(els.modalSubtitle, subtitle);
 }
 
 function clearUploadPreview() {
-  if (!downloadModalElements) return;
-  if (downloadModalElements.uploadPdfName) {
-    downloadModalElements.uploadPdfName.textContent = "—";
-  }
-  if (downloadModalElements.uploadPdfSize) {
-    downloadModalElements.uploadPdfSize.textContent = "—";
-  }
-  if (downloadModalElements.uploadLocDataPreview) {
-    downloadModalElements.uploadLocDataPreview.textContent = "{}";
-  }
-  if (downloadModalElements.uploadCustomTextPreview) {
-    downloadModalElements.uploadCustomTextPreview.textContent = "{}";
-  }
-  if (downloadModalElements.firstColumnHeaders) {
-    downloadModalElements.firstColumnHeaders.textContent = "None";
-  }
+  const els = downloadModalElements;
+  if (!els) return;
+  setTextContent(els.uploadPdfName, "—");
+  setTextContent(els.uploadPdfSize, "—");
+  setTextContent(els.uploadLocDataPreview, "{}");
+  setTextContent(els.uploadCustomTextPreview, "{}");
+  setTextContent(els.firstColumnHeaders, "None");
 }
 
 function setUploadSubmitting(isSubmitting) {
-  if (!downloadModalElements) return;
+  const els = downloadModalElements;
+  if (!els) return;
 
-  if (downloadModalElements.uploadConfirmBtn) {
-    downloadModalElements.uploadConfirmBtn.disabled = !!isSubmitting;
-  }
-  if (downloadModalElements.uploadCancelBtn) {
-    downloadModalElements.uploadCancelBtn.disabled = !!isSubmitting;
-  }
-  if (downloadModalElements.uploadSpinner) {
-    downloadModalElements.uploadSpinner.classList.toggle("d-none", !isSubmitting);
-  }
+  toggleDisabled(
+    [els.uploadConfirmBtn, els.uploadCancelBtn],
+    isSubmitting
+  );
+  toggleHidden(els.uploadSpinner, !isSubmitting);
 
-  if (downloadModalElements.uploadConfirmText) {
-    downloadModalElements.uploadConfirmText.textContent = isSubmitting
-      ? "Sending…"
-      : "Send to Server";
-  } else if (downloadModalElements.uploadConfirmBtn) {
-    downloadModalElements.uploadConfirmBtn.textContent = isSubmitting
-      ? "Sending…"
-      : "Send to Server";
-  }
+  const target = els.uploadConfirmText || els.uploadConfirmBtn;
+  const text = isSubmitting ? "Sending…" : "Send to Server";
+  setTextContent(target, text);
 }
 
 function updateUploadStatus(message, variant = "info") {
-  if (!downloadModalElements?.uploadStatus) return;
+  const el = downloadModalElements?.uploadStatus;
+  if (!el) return;
 
-  const el = downloadModalElements.uploadStatus;
-  el.textContent = message || "";
+  setTextContent(el, message || "");
   el.classList.remove("text-danger", "text-success");
 
   if (!message) return;
 
-  if (variant === "error") {
-    el.classList.add("text-danger");
-  } else if (variant === "success") {
-    el.classList.add("text-success");
-  }
+  const variantClass =
+    variant === "error"
+      ? "text-danger"
+      : variant === "success"
+      ? "text-success"
+      : null;
+  if (variantClass) el.classList.add(variantClass);
 }
 
 function formatFileSize(bytes) {
@@ -252,7 +245,8 @@ function formatFileSize(bytes) {
 }
 
 function resetDownloadModalState(options = {}) {
-  if (!downloadModalElements) return;
+  const els = downloadModalElements;
+  if (!els) return;
 
   const { preserveMode = false, preservePending = false } = options;
 
@@ -264,19 +258,17 @@ function resetDownloadModalState(options = {}) {
     downloadModalState.pendingUpload = null;
   }
 
-  downloadModalElements.form?.reset?.();
-  if (downloadModalElements.errorMessage) {
-    downloadModalElements.errorMessage.textContent = "";
-  }
+  els.form?.reset?.();
+  setTextContent(els.errorMessage, "");
   setDownloadAuthLoading(false);
 
   updateDownloadTableStatus("");
   clearDownloadTable();
 
-  downloadModalElements.loginSection?.classList.remove("d-none");
-  downloadModalElements.tableSection?.classList.add("d-none");
-  downloadModalElements.infoBanner?.classList.add("d-none");
-  downloadModalElements.uploadSection?.classList.add("d-none");
+  els.loginSection?.classList.remove("d-none");
+  els.tableSection?.classList.add("d-none");
+  els.infoBanner?.classList.add("d-none");
+  els.uploadSection?.classList.add("d-none");
 
   clearUploadPreview();
   setUploadSubmitting(false);
@@ -286,18 +278,14 @@ function resetDownloadModalState(options = {}) {
 }
 
 function setDownloadAuthLoading(isLoading) {
-  if (!downloadModalElements) return;
+  const els = downloadModalElements;
+  if (!els) return;
 
-  if (downloadModalElements.submitBtn) {
-    downloadModalElements.submitBtn.disabled = isLoading;
-  }
-  if (downloadModalElements.usernameInput) {
-    downloadModalElements.usernameInput.disabled = isLoading;
-  }
-  if (downloadModalElements.passwordInput) {
-    downloadModalElements.passwordInput.disabled = isLoading;
-  }
-  downloadModalElements.spinner?.classList.toggle("d-none", !isLoading);
+  toggleDisabled(
+    [els.submitBtn, els.usernameInput, els.passwordInput],
+    isLoading
+  );
+  toggleHidden(els.spinner, !isLoading);
 }
 
 // ========================
@@ -346,14 +334,15 @@ async function handleDownloadAuthSubmit(event) {
 // Table loading + rendering
 // ========================
 function switchToDownloadTable() {
-  if (!downloadModalElements) return;
+  const els = downloadModalElements;
+  if (!els) return;
 
   downloadModalState.mode = "list";
   applyModalMode("list");
-  downloadModalElements.loginSection.classList.add("d-none");
-  downloadModalElements.tableSection.classList.remove("d-none");
-  downloadModalElements.infoBanner?.classList.remove("d-none");
-  downloadModalElements.uploadSection?.classList.add("d-none");
+  els.loginSection.classList.add("d-none");
+  els.tableSection.classList.remove("d-none");
+  els.infoBanner?.classList.remove("d-none");
+  els.uploadSection?.classList.add("d-none");
   updateDownloadTableStatus("Loading available downloads…");
   clearDownloadTable();
 }
@@ -375,7 +364,8 @@ async function loadDownloadTableData() {
 }
 
 function renderDownloadTable(items) {
-  if (!downloadModalElements) return;
+  const els = downloadModalElements;
+  if (!els) return;
 
   clearDownloadTable();
 
@@ -412,12 +402,12 @@ function renderDownloadTable(items) {
     fragment.appendChild(row);
   });
 
-  downloadModalElements.tableBody.appendChild(fragment);
+  els.tableBody.appendChild(fragment);
 }
 
 function appendTableCell(row, text) {
   const cell = document.createElement("td");
-  cell.textContent = text ?? "—";
+  setTextContent(cell, text ?? "—");
   row.appendChild(cell);
 }
 
@@ -457,18 +447,15 @@ function appendActionCell(row, item) {
 }
 
 function clearDownloadTable() {
-  if (!downloadModalElements) return;
-  downloadModalElements.tableBody.innerHTML = "";
+  const body = downloadModalElements?.tableBody;
+  if (body) body.innerHTML = "";
 }
 
 function updateDownloadTableStatus(message, isError = false) {
-  if (!downloadModalElements) return;
-  downloadModalElements.tableStatus.textContent = message || "";
-  if (isError && message) {
-    downloadModalElements.tableStatus.classList.add("text-danger");
-  } else {
-    downloadModalElements.tableStatus.classList.remove("text-danger");
-  }
+  const status = downloadModalElements?.tableStatus;
+  if (!status) return;
+  setTextContent(status, message || "");
+  status.classList.toggle("text-danger", !!(isError && message));
 }
 
 async function handleDownloadTableClick(event) {
