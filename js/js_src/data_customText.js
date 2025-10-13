@@ -90,11 +90,12 @@ function renderAllCustomText() {
 }
 
 function renderCustomText(ctId, data) {
+    if (!data) { return; };
     // add marker to page
     const overlay = document.getElementById('pdf-overlay');
     const el = document.createElement('div');
     el.id = `ct-${ctId}`;
-    el.classList.add('custom-text')
+    el.classList.add('custom-text');
     el.classList.add('ct-data-el');
     if (selectedCustomTextId == ctId) { el.classList.add('select') }
     el.dataset.ctId = String(ctId);
@@ -103,7 +104,7 @@ function renderCustomText(ctId, data) {
     el.style.pointerEvents = 'auto';
 
     applyDataToMarker(el, data);
-    el.textContent = data.text
+    el.textContent = resolveCustomTextValue(data.text)
     overlay.appendChild(el);
 }
 
