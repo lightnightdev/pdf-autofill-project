@@ -4,43 +4,27 @@
 let inputSelection = null;
 let selectedCustomTextId = null;
 
-let customText = {}
+let customText = {};
 // customText[pageNumber] = [{x: 25, y: 30, text: "hello", size: 24, spacing: 12, font: _monospace]
-//
-//
 //
 
 function checkmarkCreate() {
     inputSelection = "checkmark";
     selectedColIndex = null;
-
-    const cardC = document.getElementById('checkmark-card')
-    cardC.classList.add('select');
-
-    const cardT = document.getElementById('custom-text-card')
-    cardT.classList.remove('select');
+    selectedCustomTextId = null;
+    deselectCheckmarkCustomText();
     selectMarkersAndCards(-1);
 }
 
 function customTextCreate() {
     inputSelection = "custom_text";
-    selectedColIndex = null;
-
-    const cardT = document.getElementById('custom-text-card')
-    cardT.classList.add('select');
-
-    const cardC = document.getElementById('checkmark-card')
-    cardC.classList.remove('select');
+    selectCheckmarkCustomText(true, false);
     selectMarkersAndCards(-1);
 }
 
 function unselectCustomTextCreate() {
     inputSelection = null;
-    selectedCustomTextId = null;
-    const cardC = document.getElementById('checkmark-card')
-    const cardT = document.getElementById('custom-text-card')
-    cardC.classList.remove('select');
-    cardT.classList.remove('select');
+    selectCheckmarkCustomText(false, false);
 
     const elements = document.querySelectorAll('.select.ct-data-el');
     if (elements.length) {
@@ -49,6 +33,15 @@ function unselectCustomTextCreate() {
         }
     }
 
+}
+
+function selectCheckmarkCustomText(selectCheckmark, selectCustomText) {
+    selectedColIndex = null;
+    selectedCustomTextId = null;
+    const cardC = document.getElementById('checkmark-card');
+    const cardT = document.getElementById('custom-text-card');
+    selectCheckmark ? cardC?.classList.add('select') : cardC?.classList.remove('select');
+    selectCustomText ? cardT?.classList.add('select') : cardT?.classList.remove('select');
 }
 
 function newCustomText(page, x, y, text, size, font, spacing = 0) {
