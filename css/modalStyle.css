@@ -1,3 +1,7 @@
+.modal-dialog {
+  min-width: 800px;
+}
+
 .download-modal.modal.fade .modal-dialog {
   transform: translateY(-60px);
   transition: transform 0.35s ease;
