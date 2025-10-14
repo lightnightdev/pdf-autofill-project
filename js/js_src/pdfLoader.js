@@ -33,7 +33,7 @@ async function uploadPDF() {
       return;
     }
 
-
+    
     await processPDF(file);
   }
 

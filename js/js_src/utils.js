@@ -387,22 +387,74 @@ function escapeHtml(s) {
     .replace(/'/g, '&#39;');
 }
 
-function jsonToHtmlTable(jsonArray, options = {}) {
-  if (!jsonArray.length) return '';
-  const cols = Object.keys(jsonArray.reduce((acc, obj) => {
-    Object.keys(obj).forEach(k => acc[k] = true);
-    return acc;
-  }, {}));
+function objectToHTMLTable(data, options = {}) {
+  // Default options
+  const {
+    tableClass = '',
+    headerClass = '',
+    rowClass = '',
+    cellClass = ''
+  } = options;
 
-  let html = `<table${options.class ? ` class="${options.class}"` : ''}>`;
-  html += '<thead><tr>' + cols.map(c => `<th>${c}</th>`).join('') + '</tr></thead>';
-  html += '<tbody>';
-  jsonArray.forEach(row => {
-    html += '<tr>' + cols.map(c => {
-      let v = row[c] == null ? '' : row[c];
-      return `<td>${v}</td>`;
-    }).join('') + '</tr>';
-  });
-  html += '</tbody></table>';
+  // Start building the table
+  let html = `<table${tableClass ? ` class="${tableClass}"` : ''}>`;
+
+  // Handle array of objects
+  if (Array.isArray(data) && data.length > 0) {
+    // Get headers from first object's keys
+    const headers = Object.keys(data[0]);
+    
+    // Create header row
+    html += '<thead><tr>';
+    headers.forEach(header => {
+      html += `<th${headerClass ? ` class="${headerClass}"` : ''}>${escapeHtml(header)}</th>`;
+    });
+    html += '</tr></thead>';
+    
+    // Create data rows
+    html += '<tbody>';
+    data.forEach(row => {
+      html += `<tr${rowClass ? ` class="${rowClass}"` : ''}>`;
+      headers.forEach(header => {
+        const value = row[header];
+        html += `<td${cellClass ? ` class="${cellClass}"` : ''}>${formatValue(value)}</td>`;
+      });
+      html += '</tr>';
+    });
+    html += '</tbody>';
+  }
+  // Handle single object (key-value pairs)
+  else if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
+    html += '<thead><tr>';
+    html += `<th${headerClass ? ` class="${headerClass}"` : ''}>Key</th>`;
+    html += `<th${headerClass ? ` class="${headerClass}"` : ''}>Value</th>`;
+    html += '</tr></thead>';
+    
+    html += '<tbody>';
+    Object.entries(data).forEach(([key, value]) => {
+      html += `<tr${rowClass ? ` class="${rowClass}"` : ''}>`;
+      html += `<td${cellClass ? ` class="${cellClass}"` : ''}>${escapeHtml(key)}</td>`;
+      html += `<td${cellClass ? ` class="${cellClass}"` : ''}>${formatValue(value)}</td>`;
+      html += '</tr>';
+    });
+    html += '</tbody>';
+  }
+  // Handle empty array
+  else if (Array.isArray(data) && data.length === 0) {
+    html += '<tbody><tr><td>No data available</td></tr></tbody>';
+  }
+  else {
+    throw new Error('Data must be an object or array of objects');
+  }
+
+  html += '</table>';
   return html;
+}
+
+// Helper function to format different value types
+function formatValue(value) {
+  if (value === null) return '<em>null</em>';
+  if (value === undefined) return '<em>undefined</em>';
+  if (typeof value === 'object') return escapeHtml(JSON.stringify(value));
+  return escapeHtml(String(value));
 }

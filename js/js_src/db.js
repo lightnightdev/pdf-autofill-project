@@ -265,6 +265,13 @@ function clearFiles() {
 async function clearLocData() {
   locData = {};
   try {
+
+    // Check if the store exists in the current DB
+    if (!db.objectStoreNames.contains(STORE_NAME)) {
+      console.log(`Store "${STORE_NAME}" does not exist — skipping delete.`);
+      return;
+    }
+    
     const tx = db.transaction(STORE_NAME, "readwrite");
     const store = tx.objectStore(STORE_NAME);
     store.delete(LOC_KEY);
@@ -285,6 +292,12 @@ async function clearLocData() {
 async function clearCustomText() {
   customText = {};
   try {
+    // Check if the store exists in the current DB
+    if (!db.objectStoreNames.contains(STORE_NAME)) {
+      console.log(`Store "${STORE_NAME}" does not exist — skipping delete.`);
+      return;
+    }
+
     const tx = db.transaction(STORE_NAME, "readwrite");
     const store = tx.objectStore(STORE_NAME);
     store.delete(TXT_KEY);
