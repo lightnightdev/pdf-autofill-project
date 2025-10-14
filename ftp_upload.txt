@@ -1,0 +1,30 @@
+open ftp.lightnightdev.com
+lightnig
+ElioraAppa2024!
+prompt
+
+cd autofill
+put index.html
+
+cd js
+lcd js
+pwd
+mput *
+
+cd js_src
+lcd js_src
+pwd
+mput *
+
+cd ..
+lcd ..
+cd ..
+lcd ..
+
+cd css
+lcd css
+
+pwd
+mput *
+
+bye

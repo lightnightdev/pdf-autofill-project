@@ -57,6 +57,15 @@ function idbPut(key, value) {
   }));
 }
 
+function idbDelete(key, value) {
+  return ensureDB().then(() => new Promise((resolve, reject) => {
+    const store = idbTx("readwrite");
+    const req = store.delete(key);
+    req.onsuccess = () => resolve(true);
+    req.onerror = () => reject(req.error || new Error("IndexedDB delete failed"));
+  }));
+}
+
 // ===== Startup / Cache loading =====
 async function loadCachedData() {
   log("Checking for cached data...");
@@ -195,7 +204,7 @@ async function savePdfBlob(blob, pdfName) {
   try {
     await idbPut(PDF_KEY, blob);
     await idbPut(PDF_NAME_KEY, pdfName);
-    log("Saved PDF to IndexedDB (overwriting previous)");
+    log("PDF Data saved");
   } catch (err) {
     log("IndexedDB save error: " + (err?.message || err));
   }
@@ -261,55 +270,48 @@ function clearFiles() {
 
 
 
-
 async function clearLocData() {
   locData = {};
-  try {
 
-    // Check if the store exists in the current DB
-    if (!db.objectStoreNames.contains(STORE_NAME)) {
-      console.log(`Store "${STORE_NAME}" does not exist — skipping delete.`);
+  try {
+    // Ensure DB is open
+    const dbHandle = await ensureDB();
+
+    // Double-check that the store exists
+    if (!dbHandle.objectStoreNames.contains(STORE_NAME)) {
+      console.warn(`Store "${STORE_NAME}" does not exist — skipping delete.`);
       return;
     }
-    
-    const tx = db.transaction(STORE_NAME, "readwrite");
-    const store = tx.objectStore(STORE_NAME);
-    store.delete(LOC_KEY);
 
-    await new Promise((resolve, reject) => {
-      tx.oncomplete = resolve;
-      tx.onerror = () => reject(tx.error);
-      tx.onabort = () => reject(tx.error);
-    });
+    // Use your helper for deletion
+    await idbDelete(LOC_KEY);
 
+    console.log("Location data cleared successfully.");
   } catch (err) {
-    log("Error deleting location data: " + (err?.message || err));
+    console.error("Error deleting location data:", err?.message || err);
   }
 }
 
 
-
 async function clearCustomText() {
   customText = {};
+
   try {
-    // Check if the store exists in the current DB
-    if (!db.objectStoreNames.contains(STORE_NAME)) {
-      console.log(`Store "${STORE_NAME}" does not exist — skipping delete.`);
+    // Ensure DB is open
+    const dbHandle = await ensureDB();
+
+    // Double-check that the store exists
+    if (!dbHandle.objectStoreNames.contains(STORE_NAME)) {
+      console.warn(`Store "${STORE_NAME}" does not exist — skipping delete.`);
       return;
     }
 
-    const tx = db.transaction(STORE_NAME, "readwrite");
-    const store = tx.objectStore(STORE_NAME);
-    store.delete(TXT_KEY);
+    // Use your helper for deletion
+    await idbDelete(TXT_KEY);
 
-    await new Promise((resolve, reject) => {
-      tx.oncomplete = resolve;
-      tx.onerror = () => reject(tx.error);
-      tx.onabort = () => reject(tx.error);
-    });
-
+    console.log("Custom text cleared successfully.");
   } catch (err) {
-    log("Error deleting custom text data: " + (err?.message || err));
+    console.error("Error deleting custom text data:", err?.message || err);
   }
 }
 
