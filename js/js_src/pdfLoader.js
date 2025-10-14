@@ -33,7 +33,7 @@ async function uploadPDF() {
       return;
     }
 
-    
+
     await processPDF(file);
   }
 
@@ -88,11 +88,13 @@ function pdfButton(isUpload, fileName = "file.pdf") {
 document.getElementById("prev-page").addEventListener("click", () => {
   if (currentPage <= 1) return;
   renderPage(currentPage - 1);
+  renderAll();
 });
 
 document.getElementById("next-page").addEventListener("click", () => {
   if (currentPage >= totalPages) return;
   renderPage(currentPage + 1);
+  renderAll();
 });
 
 async function removeCurrentPage() {
@@ -160,6 +162,7 @@ async function createEditDoc(arrayBuffer, pageNum = 1) {
 }
 
 let updateQueued = false;
+let updateQueuedMarkers = false;
 
 function queueUpdateRenderDoc(pageNum = currentPage) {
   if (updateQueued) return;
@@ -172,13 +175,10 @@ function queueUpdateRenderDoc(pageNum = currentPage) {
 
 async function updateRenderDoc(pageNum = currentPage, logLoad = false) {
   renderDoc = null;
+  if (!editDoc) { await createEditDoc(currentPdfBytes) }
   const editDocBytes = await editDoc.save();                  // serialize the current in-memory PDF
   renderDoc = await PDFLib.PDFDocument.load(editDocBytes);    // load a new independent copy
   await drawSizingText(renderDoc, editDocFonts);
-  await showRenderDoc(pageNum, logLoad);
-}
-
-async function showRenderDoc(pageNum = currentPage, logLoad = false) {
   const renderArrayBuffer = await renderDoc.save({
     useObjectStreams: false,
     compress: false,
@@ -198,7 +198,6 @@ let renderInProgress = false;
 
 async function renderPage(pageNum = currentPage) {
   if (renderInProgress) {
-    console.warn("Render skipped: already in progress");
     return;
   }
   renderInProgress = true;
@@ -222,9 +221,8 @@ async function renderPage(pageNum = currentPage) {
     currentPage = pageNum;
     document.getElementById("page-info").textContent =
       `Page ${currentPage} / ${totalPages}`;
-
-    await renderAll();
   } catch (err) {
+    log('Error rendering page');
     console.error("renderPage error:", err);
   } finally {
     renderInProgress = false;

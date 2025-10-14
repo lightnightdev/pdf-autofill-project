@@ -12,8 +12,6 @@ const canvas = document.getElementById("pdf-canvas");
 
 function newMarker(x, y, pageNum, selectedSize, selectedFont, selectedSpacing) {
 
-  const needToReRender = needsReRender(locData[selectedColIndex]?.spacing ?? 0, selectedSpacing);
-
   // Save to locData
   locData[selectedColIndex] = {
     x: x,
@@ -33,7 +31,7 @@ function newMarker(x, y, pageNum, selectedSize, selectedFont, selectedSpacing) {
     queueUpdateRenderDoc();
   } else {
     // Render current colIndex only
-    updateMarker(selectedColIndex, needToReRender);
+    updateMarker(selectedColIndex);
   }
   saveLocData();
 }
@@ -52,7 +50,7 @@ function renderAllMarkers() {
   // spacing data should be rendered with page, per renderAll();
   Object.keys(locData).forEach((key) => {
     const data = locData[key];
-    if (data && data.page === currentPage && Number(data.spacing) <= 0) {
+    if (data && data.page === currentPage) {
       renderMarker(key, data);
     }
   });
@@ -73,10 +71,7 @@ function updateMarker(colIndex, needToReRender = false) {
   if (needToReRender) {
     queueUpdateRenderDoc();
   }
-
-  if (Number(data.spacing) <= 0) { // if there is spacing, update the Doc, not the overlay
-    renderMarker(colIndex, data);
-  }
+  renderMarker(colIndex, data);
 }
 
 
@@ -86,14 +81,27 @@ function renderMarker(colIndex, markerData) {
   const el = document.createElement('div');
   el.id = `loc-${colIndex}`;
   el.className = 'loc-data-el';
-  if (selectedColIndex == colIndex) { el.className = 'loc-data-el select' }
+  const isSelected = selectedColIndex === colIndex;
+  if (isSelected) {
+    el.className = 'loc-data-el select'
+  }
   el.dataset.colIdx = String(colIndex);
   el.addEventListener('click', () => selectCard(parseInt(colIndex, 10)));
   el.style.position = 'absolute';
   el.style.pointerEvents = 'auto';
-
   applyDataToMarker(el, markerData);
-  el.textContent = getTextContent(parseInt(colIndex, 10));
+  const mText = getTextContent(parseInt(colIndex, 10));
+
+  // --- handle spacing ---
+  const spacing = Number(markerData.spacing);
+  if (!isNaN(spacing) && spacing > 0) {
+    // replace each character (including spaces) with a space
+    el.textContent = "_".repeat(String(mText || "").length);
+    queueUpdateRenderDoc();
+  } else {
+    el.textContent = mText;
+  }
+
   overlay.appendChild(el);
 }
 
@@ -120,6 +128,8 @@ function getTextContent(colIndex) {
 
   return `Col ${colIndex}`;
 }
+
+
 
 
 function needsReRender(prevSpacing, nextSpacing) {
@@ -180,6 +190,7 @@ function selectMarkersAndCards(colIdx) {
   const cards = document.getElementById("csv-cards");
   addSelectClassColIdx(markers, colIdx)
   addSelectClassColIdx(cards, colIdx)
+  setFontSizeSelectors(colIdx);
 }
 
 function addSelectClassColIdx(parentContainer, colIdx) {
