@@ -74,7 +74,7 @@ async function openQueryModal(options = {}) {
     if (downloadModalState.mode === "upload") {
       console.log("Login required before uploading.");
     } else {
-      console.log("No valid saved token — showing login form.");
+      console.log("No valid saved token - showing login form.");
     }
   }
 }
