@@ -168,6 +168,20 @@ body {
   border-radius: 6px;
 }
 
+/* Main */
+
+#pdf-stage {
+  position: relative;
+  display: inline-block;
+}
+
+#pdf-overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+}
+
 /* Right sidebar border on the left instead */
 .sidebar.right {
   padding: 8px;
@@ -226,6 +240,7 @@ body {
   margin-bottom: 2px;
   margin-left: 4px;
   margin-right: 4px;
+  cursor: pointer;
 }
 
 .custom-input-card.select {

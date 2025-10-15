@@ -1,397 +1,573 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PDF Batch Merge</title>
+    <link rel="icon" href="css/LNDico.ico" />
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PDF Batch Merge</title>
-  <link rel="icon" href="css/LNDico.ico">
-</head>
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css?v=1.0.3" />
+    <link rel="stylesheet" href="css/style_general.css?v=1.0.3" />
+    <link rel="stylesheet" href="css/modalStyle.css?v=1.0.2" />
+    <!-- Bootstrap  -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- CSS -->
-<link rel="stylesheet" href="css/style.css?v=1.0.3">
-<link rel="stylesheet" href="css/modalStyle.css?v=1.0.2">
-<!-- Bootstrap  -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Quick Styles -->
+    <style></style>
+  </head>
 
-<!-- Quick Styles -->
-<style>
-
-</style>
-
-</head>
-
-<body>
-
-  <div class="layout">
-
-    <aside class="sidebar left">
-
-      <div class="mb-3">
-        <h1>PDF-CSV Autofiller</h1>
-        <span id="webapp_version_id">v1.7.9</span>
-      </div>
-      <hr>
-
-
-      <div class="menu-block">
-        <div id="menu-header-1" class="menu-header d-flex justify-content-between align-items-center header-open"
-          data-bs-toggle="collapse" data-bs-target="#menu-content-1" onclick="menuToggleExtra(1)">
-          <h2 id="file-select-menu-header" class="mb-0 fs-5">Select Files</h2>
-          <i class="bi bi-caret-down-fill"></i>
+  <body>
+    <div class="layout">
+      <aside class="sidebar left">
+        <div class="mb-3">
+          <h1>PDF-CSV Autofiller</h1>
+          <span id="webapp_version_id">v1.7.9</span>
         </div>
-        <div id="menu-content-1" class="menu-content text-center collapse show body-open">
-          <div class="file-input">
-            <div class="file-row">
-              <button id="pdf-input" class="btn btn-outline-success w-100 fw-bold" onclick=uploadPDF()>
-                Select a PDF
+        <hr />
+
+        <div class="menu-block">
+          <div
+            id="menu-header-1"
+            class="menu-header d-flex justify-content-between align-items-center header-open"
+            data-bs-toggle="collapse"
+            data-bs-target="#menu-content-1"
+            onclick="menuToggleExtra(1)"
+          >
+            <h2 id="file-select-menu-header" class="mb-0 fs-5">Select Files</h2>
+            <i class="bi bi-caret-down-fill"></i>
+          </div>
+          <div
+            id="menu-content-1"
+            class="menu-content text-center collapse show body-open"
+          >
+            <div class="file-input">
+              <div class="file-row">
+                <button
+                  id="pdf-input"
+                  class="btn btn-outline-success w-100 fw-bold"
+                  onclick="uploadPDF()"
+                >
+                  Select a PDF
+                </button>
+              </div>
+              <div class="file-row">
+                <button
+                  id="csv-input"
+                  class="btn btn-outline-success w-100 fw-bold"
+                  onclick="uploadCSV()"
+                >
+                  Select a CSV
+                </button>
+              </div>
+            </div>
+            <div>
+              <button
+                id="btn-remove-files"
+                class="btn btn-outline-danger m-2"
+                type="button"
+                onclick="clearFiles()"
+              >
+                <i class="bi bi-trash"></i> Remove all files
+              </button>
+              <button
+                id="btn-download-loc"
+                class="btn btn-outline-primary m-2"
+                type="button"
+                onclick="openQueryModal()"
+              >
+                <i class="bi bi-trash"></i> Download PDF/CSV template
               </button>
             </div>
-            <div class="file-row">
-              <button id="csv-input" class="btn btn-outline-success w-100 fw-bold" onclick=uploadCSV()>
-                Select a CSV
+          </div>
+        </div>
+
+        <div class="menu-block">
+          <div
+            role="button"
+            id="menu-header-2"
+            class="menu-header d-flex justify-content-between align-items-center collapsed"
+            data-bs-toggle="collapse"
+            data-bs-target="#menu-content-2"
+            onclick="menuToggleExtra(2)"
+            aria-expanded="false"
+          >
+            <h2 class="mb-0 fs-5">PDF Navigation</h2>
+            <i class="bi bi-caret-down-fill"></i>
+          </div>
+          <div id="menu-content-2" class="menu-content text-center collapse">
+            <div id="pdf-page-info">
+              <span id="page-info">Page 0 / 0</span>
+            </div>
+            <div class="text-center">
+              <div id="pdf-page-buttons">
+                <button id="prev-page" class="btn btn-secondary btn-sm">
+                  Previous Page
+                </button>
+                <button id="next-page" class="btn btn-secondary btn-sm">
+                  Next Page
+                </button>
+              </div>
+              <button
+                id="btn-remove-page"
+                class="btn btn-danger m-3 w-50"
+                type="button"
+                onclick="removeCurrentPage()"
+              >
+                <i class="bi bi-trash"></i> Remove Current Page
               </button>
             </div>
           </div>
-          <div>
-            <button id="btn-remove-files" class="btn btn-outline-danger m-2" type="button" onclick="clearFiles()">
-              <i class="bi bi-trash"></i> Remove all files
-            </button>
-            <button id="btn-download-loc" class="btn btn-outline-primary m-2" type="button" onclick="openQueryModal()">
-              <i class="bi bi-trash"></i> Download PDF/CSV template
-            </button>
-          </div>
         </div>
-      </div>
 
-      <div class="menu-block">
-
-        <div role="button" id="menu-header-2" class="menu-header d-flex justify-content-between align-items-center collapsed"
-          data-bs-toggle="collapse" data-bs-target="#menu-content-2" onclick="menuToggleExtra(2)" aria-expanded="false">
-          <h2 class="mb-0 fs-5">PDF Navigation</h2>
-          <i class="bi bi-caret-down-fill"></i>
-        </div>
-        <div id="menu-content-2" class="menu-content text-center collapse">
-
-          <div id="pdf-page-info">
-            <span id="page-info">Page 0 / 0</span>
+        <div class="menu-block">
+          <div
+            role="button"
+            id="menu-header-3"
+            class="menu-header d-flex justify-content-between align-items-center collapsed"
+            data-bs-toggle="collapse"
+            data-bs-target="#menu-content-3"
+            onclick="menuToggleExtra(3)"
+            aria-expanded="false"
+          >
+            <h2 class="mb-0 fs-5">PDF Marker Data</h2>
+            <i class="bi bi-caret-down-fill"></i>
           </div>
-          <div class="text-center">
-            <div id="pdf-page-buttons">
-              <button id="prev-page" class="btn btn-secondary btn-sm">Previous Page</button>
-              <button id="next-page" class="btn btn-secondary btn-sm">Next Page</button>
+
+          <div id="menu-content-3" class="menu-content text-center collapse">
+            <div>
+              <button
+                id="btn-clear-loc"
+                class="btn btn-danger m-2 w40"
+                type="button"
+                onclick="clearAllMarkers()"
+              >
+                <i class="bi bi-trash"></i> Clear All Markers
+              </button>
+
+              <button
+                type="button"
+                class="btn btn-primary m-2 w40"
+                onclick="handleSendToServerClick()"
+              >
+                Send to Server
+              </button>
             </div>
-            <button id="btn-remove-page" class="btn btn-danger m-3 w-50" type="button" onclick="removeCurrentPage()">
-              <i class="bi bi-trash"></i> Remove Current Page
-            </button>
+            <div>
+              <button
+                class="btn btn-outline-success m-2 fw-bold w30"
+                type="button"
+                onclick="downloadMarkers()"
+              >
+                <i class="bi bi-download"></i> Download
+              </button>
+
+              <button
+                class="btn btn-outline-warning m-2 fw-bold w30"
+                type="button"
+                onclick="uploadMarkers()"
+              >
+                <i class="bi bi-upload"></i> Upload
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+        <hr />
 
-      <div class="menu-block">
-        <div role="button" id="menu-header-3" class="menu-header d-flex justify-content-between align-items-center collapsed"
-          data-bs-toggle="collapse" data-bs-target="#menu-content-3" onclick="menuToggleExtra(3)" aria-expanded="false">
-          <h2 class="mb-0 fs-5">PDF Marker Data</h2>
-          <i class="bi bi-caret-down-fill"></i>
-        </div>
-
-        <div id="menu-content-3" class="menu-content text-center collapse">
-          <div>
-            <button id="btn-clear-loc" class="btn btn-danger m-2 marker-button-wide" style="width: 40%" type="button" style="width: 30%;"
-              onclick="clearAllMarkers()">
-              <i class="bi bi-trash"></i> Clear All Markers
-            </button>
-
-            <button type="button" class="btn btn-primary m-2 marker-button-wide" style="width: 40%" onclick="handleSendToServerClick()">
-              Send to Server
-            </button>
+        <div class="mt-3">
+          <button
+            id="btn-make-pdfs"
+            class="btn btn-outline-success m-1 btn-lg w-100"
+            type="button"
+            onclick="generateAndExportPDFs()"
+          >
+            Generate PDFs
+          </button>
+          <div
+            class="form-check m-3 output-options-checkbox d-flex selected"
+            onclick="toggleCheckbox(this)"
+          >
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="export-single-pdf"
+              checked
+            />
+            <label class="form-check-label" for="export-single-pdf">
+              Export all rows as one PDF (for printing)
+            </label>
           </div>
-          <div>
-            <button class="btn btn-outline-success m-2 fw-bold marker-button-narrow" style="width: 30%" type="button"
-              onclick="downloadMarkers()">
-              <i class="bi bi-download"></i> Download
-            </button>
-
-            <button class="btn btn-outline-warning m-2 fw-bold marker-button-narrow" style="width: 30%" type="button"
-              onclick="uploadMarkers()">
-              <i class="bi bi-upload"></i> Upload
-            </button>
+          <div
+            class="form-check m-3 output-options-checkbox d-flex"
+            onclick="toggleCheckbox(this)"
+          >
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="rasterize-output"
+            />
+            <label class="form-check-label" for="rasterize-output">
+              Rasterize output. Removes any compatibility issues, but increases
+              file size.
+            </label>
           </div>
-
         </div>
+
+        <hr />
+        <div id="logbox" class="logbox"></div>
+
+        <div class="menu-block">
+          <div
+            role="button"
+            id="menu-header-4"
+            class="menu-header d-flex justify-content-between align-items-center bg-off-white"
+            data-bs-toggle="collapse"
+            data-bs-target="#menu-content-4"
+            onclick="menuToggleExtra(4)"
+            aria-expanded="true"
+          >
+            <h2 class="mb-0 fs-6">Tips / Shortcuts</h2>
+            <i class="bi bi-caret-down-fill"></i>
+          </div>
+          <div id="menu-content-4" class="menu-content collapse">
+            <p class="tip m-2">
+              <b>Placing a marker:</b><br />
+              - Choose a column on the right<br />
+              - Click to place a marker<br />
+              - Click the column again to duplicate it<br />
+            </p>
+            <p class="tip m-2">
+              <b>Editing a marker:</b><br />
+              - Click an existing marker or it's column card to selected it<br />
+              - Use (+/=) and (-) keys to adjust font size<br />
+              - Use arrow keys to adjust the location<br />
+              - Press the (Delete) key to delete that marker<br />
+            </p>
+            <p class="tip m-2">
+              <b>Unzipping on Windows:</b><br />
+              - Right click the file > Properties > Unblock
+            </p>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main PDF Display -->
+      <div class="wrapper">
+        <main class="content">
+          <div id="pdf-stage">
+            <canvas id="pdf-canvas"></canvas>
+            <div id="pdf-overlay"></div>
+          </div>
+        </main>
       </div>
-      <hr>
 
-      <div class="mt-3">
-        <button id="btn-make-pdfs" class="btn btn-outline-success m-1 btn-lg w-100" type="button"
-          onclick="generateAndExportPDFs()">
-          Generate PDFs
-        </button>
-        <div class="form-check m-3 output-options-checkbox d-flex selected" onclick="toggleCheckbox(this)">
-          <input class="form-check-input" type="checkbox" id="export-single-pdf" checked>
-          <label class="form-check-label" for="export-single-pdf">
-            Export all rows as one PDF (for printing)
-          </label>
-        </div>
-        <div class="form-check m-3 output-options-checkbox d-flex" onclick="toggleCheckbox(this)">
-          <input class="form-check-input" type="checkbox" id="rasterize-output">
-          <label class="form-check-label" for="rasterize-output">
-            Rasterize output. Removes any compatibility issues, but increases file size.
-          </label>
-        </div>
-      </div>
-
-      <hr>
-      <div id="logbox" class="logbox"></div>
-
-
-
-      <div class="menu-block">
-
-        <div role="button" id="menu-header-4" class="menu-header d-flex justify-content-between align-items-center"
-          style="background-color: #ddd;" data-bs-toggle="collapse" data-bs-target="#menu-content-4"
-          onclick="menuToggleExtra(4)" aria-expanded="true">
-          <h2 class="mb-0 fs-6">
-            Tips / Shortcuts
-          </h2>
-          <i class="bi bi-caret-down-fill"></i>
-        </div>
-        <div id="menu-content-4" class="menu-content collapse">
-          <p class="tip m-2">
-            <b>Placing a marker:</b><br>
-            - Choose a column on the right<br>
-            - Click to place a marker<br>
-            - Click the column again to duplicate it<br>
-          </p>
-          <p class="tip m-2">
-            <b>Editing a marker:</b><br>
-            - Click an existing marker or it's column card to selected it<br>
-            - Use (+/=) and (-) keys to adjust font size<br>
-            - Use arrow keys to adjust the location<br>
-            - Press the (Delete) key to delete that marker<br>
-          </p>
-          <p class="tip m-2">
-            <b>Unzipping on Windows:</b><br>
-            - Right click the file > Properties > Unblock
-          </p>
-
-        </div>
-      </div>
-    </aside>
-
-    <!-- Main PDF Display -->
-    <div class="wrapper">
-      <main class="content">
-        <div id="pdf-stage" style="position: relative; display:inline-block;">
-          <canvas id="pdf-canvas"></canvas>
-          <div id="pdf-overlay" style="position:absolute; left:0; top:0; pointer-events:none;"></div>
-        </div>
-      </main>
-    </div>
-
-    <aside class="sidebar right">
-      <h2>Select Columns</h2>
-      <div class="">
-        <!-- Controls column -->
+      <aside class="sidebar right">
+        <h2>Select Columns</h2>
         <div class="">
-          <div class="d-flex align-items-center m-2">
-            <label for="font-select" class="form-label mb-0">Font:</label>
-            <select id="font-select" class="form-select form-select-sm">
-              <option value="_normal">Normal</option>
-              <option value="_monospace">Monospace</option>
-              <option value="_signature">Signature</option>
-            </select>
-          </div>
-
-          <div class="d-flex align-items-center m-2">
-            <label for="size-select" class="form-label mb-0">Size:</label>
-            <input type="number" class="form-control" id="size-select" placeholder="12">
-          </div>
-
-          <div class="d-flex align-items-center m-2">
-            <label for="spacing-select" class="form-label mb-0">Spacing:</label>
-            <input type="number" class="form-control" id="spacing-select" value="0">
-          </div>
-        </div>
-
-        <!-- Table column -->
-        <div class="">
-          <div class="table-responsive">
-
-
-            <div class="d-flex justify-content-between">
-              <div id="checkmark-card" class="card text-center custom-input-card" style="cursor: pointer;"
-                onclick="checkmarkCreate()">
-                <div class="fw-bold mb-1 text-start">Add checkmark ✓</div>
-              </div>
-
-              <div id="custom-text-card" class="card text-center custom-input-card" style="cursor: pointer;"
-                onclick="customTextCreate()">
-                <div class="fw-bold mb-1 text-start">Add custom text</div>
-              </div>
-            </div>
-            <div class="d-flex justify-content-between align-items-center">
-              <div id="saved-text-card" class="card text-center custom-input-card"
-              style="cursor: pointer; width: 40px"
-                onclick="savedTextCreate()">
-                <div class="fw-bold mb-1">Add:</div>
-              </div>
-              <div class="flex-fill" style="min-width: 40px">
-                <label for="saved-text-input" class="form-label d-none">Saved Text</label>
-                <select id="saved-text-input" class="form-select" onclick="savedTextCreate()">
-                  <optgroup label="Choose One">
-                </select>
-              </div>
+          <!-- Controls column -->
+          <div class="">
+            <div class="d-flex align-items-center m-2">
+              <label for="font-select" class="form-label mb-0">Font:</label>
+              <select id="font-select" class="form-select form-select-sm">
+                <option value="_normal">Normal</option>
+                <option value="_monospace">Monospace</option>
+                <option value="_signature">Signature</option>
+              </select>
             </div>
 
-
-
-
-            <div id="csv-cards" class="d-flex flex-column gap-2">
+            <div class="d-flex align-items-center m-2">
+              <label for="size-select" class="form-label mb-0">Size:</label>
+              <input
+                type="number"
+                class="form-control"
+                id="size-select"
+                placeholder="12"
+              />
             </div>
-            <hr>
-            <h2>Custom Text</h2>
-            <div id="custom-cards" class="d-flex flex-column gap-2">
+
+            <div class="d-flex align-items-center m-2">
+              <label for="spacing-select" class="form-label mb-0"
+                >Spacing:</label
+              >
+              <input
+                type="number"
+                class="form-control"
+                id="spacing-select"
+                value="0"
+              />
             </div>
-
           </div>
 
-        </div>
+          <!-- Table column -->
+          <div class="">
+            <div class="table-responsive">
+              <div class="d-flex justify-content-between">
+                <div
+                  id="checkmark-card"
+                  class="card text-center custom-input-card"
+                  onclick="checkmarkCreate()"
+                >
+                  <div class="fw-bold mb-1 text-start">Add checkmark ✓</div>
+                </div>
 
-    </aside>
-
-  </div>
-
-  <!-- Download Modal -->
-  <div class="modal fade download-modal" id="downloadModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content position-relative p-3 p-sm-4">
-        <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close">×</button>
-        <div class="modal-header ps-0 pe-5">
-          <div>
-            <h1 class="modal-title fs-4 mb-1" id="download-modal-title">Download PDF / Markers</h1>
-            <p class="mb-0 text-muted" id="download-modal-subtitle">Authenticate to view the available PDF and marker
-              exports.</p>
-          </div>
-        </div>
-        <div class="modal-body pt-3">
-          <div id="download-table-info" class="alert alert-info small py-2 px-3 d-none">
-            Use the Delete button to remove outdated bundles. This action cannot be undone.
-          </div>
-          <div id="download-login-section">
-            <form id="download-auth-form" class="row g-3">
-              <div class="col-12">
-                <label for="download-username" class="form-label">Username</label>
-                <input type="text" class="form-control" id="download-username" autocomplete="username"
-                  placeholder="Enter username" required>
-              </div>
-              <div class="col-12">
-                <label for="download-password" class="form-label">Password</label>
-                <input type="password" class="form-control" id="download-password" autocomplete="current-password"
-                  placeholder="Enter password" required>
-              </div>
-              <div class="col-12 d-flex align-items-center gap-3">
-                <button type="submit" class="btn btn-primary flex-grow-1"
-                  id="download-auth-submit">Authenticate</button>
-                <div class="spinner-border text-primary d-none" role="status" id="download-auth-spinner">
-                  <span class="visually-hidden">Loading...</span>
+                <div
+                  id="custom-text-card"
+                  class="card text-center custom-input-card"
+                  onclick="customTextCreate()"
+                >
+                  <div class="fw-bold mb-1 text-start">Add custom text</div>
                 </div>
               </div>
-              <div class="col-12 text-danger status-message" id="download-auth-error"></div>
-            </form>
+              <div class="d-flex justify-content-between align-items-center">
+                <div
+                  id="saved-text-card"
+                  class="card text-center custom-input-card crsr-ptr w40px"
+                  onclick="savedTextCreate()"
+                >
+                  <div class="fw-bold mb-1">Add:</div>
+                </div>
+                <div class="flex-fill mw40px">
+                  <label for="saved-text-input" class="form-label d-none"
+                    >Saved Text</label
+                  >
+                  <select
+                    id="saved-text-input"
+                    class="form-select"
+                    onclick="savedTextCreate()"
+                  >
+                    <optgroup label="Choose One"></optgroup>
+                  </select>
+                </div>
+              </div>
+
+              <div id="csv-cards" class="d-flex flex-column gap-2"></div>
+              <hr />
+              <h2>Custom Text</h2>
+              <div id="custom-cards" class="d-flex flex-column gap-2"></div>
+            </div>
           </div>
-          <div id="download-table-section" class="d-none">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h2 class="fs-5 mb-0">Available PDF &amp; Marker Bundles</h2>
-              <button type="button" class="btn btn-outline-secondary btn-sm" id="download-logout-btn">
-                Log out
-              </button>
-            </div>
-            <div id="download-table-status" class="status-message mb-3"></div>
-            <div class="table-responsive border rounded">
-              <table class="table table-striped table-hover mb-0" id="download-data-table">
-                <thead class="table-light position-sticky top-0">
-                  <tr>
-                    <th scope="col">Carrier</th>
-                    <th scope="col">PDF Name</th>
-                    <th scope="col">PDF Size (KB)</th>
-                    <th scope="col">CSV Name</th>
-                    <th scope="col">Notes</th>
-                    <th scope="col">Created</th>
-                    <th scope="col" class="text-end">Actions</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Download Modal -->
+    <div
+      class="modal fade download-modal"
+      id="downloadModal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content position-relative p-3 p-sm-4">
+          <button
+            type="button"
+            class="modal-close-btn"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          >
+            ×
+          </button>
+          <div class="modal-header ps-0 pe-5">
+            <div>
+              <h1 class="modal-title fs-4 mb-1" id="download-modal-title">
+                Download PDF / Markers
+              </h1>
+              <p class="mb-0 text-muted" id="download-modal-subtitle">
+                Authenticate to view the available PDF and marker exports.
+              </p>
             </div>
           </div>
-          <div id="download-upload-section" class="d-none">
-            <div class="mb-3">
-              <h2 class="fs-5 mb-1">Send current PDF &amp; markers</h2>
-              <p class="mb-0 text-muted small">Review the bundle details before uploading to the server.</p>
+          <div class="modal-body pt-3">
+            <div
+              id="download-table-info"
+              class="alert alert-info small py-2 px-3 d-none"
+            >
+              Use the Delete button to remove outdated bundles. This action
+              cannot be undone.
             </div>
-            <div class="mb-3">
-              <h3 class="fs-6">PDF Details</h3>
-              <dl class="row mb-0">
-                <dt class="col-sm-4">PDF Name</dt>
-                <dd class="col-sm-8" id="upload-pdf-name">—</dd>
-                <dt class="col-sm-4">PDF Size</dt>
-                <dd class="col-sm-8" id="upload-pdf-size">—</dd>
-              </dl>
+            <div id="download-login-section">
+              <form id="download-auth-form" class="row g-3">
+                <div class="col-12">
+                  <label for="download-username" class="form-label"
+                    >Username</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="download-username"
+                    autocomplete="username"
+                    placeholder="Enter username"
+                    required
+                  />
+                </div>
+                <div class="col-12">
+                  <label for="download-password" class="form-label"
+                    >Password</label
+                  >
+                  <input
+                    type="password"
+                    class="form-control"
+                    id="download-password"
+                    autocomplete="current-password"
+                    placeholder="Enter password"
+                    required
+                  />
+                </div>
+                <div class="col-12 d-flex align-items-center gap-3">
+                  <button
+                    type="submit"
+                    class="btn btn-primary flex-grow-1"
+                    id="download-auth-submit"
+                  >
+                    Authenticate
+                  </button>
+                  <div
+                    class="spinner-border text-primary d-none"
+                    role="status"
+                    id="download-auth-spinner"
+                  >
+                    <span class="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+                <div
+                  class="col-12 text-danger status-message"
+                  id="download-auth-error"
+                ></div>
+              </form>
             </div>
-            <div class="mb-3">
-              <h3 class="fs-6">Column Headers</h3>
-              <div id="upload-first-column-headers" class="small text-break bg-light border rounded p-2"
-                style="white-space: pre-wrap;">None</div>
+            <div id="download-table-section" class="d-none">
+              <div
+                class="d-flex justify-content-between align-items-center mb-3"
+              >
+                <h2 class="fs-5 mb-0">Available PDF &amp; Marker Bundles</h2>
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary btn-sm"
+                  id="download-logout-btn"
+                >
+                  Log out
+                </button>
+              </div>
+              <div id="download-table-status" class="status-message mb-3"></div>
+              <div class="table-responsive border rounded">
+                <table
+                  class="table table-striped table-hover mb-0"
+                  id="download-data-table"
+                >
+                  <thead class="table-light position-sticky top-0">
+                    <tr>
+                      <th scope="col">Carrier</th>
+                      <th scope="col">PDF Name</th>
+                      <th scope="col">PDF Size (KB)</th>
+                      <th scope="col">CSV Name</th>
+                      <th scope="col">Notes</th>
+                      <th scope="col">Created</th>
+                      <th scope="col" class="text-end">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
             </div>
-            <div class="mb-3">
-              <h3 class="fs-6">locData</h3>
-              <pre id="upload-locdata-preview" class="bg-light border rounded small p-2 mb-0"
-                style="max-height: 220px; overflow: auto;">{}</pre>
+            <div id="download-upload-section" class="d-none">
+              <div class="mb-3">
+                <h2 class="fs-5 mb-1">Send current PDF &amp; markers</h2>
+                <p class="mb-0 text-muted small">
+                  Review the bundle details before uploading to the server.
+                </p>
+              </div>
+              <div class="mb-3">
+                <h3 class="fs-6">PDF Details</h3>
+                <dl class="row mb-0">
+                  <dt class="col-sm-4">PDF Name</dt>
+                  <dd class="col-sm-8" id="upload-pdf-name">—</dd>
+                  <dt class="col-sm-4">PDF Size</dt>
+                  <dd class="col-sm-8" id="upload-pdf-size">—</dd>
+                </dl>
+              </div>
+              <div class="mb-3">
+                <h3 class="fs-6">Column Headers</h3>
+                <div
+                  id="upload-first-column-headers"
+                  class="small text-break bg-light border rounded p-2"
+                  style="white-space: pre-wrap"
+                >
+                  None
+                </div>
+              </div>
+              <div class="mb-3">
+                <h3 class="fs-6">locData</h3>
+                <pre
+                  id="upload-locdata-preview"
+                  class="bg-light border rounded small p-2 mb-0"
+                  style="max-height: 220px; overflow: auto"
+                >
+{}</pre
+                >
+              </div>
+              <div class="mb-3">
+                <h3 class="fs-6">customText</h3>
+                <pre
+                  id="upload-customtext-preview"
+                  class="bg-light border rounded small p-2 mb-0"
+                  style="max-height: 220px; overflow: auto"
+                >
+{}</pre
+                >
+              </div>
+              <div class="d-flex justify-content-end gap-2">
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  id="upload-cancel-btn"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  id="upload-confirm-btn"
+                >
+                  <span id="upload-confirm-text">Send to Server</span>
+                  <span
+                    class="spinner-border spinner-border-sm d-none ms-2"
+                    id="upload-confirm-spinner"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
+                </button>
+              </div>
+              <div id="upload-status" class="status-message mt-2"></div>
             </div>
-            <div class="mb-3">
-              <h3 class="fs-6">customText</h3>
-              <pre id="upload-customtext-preview" class="bg-light border rounded small p-2 mb-0"
-                style="max-height: 220px; overflow: auto;">{}</pre>
-            </div>
-            <div class="d-flex justify-content-end gap-2">
-              <button type="button" class="btn btn-outline-secondary" id="upload-cancel-btn">Cancel</button>
-              <button type="button" class="btn btn-primary" id="upload-confirm-btn">
-                <span id="upload-confirm-text">Send to Server</span>
-                <span class="spinner-border spinner-border-sm d-none ms-2" id="upload-confirm-spinner" role="status"
-                  aria-hidden="true"></span>
-              </button>
-            </div>
-            <div id="upload-status" class="status-message mt-2"></div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Libraries -->
+    <!-- Libraries -->
 
-  <!-- pdf-lib: used to write and flatten PDFs -->
+    <!-- pdf-lib: used to write and flatten PDFs -->
 
-  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-  <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-  <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-  </script>
-  <!-- PapaParse for CSV parsing -->
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
+    </script>
+    <!-- PapaParse for CSV parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
+    <!-- My Dependencies -->
+    <script src="js/font_data.js"></script>
 
-
-  <!-- My Dependencies -->
-  <script src="js/font_data.js"></script>
-
-  <script src="js/autofill.min.js?v=1.0.2"></script>
-  <!-- <script src="js/js_src/_server_query.js"></script>
+    <script src="js/autofill.min.js?v=1.0.2"></script>
+    <!-- <script src="js/js_src/_server_query.js"></script>
   <script src="js/js_src/csvLoader.js"></script>
   <script src="js/js_src/data_customText.js"></script>
   <script src="js/js_src/data_markers.js"></script>
@@ -405,9 +581,7 @@
   <script src="js/js_src/queryModal.js"></script>
   <script src="js/js_src/utils.js"></script> -->
 
-  <!-- Startup Script -->
-  <script src="js/_startup.js"></script>
-
-</body>
-
+    <!-- Startup Script -->
+    <script src="js/_startup.js"></script>
+  </body>
 </html>

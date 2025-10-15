@@ -1,0 +1,24 @@
+
+.invisible-text {
+  color: rgba(255, 255, 255, 0);
+}
+
+.w30 {
+  width: 30% !important
+}
+
+.w40 {
+  width: 40% !important
+}
+
+.bg-off-white {
+  background-color: #ddd;
+}
+
+.crsr-pntr {
+  cursor: pointer;
+}
+
+.mw40px {
+  min-width: 40px
+}
