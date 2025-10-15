@@ -99,13 +99,11 @@ function renderMarker(colIndex, markerData) {
   const spacing = Number(markerData.spacing);
   if (!isNaN(spacing) && spacing > 0) {
     // replace each character (including spaces) with a space
-    el.textContent = "_".repeat(String(mText || "").length);
     el.classList.add('invisible-text')
     queueUpdateRenderDoc();
-  } else {
-    el.textContent = mText;
-  }
-
+  } 
+  el.textContent = mText;
+  
   overlay.appendChild(el);
 }
 

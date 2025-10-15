@@ -139,12 +139,9 @@ function renderCustomText(ctId, data) {
   const spacing = Number(data.spacing);
   if (!isNaN(spacing) && spacing > 0) {
     // replace each character (including spaces) with a space
-    console.log('making box for ' + data.text);
-    el.textContent = "_".repeat(String(data.text || "").length);
     el.classList.add("invisible-text");
-  } else {
-    el.textContent = resolveCustomTextValue(data.text);
   }
+  el.textContent = resolveCustomTextValue(data.text);
   overlay.appendChild(el);
 }
 
