@@ -1,6 +1,6 @@
 open ftp.lightnightdev.com
-lightnig
-ElioraAppa2024!
+user
+pass
 prompt
 
 cd autofill
