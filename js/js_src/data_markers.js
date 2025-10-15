@@ -45,7 +45,7 @@ function removeMarker(colIndx) {
 
 // checks for markers on current page & doesn't have spacing data
 function renderAllMarkers() {
-  
+
   // spacing data should be rendered with page, per renderAll();
   Object.keys(locData).forEach((key) => {
     const data = locData[key];
@@ -74,7 +74,7 @@ function updateMarker(colIndex, needToReRender = false) {
   if (needToReRender) {
     queueUpdateRenderDoc();
   }
-  
+
   renderMarker(colIndex, data);
 }
 
@@ -101,9 +101,9 @@ function renderMarker(colIndex, markerData) {
     // replace each character (including spaces) with a space
     el.classList.add('invisible-text')
     queueUpdateRenderDoc();
-  } 
+  }
   el.textContent = mText;
-  
+
   overlay.appendChild(el);
 }
 
@@ -275,19 +275,18 @@ function onStyleInputChange() {
 // Assumes: db, STORE_NAME, LOC_KEY, locData, renderLocAll(), displayCSVPreviewAsCards(), log()
 
 async function clearAllMarkers() {
-  if (
-    !confirm(
-      'Delete all saved column markers/custom text on page? This cannot be undone.'
-    )
-  )
-    return;
+  if (!confirm('Delete all saved column markers/custom text on page? This cannot be undone.')) { return; }
+
+  log('Deleted all markers/custom text');
 
   // clears local and DB instance of LocData and customText
-  await clearLocData();
-  await clearCustomText();
+  await Promise.all([
+    clearLocData(),
+    clearCustomText(),
+  ]);
 
   // clear any changes to rendered PDF
-  await createEditDoc();
+  await createEditDoc(currentPdfBytes);
 
   // Refresh UI: remove markers and unmark CSV cards
   await renderAll(); // overlay reconcile will remove markers

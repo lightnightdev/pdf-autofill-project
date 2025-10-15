@@ -155,7 +155,7 @@ async function loadPDF(arrayBuffer, pageNum = 1) {
 // Turn PDF bytes into editable PDFLib object (editDoc)
 // Edit Doc is the template w/ fonts -- renderDoc will copy EditDoc 
 // --------------------
-async function createEditDoc(arrayBuffer, pageNum = 1) {
+async function createEditDoc(arrayBuffer = currentPdfBytes, pageNum = 1) {
   editDoc = await PDFLib.PDFDocument.load(arrayBuffer);
   editDocFonts = await embedFontsForDoc(editDoc); // embedding fonts
   queueUpdateRenderDoc(pageNum);

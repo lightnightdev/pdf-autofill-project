@@ -54,7 +54,7 @@ async function generateAndExportPDFs() {
 
     // Iterate through each data row in the CSV (skipping header)
     for (let r = 1; r < csvData.length; r++) {
-      log(`Generating row ${r} of ${total}…`);
+      log(`Generating row ${r} of ${total}`);
 
       // New output doc with copied pages
       const outDoc = await srcDoc.copy();
