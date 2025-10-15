@@ -31,7 +31,7 @@ function newMarker(x, y, pageNum, selectedSize, selectedFont, selectedSpacing) {
     queueUpdateRenderDoc();
   } else {
     // Render current colIndex only
-    updateMarker(selectedColIndex, needToReRender);
+    updateMarker(selectedColIndex);
   }
   saveLocData();
 }
@@ -49,7 +49,6 @@ function renderAllMarkers() {
   Object.keys(locData).forEach((key) => {
     const data = locData[key];
     const spacing = Number(data.spacing ?? 0); // null/undefined → 0, text → numeric conversion
-
     if (data && data.page === currentPage && spacing <= 0) {
       renderMarker(key, data);
     }
@@ -74,11 +73,8 @@ function updateMarker(colIndex, needToReRender = false) {
   if (needToReRender) {
     queueUpdateRenderDoc();
   }
-
-  if (Number(data.spacing) <= 0) {
-    // if there is spacing, update the Doc, not the overlay
-    renderMarker(colIndex, data);
-  }
+  
+  renderMarker(colIndex, data);
 }
 
 // add marker to page
@@ -87,16 +83,27 @@ function renderMarker(colIndex, markerData) {
   const el = document.createElement('div');
   el.id = `loc-${colIndex}`;
   el.className = 'loc-data-el';
-  if (selectedColIndex == colIndex) {
-    el.className = 'loc-data-el select';
+  const isSelected = selectedColIndex === colIndex;
+  if (isSelected) {
+    el.className = 'loc-data-el select'
   }
   el.dataset.colIdx = String(colIndex);
   el.addEventListener('click', () => selectCard(parseInt(colIndex, 10)));
   el.style.position = 'absolute';
   el.style.pointerEvents = 'auto';
-
   applyDataToMarker(el, markerData);
-  el.textContent = getTextContent(parseInt(colIndex, 10));
+  const mText = getTextContent(parseInt(colIndex, 10));
+
+  // --- handle spacing ---
+  const spacing = Number(markerData.spacing);
+  if (!isNaN(spacing) && spacing > 0) {
+    // replace each character (including spaces) with a space
+    el.textContent = "_".repeat(String(mText || "").length);
+    queueUpdateRenderDoc();
+  } else {
+    el.textContent = mText;
+  }
+
   overlay.appendChild(el);
 }
 
@@ -164,8 +171,9 @@ function selectMarkersAndCards(colIdx) {
 
   const markers = document.getElementById('pdf-overlay');
   const cards = document.getElementById('csv-cards');
-  addSelectClassColIdx(markers, colIdx);
-  addSelectClassColIdx(cards, colIdx);
+  addSelectClassColIdx(markers, colIdx)
+  addSelectClassColIdx(cards, colIdx)
+  setFontSizeSelectors(colIdx);
 }
 
 function addSelectClassColIdx(parentContainer, colIdx) {

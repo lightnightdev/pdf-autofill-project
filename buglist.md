@@ -2,6 +2,7 @@
 - Enable downloading the CSV template
 - Add highlighting to rasterized LocEls
 - When editing monospace-spacing, it doesn't update (keys)
+    > Do this first
 - Rasterize renderDoc for customText with spacing
 
 - Only suppress keys if a LocEl is selected - unselect when opening Modal

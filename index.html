@@ -30,7 +30,7 @@
 
       <div class="mb-3">
         <h1>PDF-CSV Autofiller</h1>
-        <span id="webapp_version_id">v1.7.6</span>
+        <span id="webapp_version_id">v1.7.9</span>
       </div>
       <hr>
 
@@ -55,7 +55,7 @@
             </div>
           </div>
           <div>
-            <button id="btn-clear-loc" class="btn btn-outline-danger m-2" type="button" onclick="clearFiles()">
+            <button id="btn-remove-files" class="btn btn-outline-danger m-2" type="button" onclick="clearFiles()">
               <i class="bi bi-trash"></i> Remove all files
             </button>
             <button id="btn-download-loc" class="btn btn-outline-primary m-2" type="button" onclick="openQueryModal()">
@@ -82,7 +82,7 @@
               <button id="prev-page" class="btn btn-secondary btn-sm">Previous Page</button>
               <button id="next-page" class="btn btn-secondary btn-sm">Next Page</button>
             </div>
-            <button id="btn-clear-loc" class="btn btn-danger m-3 w-50" type="button" onclick="removeCurrentPage()">
+            <button id="btn-remove-page" class="btn btn-danger m-3 w-50" type="button" onclick="removeCurrentPage()">
               <i class="bi bi-trash"></i> Remove Current Page
             </button>
           </div>
@@ -98,22 +98,22 @@
 
         <div id="menu-content-3" class="menu-content text-center collapse">
           <div>
-            <button id="btn-clear-loc" class="btn btn-danger m-2" style="width: 40%" type="button" style="width: 30%;"
+            <button id="btn-clear-loc" class="btn btn-danger m-2 marker-button-wide" style="width: 40%" type="button" style="width: 30%;"
               onclick="clearAllMarkers()">
               <i class="bi bi-trash"></i> Clear All Markers
             </button>
 
-            <button type="button" class="btn btn-primary m-2" style="width: 40%" onclick="handleSendToServerClick()">
+            <button type="button" class="btn btn-primary m-2 marker-button-wide" style="width: 40%" onclick="handleSendToServerClick()">
               Send to Server
             </button>
           </div>
           <div>
-            <button class="btn btn-outline-success m-2 fw-bold" style="width: 30%" type="button"
+            <button class="btn btn-outline-success m-2 fw-bold marker-button-narrow" style="width: 30%" type="button"
               onclick="downloadMarkers()">
               <i class="bi bi-download"></i> Download
             </button>
 
-            <button class="btn btn-outline-warning m-2 fw-bold" style="width: 30%" type="button"
+            <button class="btn btn-outline-warning m-2 fw-bold marker-button-narrow" style="width: 30%" type="button"
               onclick="uploadMarkers()">
               <i class="bi bi-upload"></i> Upload
             </button>
@@ -250,7 +250,8 @@
 
             <div id="csv-cards" class="d-flex flex-column gap-2">
             </div>
-
+            <hr>
+            <h2>Custom Text</h2>
             <div id="custom-cards" class="d-flex flex-column gap-2">
             </div>
 

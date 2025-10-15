@@ -78,6 +78,7 @@ async function loadCachedData() {
   }
 
   await loadCache();
+  renderAll();
 }
 
 async function loadCache() {
@@ -102,12 +103,12 @@ async function loadCache() {
     pdfButton(true, currentPdfName)
   }
 
-  if (csvIsValid && pdfIsValid ) {
-    setTimeout( function () {
+  if (csvIsValid && pdfIsValid) {
+    setTimeout(function () {
       closeMenu(1)
       openMenu(2)
     },
-    1000);
+      1000);
   }
 }
 
@@ -193,9 +194,8 @@ async function saveCsvData(csvName) {
 async function savePdfRenderBlob(blob) {
   try {
     await idbPut(RENDER_KEY, blob);
-    console.log("Saving Render PDF to IndexedDB (overwriting previous)");
   } catch (err) {
-    log("IndexedDB save error: " + (err?.message || err));
+    log("IndexedDB save error: (savePdfRenderBlob)" + (err?.message || err));
   }
 }
 
@@ -312,6 +312,12 @@ async function clearCustomText() {
     console.log("Custom text cleared successfully.");
   } catch (err) {
     console.error("Error deleting custom text data:", err?.message || err);
+  }
+
+  try {
+    renderCustomTextCards();
+  } catch (err) {
+    console.warn('Unable to refresh custom text cards:', err);
   }
 }
 

@@ -243,7 +243,29 @@ function drawSizingText(doc, docFonts) {
     const text = getCellOrHeader(1, parseInt(key, 10));
     drawPlacedText(page, cfg, text, docFonts); // <--- single call now
   }
+
+  // Loop through all pages that have custom text entries
+  for (const [pageNumStr, entries] of Object.entries(customText)) {
+    const pageNum = parseInt(pageNumStr, 10);
+    const pageIndex = pageNum - 1;
+    const page = doc.getPage(pageIndex);
+    if (!page || !entries) continue;
+
+    // Loop through each text config in this page
+    for (const [i, cfg] of Object.entries(entries)) {
+      if (!cfg) continue;
+
+      const spacing = Number(cfg.spacing);
+      if (!Number.isFinite(spacing) || spacing <= 0) continue;
+
+      // Use the stored cfg.text directly
+      const rawText = cfg.text || "";
+      const text = resolveCustomTextValue(rawText)
+      drawPlacedText(page, cfg, text, docFonts);
+    }
+  }
 }
+
 
 function initKeyCaptures() {
   document.addEventListener('keydown', function (event) {
@@ -263,6 +285,8 @@ function initKeyCaptures() {
       case '+': action = "s+"; break;
       case 'Delete': action = "d"; break;
       case 'Backspace': action = "d"; break;
+      case '[': action = "sp-"; break;
+      case ']': action = "sp+"; break;
       default: return;
     }
     event.preventDefault();
@@ -309,14 +333,26 @@ function colAction(move) {
       markerData.size = parseInt(markerData.size, 10) + 1;
       setFontSizeSelectors(selectedColIndex);
       break;
+    case "sp-":
+      if (markerData.spacing > 0) {
+        markerData.spacing -= 1;
+        setFontSizeSelectors(selectedColIndex);
+        queueUpdateRenderDoc();
+      }
+      break;
+    case "sp+":
+      markerData.spacing = parseInt(markerData.spacing, 10) + 1;
+      setFontSizeSelectors(selectedColIndex);
+      queueUpdateRenderDoc();
+      break;
     case "d":
       removeMarker(selectedColIndex);
       break;
     default:
       console.warn("Move error: unknown direction", move);
   }
-  try { saveLocData && saveLocData(); } catch { }
 
+  try { saveLocData(); } catch { }
   updateMarker(selectedColIndex); // incremental re-render for this one
 }
 
@@ -352,15 +388,25 @@ function customTextAction(move) {
     case "s+":
       customTextData.size += 1;
       break;
+    case "sp-":
+      if (customTextData.spacing > 0) {
+        customTextData.spacing -= 1;
+        queueUpdateRenderDoc();
+      }
+      break;
+    case "sp+":
+      customTextData.spacing = parseInt(customTextData.spacing, 10) + 1;
+      queueUpdateRenderDoc();
+      break;
     case "d":
       removeCustomText(currentPage, selectedCustomTextId);
-      return;
+      break;
     default:
       console.warn("Custom Text move error: unknown direction", move);
   }
-
+  checkRender(customTextData);
   updateCustomText(selectedCustomTextId); // incremental re-render for this one
-
+  setCustomTextSelectors(selectedCustomTextId);
 }
 
 
@@ -403,14 +449,14 @@ function objectToHTMLTable(data, options = {}) {
   if (Array.isArray(data) && data.length > 0) {
     // Get headers from first object's keys
     const headers = Object.keys(data[0]);
-    
+
     // Create header row
     html += '<thead><tr>';
     headers.forEach(header => {
       html += `<th${headerClass ? ` class="${headerClass}"` : ''}>${escapeHtml(header)}</th>`;
     });
     html += '</tr></thead>';
-    
+
     // Create data rows
     html += '<tbody>';
     data.forEach(row => {
@@ -429,7 +475,7 @@ function objectToHTMLTable(data, options = {}) {
     html += `<th${headerClass ? ` class="${headerClass}"` : ''}>Key</th>`;
     html += `<th${headerClass ? ` class="${headerClass}"` : ''}>Value</th>`;
     html += '</tr></thead>';
-    
+
     html += '<tbody>';
     Object.entries(data).forEach(([key, value]) => {
       html += `<tr${rowClass ? ` class="${rowClass}"` : ''}>`;
@@ -457,4 +503,13 @@ function formatValue(value) {
   if (value === undefined) return '<em>undefined</em>';
   if (typeof value === 'object') return escapeHtml(JSON.stringify(value));
   return escapeHtml(String(value));
+}
+
+function checkRender(obj) {
+  if (!obj || obj.spacing == null) return false;
+  const num = Number(obj.spacing);
+  if (isNaN(num)) return;
+  if (num > 0) {
+    queueUpdateRenderDoc();
+  }
 }
