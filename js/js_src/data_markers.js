@@ -45,11 +45,12 @@ function removeMarker(colIndx) {
 
 // checks for markers on current page & doesn't have spacing data
 function renderAllMarkers() {
+  
   // spacing data should be rendered with page, per renderAll();
   Object.keys(locData).forEach((key) => {
     const data = locData[key];
     const spacing = Number(data.spacing ?? 0); // null/undefined → 0, text → numeric conversion
-    if (data && data.page === currentPage && spacing <= 0) {
+    if (data && data.page === currentPage) {
       renderMarker(key, data);
     }
   });
@@ -85,7 +86,7 @@ function renderMarker(colIndex, markerData) {
   el.className = 'loc-data-el';
   const isSelected = selectedColIndex === colIndex;
   if (isSelected) {
-    el.className = 'loc-data-el select'
+    el.classList.add('select')
   }
   el.dataset.colIdx = String(colIndex);
   el.addEventListener('click', () => selectCard(parseInt(colIndex, 10)));
@@ -99,6 +100,7 @@ function renderMarker(colIndex, markerData) {
   if (!isNaN(spacing) && spacing > 0) {
     // replace each character (including spaces) with a space
     el.textContent = "_".repeat(String(mText || "").length);
+    el.classList.add('invisible-text')
     queueUpdateRenderDoc();
   } else {
     el.textContent = mText;
