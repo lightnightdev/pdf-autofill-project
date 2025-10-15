@@ -81,6 +81,9 @@ body {
   background-color: var(--menu-clr);
   color: var(--menu-txt);
   padding: 5px;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #aaa;
   border-top-left-radius: var(--menu-br);
   border-top-right-radius: var(--menu-br);
   border-bottom-left-radius: var(--menu-br);
@@ -149,6 +152,10 @@ body {
   background-color:#efe;
 }
 
+.form-check-input {
+  margin-left: -1rem !important;
+  margin-right: 0.5rem !important;
+}
 
 .logbox {
   white-space: pre-wrap;

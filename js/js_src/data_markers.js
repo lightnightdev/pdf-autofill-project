@@ -1,18 +1,16 @@
 // markers.js
 
-
 let locData = {};
 let selectedColIndex = null;
-let selectedFont = "monospace";
-let selectedSize = "12px";
-const canvas = document.getElementById("pdf-canvas");
-
-
-
+let selectedFont = 'monospace';
+let selectedSize = '12px';
+const canvas = document.getElementById('pdf-canvas');
 
 function newMarker(x, y, pageNum, selectedSize, selectedFont, selectedSpacing) {
-
-  const needToReRender = needsReRender(locData[selectedColIndex]?.spacing ?? 0, selectedSpacing);
+  const needToReRender = needsReRender(
+    locData[selectedColIndex]?.spacing ?? 0,
+    selectedSpacing
+  );
 
   // Save to locData
   locData[selectedColIndex] = {
@@ -27,8 +25,8 @@ function newMarker(x, y, pageNum, selectedSize, selectedFont, selectedSpacing) {
   };
 
   // Add element to card
-  const card = document.querySelector(`[data-col-idx="${selectedColIndex}"]`)
-  card.classList.add("loc-data-exists")
+  const card = document.querySelector(`[data-col-idx='${selectedColIndex}']`);
+  card.classList.add('loc-data-exists');
   if (selectedSpacing > 0) {
     queueUpdateRenderDoc();
   } else {
@@ -41,18 +39,18 @@ function newMarker(x, y, pageNum, selectedSize, selectedFont, selectedSpacing) {
 function removeMarker(colIndx) {
   delete locData[colIndx];
   const card = document.getElementById('card-col' + String(colIndx));
-  card.classList.remove("loc-data-exists");
+  card.classList.remove('loc-data-exists');
   updateMarker(selectedColIndex);
 }
-
-
 
 // checks for markers on current page & doesn't have spacing data
 function renderAllMarkers() {
   // spacing data should be rendered with page, per renderAll();
   Object.keys(locData).forEach((key) => {
     const data = locData[key];
-    if (data && data.page === currentPage && Number(data.spacing) <= 0) {
+    const spacing = Number(data.spacing ?? 0); // null/undefined → 0, text → numeric conversion
+
+    if (data && data.page === currentPage && spacing <= 0) {
       renderMarker(key, data);
     }
   });
@@ -67,18 +65,21 @@ function updateMarker(colIndex, needToReRender = false) {
   const data = locData?.[colIndex];
   if (!data) return;
   if (typeof currentPage !== 'number' || data.page !== currentPage) return;
-  if (!syncOverlayBoxToCanvas()) { log('no overlay or canvas'); return; }
+  if (!syncOverlayBoxToCanvas()) {
+    log('no overlay or canvas');
+    return;
+  }
 
-  // If baked-in spacing element is added or removed, 
+  // If baked-in spacing element is added or removed,
   if (needToReRender) {
     queueUpdateRenderDoc();
   }
 
-  if (Number(data.spacing) <= 0) { // if there is spacing, update the Doc, not the overlay
+  if (Number(data.spacing) <= 0) {
+    // if there is spacing, update the Doc, not the overlay
     renderMarker(colIndex, data);
   }
 }
-
 
 // add marker to page
 function renderMarker(colIndex, markerData) {
@@ -86,7 +87,9 @@ function renderMarker(colIndex, markerData) {
   const el = document.createElement('div');
   el.id = `loc-${colIndex}`;
   el.className = 'loc-data-el';
-  if (selectedColIndex == colIndex) { el.className = 'loc-data-el select' }
+  if (selectedColIndex == colIndex) {
+    el.className = 'loc-data-el select';
+  }
   el.dataset.colIdx = String(colIndex);
   el.addEventListener('click', () => selectCard(parseInt(colIndex, 10)));
   el.style.position = 'absolute';
@@ -104,7 +107,7 @@ function applyDataToMarker(el, markerData) {
   el.style.top = (markerData.y || 0) + 'px';
   // el.style.transform = 'translate(0, -100%)'; <-- already in css
 
-  let font = markerData.font || "_normal";
+  let font = markerData.font || '_normal';
 
   el.style.fontFamily = font;
   el.style.fontSize = (parseInt(markerData.size, 10) || 12) + 'px';
@@ -121,28 +124,11 @@ function getTextContent(colIndex) {
   return `Col ${colIndex}`;
 }
 
-
 function needsReRender(prevSpacing, nextSpacing) {
   const prevNotZero = Number(prevSpacing) !== 0;
   const nextNotZero = Number(nextSpacing) !== 0;
   return prevNotZero !== nextNotZero; // XOR
 }
-
-
-
-
-// Check if page has 
-function pageHasNonZeroSpacing(pageNum) {
-  if (!locData) return false;
-  for (const key of Object.keys(locData)) {
-    const d = locData[key];
-    if (!d || d.page !== pageNum) continue;
-    if (Number(d.spacing) > 0) return true;
-  }
-  return false;
-}
-
-
 
 async function copyRow(colIdx) {
   let newIdx = copyArrayColumn(csvData, colIdx);
@@ -154,13 +140,13 @@ async function copyRow(colIdx) {
   selectMarkersAndCards(newIdx);
 }
 
-// 
+//
 // Selecting Cards, Changing Font/Size/Loc
-// 
+//
 // This is the onClick for the cards!!!!!
 function selectCard(colIdx) {
   if (selectedColIndex === colIdx) {
-    if (confirm("Double this column?")) {
+    if (confirm('Double this column?')) {
       copyRow(colIdx);
       return;
     }
@@ -176,50 +162,48 @@ function selectMarkersAndCards(colIdx) {
     selectedColIndex = colIdx;
   }
 
-  const markers = document.getElementById("pdf-overlay");
-  const cards = document.getElementById("csv-cards");
-  addSelectClassColIdx(markers, colIdx)
-  addSelectClassColIdx(cards, colIdx)
+  const markers = document.getElementById('pdf-overlay');
+  const cards = document.getElementById('csv-cards');
+  addSelectClassColIdx(markers, colIdx);
+  addSelectClassColIdx(cards, colIdx);
 }
 
 function addSelectClassColIdx(parentContainer, colIdx) {
   Array.from(parentContainer.children).forEach((card) => {
     if (parseInt(card.dataset.colIdx) === colIdx) {
-      card.classList.add("select");
+      card.classList.add('select');
     } else {
-      card.classList.remove("select");
+      card.classList.remove('select');
     }
   });
 }
 
 function setFontSizeSelectors(colIdx) {
-
   // ✅ Prefill font + size if this column already has locData
   if (locData?.[colIdx]) {
     const cfg = locData[colIdx];
 
-    const fontSelect = document.getElementById("font-select");
+    const fontSelect = document.getElementById('font-select');
     if (cfg.font) {
       fontSelect.value = cfg.font; // assumes option exists
     }
 
-    const sizeInput = document.getElementById("size-select");
+    const sizeInput = document.getElementById('size-select');
     if (cfg.size) {
       sizeInput.value = cfg.size;
     }
 
-    const spacingInput = document.getElementById("spacing-select");
+    const spacingInput = document.getElementById('spacing-select');
     if (cfg.spacing) {
       spacingInput.value = cfg.spacing;
     }
   } else {
     // Optional: reset to defaults when no locData
-    document.getElementById("font-select").value = "_normal";
-    document.getElementById("size-select").value = 12;
-    document.getElementById("spacing-select").value = 0;
+    document.getElementById('font-select').value = '_normal';
+    document.getElementById('size-select').value = 12;
+    document.getElementById('spacing-select').value = 0;
   }
 }
-
 
 // call once on startup (after the inputs exist)
 // assigns event listeners
@@ -228,13 +212,13 @@ function initFontSizeHandlers() {
   const sizeInp = document.getElementById('size-select');
   const spacingInp = document.getElementById('spacing-select');
 
-  if (!fontSel || !sizeInp || !spacingInp) return log('ERROR: font/size selector(s) not detected');
+  if (!fontSel || !sizeInp || !spacingInp)
+    return log('ERROR: font/size selector(s) not detected');
 
   fontSel.addEventListener('change', onStyleInputChange);
   sizeInp.addEventListener('input', onStyleInputChange);
   spacingInp.addEventListener('input', onStyleInputChange);
 }
-
 
 function onStyleInputChange() {
   if (selectedColIndex == null && selectedCustomTextId == null) return;
@@ -249,40 +233,33 @@ function onStyleInputChange() {
   // read inputs
   const rawFont = document.getElementById('font-select').value;
   const rawSize = parseInt(document.getElementById('size-select').value, 10);
-  const rawSpacing = parseInt(document.getElementById('spacing-select').value, 10);
+  const rawSpacing = parseInt(
+    document.getElementById('spacing-select').value,
+    10
+  );
 
   const needToReRender = needsReRender(markerData.spacing, rawSpacing);
 
   // set values
-  markerData.font = rawFont
+  markerData.font = rawFont;
   markerData.size = Number.isFinite(rawSize) && rawSize > 0 ? rawSize : 12;
-  markerData.spacing = Number.isFinite(rawSpacing) && rawSpacing > 0 ? rawSpacing : 0;
+  markerData.spacing =
+    Number.isFinite(rawSpacing) && rawSpacing > 0 ? rawSpacing : 0;
 
   if (isCustomText) {
     saveCustomText();
     updateCustomText(selectedCustomTextId);
   } else {
-    // 
+    //
     // persist + update just this marker
     saveLocData();
     updateMarker(selectedColIndex); // incremental re-render for this one
   }
 
-  if (needToReRender) { queueUpdateRenderDoc() };
-
+  if (needToReRender) {
+    queueUpdateRenderDoc();
+  }
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 //
 // Deleting
@@ -290,7 +267,12 @@ function onStyleInputChange() {
 // Assumes: db, STORE_NAME, LOC_KEY, locData, renderLocAll(), displayCSVPreviewAsCards(), log()
 
 async function clearAllMarkers() {
-  if (!confirm("Delete all saved column markers/custom text on page? This cannot be undone.")) return;
+  if (
+    !confirm(
+      'Delete all saved column markers/custom text on page? This cannot be undone.'
+    )
+  )
+    return;
 
   // clears local and DB instance of LocData and customText
   await clearLocData();
@@ -302,28 +284,25 @@ async function clearAllMarkers() {
   // Refresh UI: remove markers and unmark CSV cards
   await renderAll(); // overlay reconcile will remove markers
 
-  // If your CSV cards are already rendered, strip the "loc-data-exists" class:
-  const container = document.getElementById("csv-cards");
+  // If your CSV cards are already rendered, strip the 'loc-data-exists' class:
+  const container = document.getElementById('csv-cards');
   if (container) {
-    Array.from(container.children).forEach(card => card.classList.remove("loc-data-exists"));
+    Array.from(container.children).forEach((card) =>
+      card.classList.remove('loc-data-exists')
+    );
   }
 
   // Optionally reset font/size controls
-  const fontSelect = document.getElementById("font-select");
-  const sizeInput = document.getElementById("size-select");
-  if (fontSelect) fontSelect.value = "_normal";
+  const fontSelect = document.getElementById('font-select');
+  const sizeInput = document.getElementById('size-select');
+  if (fontSelect) fontSelect.value = '_normal';
   if (sizeInput) sizeInput.value = 12;
 }
 
-
-
-
-
-
 async function downloadMarkers() {
-  let pdfName = await getPdfNameFromDb()
+  let pdfName = await getPdfNameFromDb();
   if (!confirm(`Download PDF locations for file ${pdfName}?`)) return;
-  const out = [customText, locData]
+  const out = [customText, locData];
   const jsonString = JSON.stringify(out, null, 2); // null for replacer, 2 for indentation
   const blob = new Blob([jsonString], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -333,7 +312,6 @@ async function downloadMarkers() {
   a.click();
   URL.revokeObjectURL(url); // cleanup
 }
-
 
 async function uploadMarkers() {
   const input = document.createElement('input');
@@ -356,7 +334,6 @@ async function uploadMarkers() {
 
       log('Markers uploaded successfully');
       renderAll();
-
     } catch (error) {
       alert('Error loading markers file: ' + error.message);
     }
