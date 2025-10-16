@@ -182,8 +182,6 @@ function drawPlacedText(page, cfg, text, fontsMap) {
   const { pdfFontSize, exportX, exportY } = computeExportCoords(page, cfg);
 
   if (!spacing) {
-    console.log('drawText:')
-    console.log(text)
     page.drawText(text, { x: exportX, y: exportY, size: pdfFontSize, font });
     return;
   }
@@ -208,7 +206,6 @@ function drawCustText(doc, docFonts) {
     const cTextsOnPg = customText[pgNum];
     for (cTexts of cTextsOnPg) {
       const cTextP = resolveCustomTextValue(cTexts.text)
-      console.log(cTextP)
       drawPlacedText(page, cTexts, cTextP, docFonts)
     }
   }

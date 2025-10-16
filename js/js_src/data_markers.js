@@ -275,7 +275,7 @@ function onStyleInputChange() {
 // Assumes: db, STORE_NAME, LOC_KEY, locData, renderLocAll(), displayCSVPreviewAsCards(), log()
 
 async function clearAllMarkers() {
-  if (!confirm('Delete all saved column markers/custom text on page? This cannot be undone.')) { return; }
+  if (!confirm('Delete all saved column markers/custom text? This cannot be undone.')) { return; }
 
   log('Deleted all markers/custom text');
 

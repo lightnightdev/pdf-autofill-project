@@ -3,27 +3,29 @@
 // --------------------
 // PDF state
 // --------------------
-let currentPdfBytes = null;   // base pdf we render pages from
-let pdfDoc = null;            // cached PDF as pdfjsLib document for viewing
-let editDoc = null;           // PDF-Lib document with fonts
+let currentPdfBytes = null; // base pdf we render pages from
+let pdfDoc = null; // cached PDF as pdfjsLib document for viewing
+let editDoc = null; // PDF-Lib document with fonts
 let editDocFonts = null;
-let renderDoc = null;         // PDF-Lib document with edits
+let renderDoc = null; // PDF-Lib document with edits
 let currentPage = 1;
 let totalPages = 0;
 
 async function uploadPDF() {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.pdf';
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".pdf";
 
   input.onchange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const maxSize = 2 * 1024 * 1024 * 1024; // 2GB in bytes
-    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const isPdf =
+      file.type === "application/pdf" ||
+      file.name.toLowerCase().endsWith(".pdf");
 
     if (!isPdf) {
-      alert('Please select a valid PDF file.');
+      alert("Please select a valid PDF file.");
       return;
     }
 
@@ -33,12 +35,11 @@ async function uploadPDF() {
       return;
     }
 
-
     await processPDF(file);
-  }
+  };
 
   input.click();
-};
+}
 
 async function processPDF(file) {
   const file_ab = await file.arrayBuffer();
@@ -66,44 +67,54 @@ async function processPDF(file) {
 }
 
 function pdfButton(isUpload, fileName = "file.pdf") {
-  const pdfBtn = document.getElementById('pdf-input');
+  const pdfBtn = document.getElementById("pdf-input");
   if (isUpload) {
-    pdfBtn.classList.remove('btn-outline-success');
-    pdfBtn.classList.add('btn-success');
-    pdfBtn.classList.add('file-loaded');
+    pdfBtn.classList.remove("btn-outline-success");
+    pdfBtn.classList.add("btn-success");
+    pdfBtn.classList.add("file-loaded");
     pdfBtn.textContent = fileName;
   } else {
-    pdfBtn.classList.add('btn-outline-success');
-    pdfBtn.classList.remove('btn-success');
-    pdfBtn.classList.remove('file-loaded');
+    pdfBtn.classList.add("btn-outline-success");
+    pdfBtn.classList.remove("btn-success");
+    pdfBtn.classList.remove("file-loaded");
     pdfBtn.textContent = "Select PDF";
-
   }
 }
-
 
 // --------------------
 // Navigation buttons
 // --------------------
 document.getElementById("prev-page").addEventListener("click", () => {
-  if (currentPage <= 1) return;
-  renderPage(currentPage - 1);
-  renderAll();
+  prevPage();
 });
 
 document.getElementById("next-page").addEventListener("click", () => {
-  if (currentPage >= totalPages) return;
-  renderPage(currentPage + 1);
-  renderAll();
+  nextPage();
 });
+
+async function nextPage() {
+  if (currentPage >= totalPages) return;
+  await renderPage(currentPage + 1);
+  renderAll();
+}
+
+async function prevPage() {
+  if (currentPage <= 1) return;
+  await renderPage(currentPage - 1);
+  renderAll();
+}
 
 async function removeCurrentPage() {
   if (pdfDoc.numPages == 1) {
-    log('Only one page!');
+    log("Only one page!");
     return;
   }
 
-  if (!confirm(`Hide page ${currentPage}? This will remove all fields place on the page and remove it from the exported document.`)) {
+  if (
+    !confirm(
+      `Hide page ${currentPage}? This will remove all fields place on the page and remove it from the exported document.`
+    )
+  ) {
     return;
   }
 
@@ -121,23 +132,27 @@ async function removeCurrentPage() {
   // Remove all customText on that page, shift it down
   removeCustomTextFromPage();
 
-  removePageBytes(currentPage)
+  removePageBytes(currentPage);
   displayCSVPreviewAsCards(csvData);
-  log('Page hidden and removed.')
+  log("Page hidden and removed.");
   renderAll();
 }
 
 async function removePageBytes(pageNum) {
-  const goToPage = (pageNum == totalPages) ? pageNum - 1 : pageNum;
+  const goToPage = pageNum == totalPages ? pageNum - 1 : pageNum;
   doc = await PDFLib.PDFDocument.load(currentPdfBytes);
-  if (doc.totalPages == 1) { return; }
+  if (doc.totalPages == 1) {
+    return;
+  }
   doc.removePage(pageNum - 1);
   currentPdfBytes = await doc.save();
-  const currentPdfName = await getPdfNameFromDb() || 'unknown.pdf';
-  const newPdfName = currentPdfName.startsWith('edited_') ? currentPdfName : 'edited_' + currentPdfName;
+  const currentPdfName = (await getPdfNameFromDb()) || "unknown.pdf";
+  const newPdfName = currentPdfName.startsWith("edited_")
+    ? currentPdfName
+    : "edited_" + currentPdfName;
 
-  savePdfToIndexedDb(currentPdfBytes, newPdfName)
-  log('loading, going to ' + goToPage)
+  savePdfToIndexedDb(currentPdfBytes, newPdfName);
+  log("loading, going to " + goToPage);
   loadPDF(currentPdfBytes, goToPage);
 }
 
@@ -153,7 +168,7 @@ async function loadPDF(arrayBuffer, pageNum = 1) {
 
 // --------------------
 // Turn PDF bytes into editable PDFLib object (editDoc)
-// Edit Doc is the template w/ fonts -- renderDoc will copy EditDoc 
+// Edit Doc is the template w/ fonts -- renderDoc will copy EditDoc
 // --------------------
 async function createEditDoc(arrayBuffer = currentPdfBytes, pageNum = 1) {
   editDoc = await PDFLib.PDFDocument.load(arrayBuffer);
@@ -175,9 +190,11 @@ function queueUpdateRenderDoc(pageNum = currentPage) {
 
 async function updateRenderDoc(pageNum = currentPage, logLoad = false) {
   renderDoc = null;
-  if (!editDoc) { await createEditDoc(currentPdfBytes) }
-  const editDocBytes = await editDoc.save();                  // serialize the current in-memory PDF
-  renderDoc = await PDFLib.PDFDocument.load(editDocBytes);    // load a new independent copy
+  if (!editDoc) {
+    await createEditDoc(currentPdfBytes);
+  }
+  const editDocBytes = await editDoc.save(); // serialize the current in-memory PDF
+  renderDoc = await PDFLib.PDFDocument.load(editDocBytes); // load a new independent copy
   await drawSizingText(renderDoc, editDocFonts);
   const renderArrayBuffer = await renderDoc.save({
     useObjectStreams: false,
@@ -186,7 +203,9 @@ async function updateRenderDoc(pageNum = currentPage, logLoad = false) {
   const typedarray = new Uint8Array(renderArrayBuffer);
   pdfDoc = await pdfjsLib.getDocument({ data: typedarray }).promise;
   totalPages = pdfDoc.numPages;
-  if (logLoad) { log(`PDF loaded, pages: ${totalPages}`) };
+  if (logLoad) {
+    log(`PDF loaded, pages: ${totalPages}`);
+  }
   await renderPage(pageNum);
 }
 //function drawPlacedText(page, cfg, text, fontsMap) {
@@ -219,19 +238,16 @@ async function renderPage(pageNum = currentPage) {
     // update info
     totalPages = pdfDoc.numPages;
     currentPage = pageNum;
-    document.getElementById("page-info").textContent =
-      `Page ${currentPage} / ${totalPages}`;
+    document.getElementById(
+      "page-info"
+    ).textContent = `Page ${currentPage} / ${totalPages}`;
   } catch (err) {
-    log('Error rendering page');
+    log("Error rendering page");
     console.error("renderPage error:", err);
   } finally {
     renderInProgress = false;
   }
 }
-
-
-
-
 
 // --------------------
 // Flatten & compress with PDF-lib
@@ -241,7 +257,9 @@ async function flattenAndCompressFile(arrayBuffer) {
     // dumpSizeHeaderFooter(arrayBuffer);
 
     // Get PDF from Array buffer
-    const pdfLibDoc = await PDFLib.PDFDocument.load(arrayBuffer, { ignoreEncryption: true, });
+    const pdfLibDoc = await PDFLib.PDFDocument.load(arrayBuffer, {
+      ignoreEncryption: true,
+    });
 
     // Flatten form fields
     const form = pdfLibDoc.getForm();
@@ -256,14 +274,14 @@ async function flattenAndCompressFile(arrayBuffer) {
   } catch (err) {
     log("Error processing PDF: " + err.message);
     console.error(err);
-    return (arrayBuffer);
+    return arrayBuffer;
   }
 }
 
 // --------------------
 // Save Render (with spacing markers) / Main PDF to IndexedDb
 // --------------------
-// 
+//
 function saveRenderPdfToIndexedDb(arrayBuffer) {
   const blob = new Blob([arrayBuffer], { type: "application/pdf" });
   log(` Saving Render PDF: ${(arrayBuffer.byteLength / 1024).toFixed(1)} KB`);
@@ -276,12 +294,6 @@ function savePdfToIndexedDb(arrayBuffer, pdfName) {
   savePdfBlob(blob, pdfName);
   pdfButton(true, pdfName);
 }
-
-
-
-
-
-
 
 async function isEditingAllowed(ab) {
   loadingTask = pdfjsLib.getDocument({ data: ab });

@@ -5,12 +5,10 @@
 
 let csvData;
 
-
 async function uploadCSV() {
-
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.csv';
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".csv";
 
   input.onchange = async (e) => {
     const file = e.target.files[0];
@@ -25,8 +23,8 @@ async function uploadCSV() {
         if (!rawData || rawData.length === 1) return log("CSV is headers only");
 
         // Filter for emptry rows
-        const data = rawData.filter(row =>
-          row && row.some(cell => cell && cell.trim() !== "")
+        const data = rawData.filter(
+          (row) => row && row.some((cell) => cell && cell.trim() !== "")
         );
         log(`CSV parsed, ${data.length - 1} data rows`);
 
@@ -41,23 +39,22 @@ async function uploadCSV() {
       },
       header: false, // we parse manually
     });
-  }
+  };
   input.click();
 }
 
 function csvButton(isUpload, fileName = "csv_file.csv") {
-  const pdfBtn = document.getElementById('csv-input');
+  const pdfBtn = document.getElementById("csv-input");
   if (isUpload) {
-    pdfBtn.classList.remove('btn-outline-success');
-    pdfBtn.classList.add('btn-success');
-    pdfBtn.classList.add('file-loaded');
+    pdfBtn.classList.remove("btn-outline-success");
+    pdfBtn.classList.add("btn-success");
+    pdfBtn.classList.add("file-loaded");
     pdfBtn.textContent = fileName;
   } else {
-    pdfBtn.classList.add('btn-outline-success');
-    pdfBtn.classList.remove('btn-success');
-    pdfBtn.classList.remove('file-loaded');
+    pdfBtn.classList.add("btn-outline-success");
+    pdfBtn.classList.remove("btn-success");
+    pdfBtn.classList.remove("file-loaded");
     pdfBtn.textContent = "Select CSV";
-
   }
 }
 
@@ -72,8 +69,8 @@ function displayCSVPreviewAsCards(data) {
 
   headers.forEach((colName, colIdx) => {
     const card = document.createElement("div");
-    card.id = 'card-col' + String(colIdx)
-    card.className = 'card p-2 text-center';
+    card.id = "card-col" + String(colIdx);
+    card.className = "card col-card p-2 text-center";
     card.dataset.colIdx = colIdx;
     card.style.cursor = "pointer";
 
@@ -82,25 +79,55 @@ function displayCSVPreviewAsCards(data) {
       card.classList.add("loc-data-exists");
     }
 
-    // Build inner content: header + first 2 rows preview
+    const wrp = document.createElement("div");
+    wrp.className = "d-flex";
+
+    // Header
+    const textDiv = document.createElement("div");
+    textDiv.className = "col-8";
     const headerDiv = document.createElement("div");
     headerDiv.className = "fw-bold mb-1 text-start";
     headerDiv.textContent = colName;
-    card.appendChild(headerDiv);
+    textDiv.appendChild(headerDiv);
 
+    // Preview Rows
     for (let i = 1; i <= rowsToShow; i++) {
       const cellDiv = document.createElement("div");
       cellDiv.textContent = data[i][colIdx] || "";
       cellDiv.className = "text-start";
       cellDiv.style.fontSize = "0.8rem"; // smaller preview
-      card.appendChild(cellDiv);
+      textDiv.appendChild(cellDiv);
     }
+    wrp.appendChild(textDiv);
+
+    // ✅ Add "Add to File Name" toggle mini-card
+    const toggleDiv = document.createElement("div");
+    toggleDiv.id = "file-name-toggle-" + String(colIdx);
+    toggleDiv.className = "card file-name-toggle mt-2 text-align-center col-4";
+    toggleDiv.textContent = "Add to File Name";
+    toggleDiv.onclick = (e) => {
+      e.stopPropagation(); // prevent triggering main card click
+      toggleDiv.classList.toggle("file-name-select");
+    };
+    wrp.appendChild(toggleDiv);
+    card.appendChild(wrp);
 
     // Handle click
     card.onclick = () => selectCard(parseInt(card.dataset.colIdx));
 
     container.appendChild(card);
   });
+}
+
+// get selected headers
+function getSelectedFileNameHeaders(csvData) {
+  const selectedCards = document.querySelectorAll(".file-name-select");
+  const selectedHeaders = [];
+  selectedCards.forEach((div) => {
+    const colIdx = parseInt(div.closest(".col-card").dataset.colIdx);
+    selectedHeaders.push(colIdx);
+  });
+  return selectedHeaders;
 }
 
 // // Display table with headers and first two data rows
@@ -137,8 +164,6 @@ function displayCSVPreviewAsCards(data) {
 //     table.appendChild(tr);
 //   }
 // }
-
-
 
 // function selectColumn(colIdx) {
 //   selectedColIndex = colIdx;

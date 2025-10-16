@@ -51,7 +51,7 @@ async function generateAndExportPDFs() {
     const fonts = await embedFontsForDoc(srcDoc);
     drawCustText(srcDoc, fonts);
 
-
+    const fileNameCols = getSelectedFileNameHeaders(csvData);
     // Iterate through each data row in the CSV (skipping header)
     for (let r = 1; r < csvData.length; r++) {
       log(`Generating row ${r} of ${total}`);
@@ -85,11 +85,17 @@ async function generateAndExportPDFs() {
           });
         };
 
-        const stemRaw = (csvData[r]?.[0] || "").toString();
+        // Set FileName
+        let stemRaw = "";
+        for (const nm of fileNameCols) {
+          stemRaw += (csvData[r]?.[nm] || "").toString();
+        }
+        if (stemRaw === ""){ stemRaw = (csvData[r]?.[0] || "").toString(); }
+
         // To get leading 0's if more than 9 rows
         const paddedRow = String(r).padStart(String(total).length, "0");
         const sanitized = sanitizeStem(stemRaw);
-        const stem = sanitized ? `${paddedRow}-${sanitized}` : `Row-${paddedRow}`;
+        const stem = sanitized ? `${paddedRow}-${sanitized}` : `${paddedRow}-Row`;
 
         filesForZip.push({ name: `${stem}.pdf`, data: bytes });
       }
