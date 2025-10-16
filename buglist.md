@@ -1,5 +1,6 @@
 BUGS
 - Need parseApiData!
+- Make user:password autofill. no user?
 - Uploading does not work perfectly
 
 QUALITY OF LIFE
