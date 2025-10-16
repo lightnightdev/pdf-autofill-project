@@ -48,7 +48,7 @@
 }
 
 .download-modal .table-responsive {
-  max-height: 320px;
+  max-height: 60%;
   overflow-y: auto;
 }
 

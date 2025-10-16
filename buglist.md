@@ -1,4 +1,5 @@
 BUGS
+- Need parseApiData!
 - Uploading does not work perfectly
 
 QUALITY OF LIFE
