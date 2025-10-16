@@ -12,20 +12,20 @@ let currentPage = 1;
 let totalPages = 0;
 
 async function uploadPDF() {
-  const input = document.createElement("input");
-  input.type = "file";
-  input.accept = ".pdf";
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.pdf';
 
   input.onchange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const maxSize = 2 * 1024 * 1024 * 1024; // 2GB in bytes
     const isPdf =
-      file.type === "application/pdf" ||
-      file.name.toLowerCase().endsWith(".pdf");
+      file.type === 'application/pdf' ||
+      file.name.toLowerCase().endsWith('.pdf');
 
     if (!isPdf) {
-      alert("Please select a valid PDF file.");
+      alert('Please select a valid PDF file.');
       return;
     }
 
@@ -49,7 +49,7 @@ async function processPDF(file) {
     log(` Original size: ${(file.size / 1024).toFixed(1)} KB`);
     const canEdit = await isEditingAllowed(file_ab); // or drop await if truly sync
     if (!canEdit) {
-      log("PDF modifications not allowed. Rasterizing...");
+      log('PDF modifications not allowed. Rasterizing...');
     }
     const processed = canEdit
       ? await flattenAndCompressFile(file_ab) // return processed bytes/blob
@@ -61,34 +61,34 @@ async function processPDF(file) {
     clearLocData();
     loadPDF(processed); // pass processed output
   } catch (err) {
-    log("Error: " + (err?.message || err));
+    log('Error: ' + (err?.message || err));
     console.error(err);
   }
 }
 
-function pdfButton(isUpload, fileName = "file.pdf") {
-  const pdfBtn = document.getElementById("pdf-input");
+function pdfButton(isUpload, fileName = 'file.pdf') {
+  const pdfBtn = document.getElementById('pdf-input');
   if (isUpload) {
-    pdfBtn.classList.remove("btn-outline-success");
-    pdfBtn.classList.add("btn-success");
-    pdfBtn.classList.add("file-loaded");
+    pdfBtn.classList.remove('btn-outline-success');
+    pdfBtn.classList.add('btn-success');
+    pdfBtn.classList.add('file-loaded');
     pdfBtn.textContent = fileName;
   } else {
-    pdfBtn.classList.add("btn-outline-success");
-    pdfBtn.classList.remove("btn-success");
-    pdfBtn.classList.remove("file-loaded");
-    pdfBtn.textContent = "Select PDF";
+    pdfBtn.classList.add('btn-outline-success');
+    pdfBtn.classList.remove('btn-success');
+    pdfBtn.classList.remove('file-loaded');
+    pdfBtn.textContent = 'Select PDF';
   }
 }
 
 // --------------------
 // Navigation buttons
 // --------------------
-document.getElementById("prev-page").addEventListener("click", () => {
+document.getElementById('prev-page').addEventListener('click', () => {
   prevPage();
 });
 
-document.getElementById("next-page").addEventListener("click", () => {
+document.getElementById('next-page').addEventListener('click', () => {
   nextPage();
 });
 
@@ -106,7 +106,7 @@ async function prevPage() {
 
 async function removeCurrentPage() {
   if (pdfDoc.numPages == 1) {
-    log("Only one page!");
+    log('Only one page!');
     return;
   }
 
@@ -119,7 +119,7 @@ async function removeCurrentPage() {
   }
 
   // Remove all locData for that page
-  if (locData && typeof locData === "object") {
+  if (locData && typeof locData === 'object') {
     for (const key of Object.keys(locData)) {
       const cfg = locData[key];
       if (cfg && Number(cfg.page) === Number(currentPage)) {
@@ -134,7 +134,7 @@ async function removeCurrentPage() {
 
   removePageBytes(currentPage);
   displayCSVPreviewAsCards(csvData);
-  log("Page hidden and removed.");
+  log('Page hidden and removed.');
   renderAll();
 }
 
@@ -146,13 +146,13 @@ async function removePageBytes(pageNum) {
   }
   doc.removePage(pageNum - 1);
   currentPdfBytes = await doc.save();
-  const currentPdfName = (await getPdfNameFromDb()) || "unknown.pdf";
-  const newPdfName = currentPdfName.startsWith("edited_")
+  const currentPdfName = (await getPdfNameFromDb()) || 'unknown.pdf';
+  const newPdfName = currentPdfName.startsWith('edited_')
     ? currentPdfName
-    : "edited_" + currentPdfName;
+    : 'edited_' + currentPdfName;
 
   savePdfToIndexedDb(currentPdfBytes, newPdfName);
-  log("loading, going to " + goToPage);
+  log('loading, going to ' + goToPage);
   loadPDF(currentPdfBytes, goToPage);
 }
 
@@ -226,8 +226,8 @@ async function renderPage(pageNum = currentPage) {
 
     const page = await pdfDoc.getPage(pageNum);
     const viewport = page.getViewport({ scale: 1.5 });
-    const canvas = document.getElementById("pdf-canvas");
-    const ctx = canvas.getContext("2d");
+    const canvas = document.getElementById('pdf-canvas');
+    const ctx = canvas.getContext('2d');
 
     canvas.width = viewport.width;
     canvas.height = viewport.height;
@@ -239,11 +239,11 @@ async function renderPage(pageNum = currentPage) {
     totalPages = pdfDoc.numPages;
     currentPage = pageNum;
     document.getElementById(
-      "page-info"
+      'page-info'
     ).textContent = `Page ${currentPage} / ${totalPages}`;
   } catch (err) {
-    log("Error rendering page");
-    console.error("renderPage error:", err);
+    log('Error rendering page');
+    console.error('renderPage error:', err);
   } finally {
     renderInProgress = false;
   }
@@ -272,7 +272,7 @@ async function flattenAndCompressFile(arrayBuffer) {
     });
     return pdfBytes;
   } catch (err) {
-    log("Error processing PDF: " + err.message);
+    log('Error processing PDF: ' + err.message);
     console.error(err);
     return arrayBuffer;
   }
@@ -283,13 +283,13 @@ async function flattenAndCompressFile(arrayBuffer) {
 // --------------------
 //
 function saveRenderPdfToIndexedDb(arrayBuffer) {
-  const blob = new Blob([arrayBuffer], { type: "application/pdf" });
+  const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
   log(` Saving Render PDF: ${(arrayBuffer.byteLength / 1024).toFixed(1)} KB`);
   savePdfRenderBlob(blob);
 }
 
 function savePdfToIndexedDb(arrayBuffer, pdfName) {
-  const blob = new Blob([arrayBuffer], { type: "application/pdf" });
+  const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
   log(` Saving: PDF: ${(arrayBuffer.byteLength / 1024).toFixed(1)} KB`);
   savePdfBlob(blob, pdfName);
   pdfButton(true, pdfName);
@@ -303,14 +303,14 @@ async function isEditingAllowed(ab) {
   // If null, then no restrictions
   if (!permissions) return true;
 
-  log("Encryption detected. Checking for permissions...");
+  log('Encryption detected. Checking for permissions...');
 
   const canModify = permissions.includes(
     pdfjsLib.PermissionFlag.MODIFY_CONTENTS
   );
 
   if (canModify) {
-    log("Modify permissions enabled.");
+    log('Modify permissions enabled.');
   }
 
   return canModify;

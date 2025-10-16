@@ -20,7 +20,7 @@ function newMarker(x, y, pageNum, selectedSize, selectedFont, selectedSpacing) {
     font: selectedFont,
     size: selectedSize,
     spacing: selectedSpacing,
-    stageW: canvas?.width || 1,     // 👈 store capture canvas size
+    stageW: canvas?.width || 1, // 👈 store capture canvas size
     stageH: canvas?.height || 1,
   };
 
@@ -45,7 +45,6 @@ function removeMarker(colIndx) {
 
 // checks for markers on current page & doesn't have spacing data
 function renderAllMarkers() {
-
   // spacing data should be rendered with page, per renderAll();
   Object.keys(locData).forEach((key) => {
     const data = locData[key];
@@ -86,7 +85,7 @@ function renderMarker(colIndex, markerData) {
   el.className = 'loc-data-el';
   const isSelected = selectedColIndex === colIndex;
   if (isSelected) {
-    el.classList.add('select')
+    el.classList.add('select');
   }
   el.dataset.colIdx = String(colIndex);
   el.addEventListener('click', () => selectCard(parseInt(colIndex, 10)));
@@ -99,7 +98,7 @@ function renderMarker(colIndex, markerData) {
   const spacing = Number(markerData.spacing);
   if (!isNaN(spacing) && spacing > 0) {
     // replace each character (including spaces) with a space
-    el.classList.add('invisible-text')
+    el.classList.add('invisible-text');
     queueUpdateRenderDoc();
   }
   el.textContent = mText;
@@ -171,8 +170,8 @@ function selectMarkersAndCards(colIdx) {
 
   const markers = document.getElementById('pdf-overlay');
   const cards = document.getElementById('csv-cards');
-  addSelectClassColIdx(markers, colIdx)
-  addSelectClassColIdx(cards, colIdx)
+  addSelectClassColIdx(markers, colIdx);
+  addSelectClassColIdx(cards, colIdx);
   setFontSizeSelectors(colIdx);
 }
 
@@ -275,15 +274,18 @@ function onStyleInputChange() {
 // Assumes: db, STORE_NAME, LOC_KEY, locData, renderLocAll(), displayCSVPreviewAsCards(), log()
 
 async function clearAllMarkers() {
-  if (!confirm('Delete all saved column markers/custom text? This cannot be undone.')) { return; }
+  if (
+    !confirm(
+      'Delete all saved column markers/custom text? This cannot be undone.'
+    )
+  ) {
+    return;
+  }
 
   log('Deleted all markers/custom text');
 
   // clears local and DB instance of LocData and customText
-  await Promise.all([
-    clearLocData(),
-    clearCustomText(),
-  ]);
+  await Promise.all([clearLocData(), clearCustomText()]);
 
   // clear any changes to rendered PDF
   await createEditDoc(currentPdfBytes);
@@ -307,17 +309,28 @@ async function clearAllMarkers() {
 }
 
 async function downloadMarkers() {
-  let pdfName = await getPdfNameFromDb();
-  if (!confirm(`Download PDF locations for file ${pdfName}?`)) return;
-  const out = [customText, locData];
-  const jsonString = JSON.stringify(out, null, 2); // null for replacer, 2 for indentation
-  const blob = new Blob([jsonString], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${pdfName}-markers.json`; // or whatever filename you want
-  a.click();
-  URL.revokeObjectURL(url); // cleanup
+  try {
+    const pdfName = await getPdfNameFromDb();
+    if (!pdfName) {
+      pdfName = 'unknown.pdf';
+    }
+
+    if (!confirm(`Download PDF locations for file "${pdfName}"?`)) return;
+
+    const outJson = extractMarkerJson();
+    const blob = new Blob([outJson], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${pdfName}-markers.json`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+    log(`✅ Marker JSON downloaded for: ${pdfName}`);
+  } catch (err) {
+    alert('Error downloading markers: ' + err.message);
+  }
 }
 
 async function uploadMarkers() {
@@ -329,22 +342,43 @@ async function uploadMarkers() {
     const file = e.target.files[0];
     if (!file) return;
 
-    try {
-      const text = await file.text();
-      const [customTextData, locDataData] = JSON.parse(text);
-
-      customText = customTextData;
-      locData = locDataData;
-
-      await saveLocData();
-      await saveCustomText();
-
-      log('Markers uploaded successfully');
-      renderAll();
-    } catch (error) {
-      alert('Error loading markers file: ' + error.message);
-    }
+    await loadMarkerJson(file);
   };
 
   input.click();
+}
+
+function extractMarkerJson() {
+  const out = {
+    customText: customText,
+    locData: locData,
+    csvHeaders: csvData[0],
+  };
+
+  return JSON.stringify(out, null, 2); // pretty-print JSON
+}
+
+async function loadMarkerJson(file) {
+  try {
+    const text = await file.text();
+    const input = JSON.parse(text);
+
+    if (!input || typeof input !== 'object') {
+      throw new Error('Invalid JSON format');
+    }
+
+    if (!input.customText || !input.locData) {
+      throw new Error('Missing required fields (customText / locData)');
+    }
+
+    customText = input.customText;
+    locData = input.locData;
+
+    await Promise.all([saveLocData(), saveCustomText()]);
+    log('Markers loaded successfully');
+
+    await renderAll();
+  } catch (error) {
+    alert('Error loading markers file: ' + error.message);
+  }
 }

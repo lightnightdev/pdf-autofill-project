@@ -1,4 +1,4 @@
-const API_BASE = "https://www.lightnightdev.com/autofill/api";
+const API_BASE = 'https://www.lightnightdev.com/autofill/api';
 
 const API_ENDPOINTS = {
   login: `${API_BASE}/Auth/login`,
@@ -12,24 +12,24 @@ const API_ENDPOINTS = {
 
 async function apiLogin(username, password) {
   const res = await fetch(`${API_BASE}/Auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password }),
   });
 
   if (!res.ok) {
     const msg = await res.text();
-    console.error(`Login Failed: ${msg}`)
+    console.error(`Login Failed: ${msg}`);
     throw new Error(`Login failed: ${msg}`);
   }
 
   const data = await res.json();
-  localStorage.setItem("token", data.token);
+  localStorage.setItem('token', data.token);
   return data;
 }
 
 async function apiTestAuth() {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem('token');
   const res = await fetch(`${API_BASE}/Auth/test`, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -39,7 +39,7 @@ async function apiTestAuth() {
 }
 
 async function apiGetList() {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem('token');
   const res = await fetch(`${API_BASE}/Autofill/list`, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -49,7 +49,7 @@ async function apiGetList() {
 }
 
 async function apiGetData(id) {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem('token');
   const res = await fetch(`${API_BASE}/autofill/data/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -59,24 +59,24 @@ async function apiGetData(id) {
 }
 
 async function apiGetPdf(id) {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem('token');
   const res = await fetch(`${API_BASE}/autofill/pdf/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
   if (!res.ok) throw new Error(`Failed to fetch PDF: ${res.status}`);
-  const contentDisposition = res.headers.get("Content-Disposition");
-  let filename = "download.pdf";
+  const contentDisposition = res.headers.get('Content-Disposition');
+  let filename = 'download.pdf';
 
-  if (contentDisposition && contentDisposition.includes("filename=")) {
+  if (contentDisposition && contentDisposition.includes('filename=')) {
     filename = contentDisposition
-      .split("filename=")[1]
-      .replace(/["']/g, "")
+      .split('filename=')[1]
+      .replace(/["']/g, '')
       .trim();
   }
 
   const ab = await res.arrayBuffer();
-  return { filename, ab}
+  return { filename, ab };
 }
 
 async function apiCreateAutofill({
@@ -87,25 +87,25 @@ async function apiCreateAutofill({
   pdfFile,
   pdfFileName,
 }) {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem('token');
   const form = new FormData();
-  form.append("CarrierName", carrierName || "");
-  form.append("CsvFileName", csvFileName || "");
-  form.append("CsvMarkerData", csvMarkerData || "");
-  form.append("Notes", notes || "");
+  form.append('CarrierName', carrierName || '');
+  form.append('CsvFileName', csvFileName || '');
+  form.append('CsvMarkerData', csvMarkerData || '');
+  form.append('Notes', notes || '');
   if (!pdfFile) {
-    throw new Error("PDF file is required for upload.");
+    throw new Error('PDF file is required for upload.');
   }
 
   if (pdfFile instanceof Blob) {
-    const name = pdfFileName || pdfFile.name || "upload.pdf";
-    form.append("PdfFile", pdfFile, name);
+    const name = pdfFileName || pdfFile.name || 'upload.pdf';
+    form.append('PdfFile', pdfFile, name);
   } else {
-    form.append("PdfFile", pdfFile);
+    form.append('PdfFile', pdfFile);
   }
 
   const res = await fetch(`${API_BASE}/autofill`, {
-    method: "POST",
+    method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
     body: form,
   });
@@ -120,9 +120,9 @@ async function apiCreateAutofill({
 }
 
 async function apiDeleteAutofill_POST(id) {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem('token');
   const res = await fetch(`${API_BASE}/autofill/delete/${id}`, {
-    method: "POST",
+    method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -132,9 +132,9 @@ async function apiDeleteAutofill_POST(id) {
 }
 
 async function apiDeleteAutofill(id) {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem('token');
   const res = await fetch(`${API_BASE}/autofill/${id}`, {
-    method: "DELETE",
+    method: 'DELETE',
     headers: { Authorization: `Bearer ${token}` },
   });
 

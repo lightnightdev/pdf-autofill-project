@@ -3,8 +3,6 @@
 // IndexedDB setup
 // --------------------
 
-
-
 loadCachedData();
 
 initFontSizeHandlers();

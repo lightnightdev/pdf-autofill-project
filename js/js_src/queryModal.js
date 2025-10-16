@@ -4,24 +4,25 @@ let downloadModalElements = null;
 
 const downloadModalState = {
   token: null,
-  mode: "list",
+  mode: 'list',
   pendingUpload: null,
 };
 
 const DOWNLOAD_MODAL_COPY = {
   list: {
-    title: "Download PDF / Markers",
-    subtitle: "Authenticate to view the available PDF and marker exports.",
+    title: 'Download PDF / Markers',
+    subtitle: 'Authenticate to view the available PDF and marker exports.',
   },
   upload: {
-    title: "Send PDF / Markers",
-    subtitle: "Authenticate to send the current PDF and marker data to the server.",
+    title: 'Send PDF / Markers',
+    subtitle:
+      'Authenticate to send the current PDF and marker data to the server.',
   },
 };
 
 const setTextContent = (el, text) => {
   if (!el) return;
-  el.textContent = text ?? "";
+  el.textContent = text ?? '';
 };
 
 const toggleDisabled = (elements, disabled) => {
@@ -31,7 +32,7 @@ const toggleDisabled = (elements, disabled) => {
 };
 
 const toggleHidden = (el, hidden) => {
-  el?.classList.toggle("d-none", !!hidden);
+  el?.classList.toggle('d-none', !!hidden);
 };
 
 // ========================
@@ -40,16 +41,17 @@ const toggleHidden = (el, hidden) => {
 async function openQueryModal(options = {}) {
   const modalEl = ensureDownloadModalSetup();
   if (!modalEl) {
-    console.warn("Download modal element not found.");
+    console.warn('Download modal element not found.');
     return;
   }
 
-  const { mode = "list", uploadData = null } = options;
+  const { mode = 'list', uploadData = null } = options;
   downloadModalState.mode = mode;
-  if (mode === "upload") {
-    downloadModalState.pendingUpload = uploadData ?? downloadModalState.pendingUpload;
+  if (mode === 'upload') {
+    downloadModalState.pendingUpload =
+      uploadData ?? downloadModalState.pendingUpload;
     if (!downloadModalState.pendingUpload) {
-      console.warn("Upload mode requested without pending data.");
+      console.warn('Upload mode requested without pending data.');
     }
   } else {
     downloadModalState.pendingUpload = null;
@@ -62,19 +64,19 @@ async function openQueryModal(options = {}) {
   // ✅ Check saved token
   const existingToken = await verifyExistingToken();
   if (existingToken) {
-    console.log("Authenticated via saved token.");
+    console.log('Authenticated via saved token.');
     downloadModalState.token = existingToken;
-    if (downloadModalState.mode === "upload") {
+    if (downloadModalState.mode === 'upload') {
       await showUploadConfirmation();
     } else {
       switchToDownloadTable();
       await loadDownloadTableData();
     }
   } else {
-    if (downloadModalState.mode === "upload") {
-      console.log("Login required before uploading.");
+    if (downloadModalState.mode === 'upload') {
+      console.log('Login required before uploading.');
     } else {
-      console.log("No valid saved token - showing login form.");
+      console.log('No valid saved token - showing login form.');
     }
   }
 }
@@ -83,38 +85,40 @@ async function openQueryModal(options = {}) {
 // Modal setup
 // ========================
 function ensureDownloadModalSetup() {
-  const modalEl = document.getElementById("downloadModal");
+  const modalEl = document.getElementById('downloadModal');
   if (!modalEl) return null;
 
   if (downloadModalInitialized) return modalEl;
 
   downloadModalElements = {
     modalEl,
-    form: document.getElementById("download-auth-form"),
-    usernameInput: document.getElementById("download-username"),
-    passwordInput: document.getElementById("download-password"),
-    submitBtn: document.getElementById("download-auth-submit"),
-    spinner: document.getElementById("download-auth-spinner"),
-    errorMessage: document.getElementById("download-auth-error"),
-    loginSection: document.getElementById("download-login-section"),
-    tableSection: document.getElementById("download-table-section"),
-    tableStatus: document.getElementById("download-table-status"),
-    tableBody: document.querySelector("#download-data-table tbody"),
-    logoutBtn: document.getElementById("download-logout-btn"),
-    infoBanner: document.getElementById("download-table-info"),
-    modalTitle: document.getElementById("download-modal-title"),
-    modalSubtitle: document.getElementById("download-modal-subtitle"),
-    uploadSection: document.getElementById("download-upload-section"),
-    uploadPdfName: document.getElementById("upload-pdf-name"),
-    uploadPdfSize: document.getElementById("upload-pdf-size"),
-    uploadLocDataPreview: document.getElementById("upload-locdata-preview"),
-    uploadCustomTextPreview: document.getElementById("upload-customtext-preview"),
-    firstColumnHeaders: document.getElementById("upload-first-column-headers"),
-    uploadConfirmBtn: document.getElementById("upload-confirm-btn"),
-    uploadCancelBtn: document.getElementById("upload-cancel-btn"),
-    uploadConfirmText: document.getElementById("upload-confirm-text"),
-    uploadSpinner: document.getElementById("upload-confirm-spinner"),
-    uploadStatus: document.getElementById("upload-status"),
+    form: document.getElementById('download-auth-form'),
+    usernameInput: document.getElementById('download-username'),
+    passwordInput: document.getElementById('download-password'),
+    submitBtn: document.getElementById('download-auth-submit'),
+    spinner: document.getElementById('download-auth-spinner'),
+    errorMessage: document.getElementById('download-auth-error'),
+    loginSection: document.getElementById('download-login-section'),
+    tableSection: document.getElementById('download-table-section'),
+    tableStatus: document.getElementById('download-table-status'),
+    tableBody: document.querySelector('#download-data-table tbody'),
+    logoutBtn: document.getElementById('download-logout-btn'),
+    infoBanner: document.getElementById('download-table-info'),
+    modalTitle: document.getElementById('download-modal-title'),
+    modalSubtitle: document.getElementById('download-modal-subtitle'),
+    uploadSection: document.getElementById('download-upload-section'),
+    uploadPdfName: document.getElementById('upload-pdf-name'),
+    uploadPdfSize: document.getElementById('upload-pdf-size'),
+    uploadLocDataPreview: document.getElementById('upload-locdata-preview'),
+    uploadCustomTextPreview: document.getElementById(
+      'upload-customtext-preview'
+    ),
+    firstColumnHeaders: document.getElementById('upload-first-column-headers'),
+    uploadConfirmBtn: document.getElementById('upload-confirm-btn'),
+    uploadCancelBtn: document.getElementById('upload-cancel-btn'),
+    uploadConfirmText: document.getElementById('upload-confirm-text'),
+    uploadSpinner: document.getElementById('upload-confirm-spinner'),
+    uploadStatus: document.getElementById('upload-status'),
   };
 
   downloadModalInstance = bootstrap.Modal.getOrCreateInstance(modalEl, {
@@ -124,38 +128,41 @@ function ensureDownloadModalSetup() {
   });
 
   downloadModalElements.form?.addEventListener(
-    "submit",
+    'submit',
     handleDownloadAuthSubmit
   );
 
-  downloadModalElements.logoutBtn?.addEventListener("click", () => {
-    localStorage.removeItem("token"); // ✅ also clear saved login
-    const preserve = downloadModalState.mode === "upload";
-    resetDownloadModalState({ preserveMode: preserve, preservePending: preserve });
+  downloadModalElements.logoutBtn?.addEventListener('click', () => {
+    localStorage.removeItem('token'); // ✅ also clear saved login
+    const preserve = downloadModalState.mode === 'upload';
+    resetDownloadModalState({
+      preserveMode: preserve,
+      preservePending: preserve,
+    });
     focusDownloadUsername();
   });
 
   downloadModalElements.tableBody?.addEventListener(
-    "click",
+    'click',
     handleDownloadTableClick
   );
 
   downloadModalElements.uploadConfirmBtn?.addEventListener(
-    "click",
+    'click',
     handleUploadConfirm
   );
 
-  downloadModalElements.uploadCancelBtn?.addEventListener("click", () => {
+  downloadModalElements.uploadCancelBtn?.addEventListener('click', () => {
     downloadModalInstance?.hide();
   });
 
-  modalEl.addEventListener("shown.bs.modal", () => {
-    document.body.classList.add("download-modal-open");
+  modalEl.addEventListener('shown.bs.modal', () => {
+    document.body.classList.add('download-modal-open');
     focusDownloadUsername();
   });
 
-  modalEl.addEventListener("hidden.bs.modal", () => {
-    document.body.classList.remove("download-modal-open");
+  modalEl.addEventListener('hidden.bs.modal', () => {
+    document.body.classList.remove('download-modal-open');
     resetDownloadModalState();
   });
 
@@ -170,7 +177,7 @@ function focusDownloadUsername() {
   const els = downloadModalElements;
   if (!els) return;
   setTimeout(() => {
-    if (els.loginSection?.classList.contains("d-none")) return;
+    if (els.loginSection?.classList.contains('d-none')) return;
     els.usernameInput?.focus();
   }, 150);
 }
@@ -187,51 +194,48 @@ function applyModalMode(mode) {
 function clearUploadPreview() {
   const els = downloadModalElements;
   if (!els) return;
-  setTextContent(els.uploadPdfName, "—");
-  setTextContent(els.uploadPdfSize, "—");
-  setTextContent(els.uploadLocDataPreview, "{}");
-  setTextContent(els.uploadCustomTextPreview, "{}");
-  setTextContent(els.firstColumnHeaders, "None");
+  setTextContent(els.uploadPdfName, '—');
+  setTextContent(els.uploadPdfSize, '—');
+  setTextContent(els.uploadLocDataPreview, '{}');
+  setTextContent(els.uploadCustomTextPreview, '{}');
+  setTextContent(els.firstColumnHeaders, 'None');
 }
 
 function setUploadSubmitting(isSubmitting) {
   const els = downloadModalElements;
   if (!els) return;
 
-  toggleDisabled(
-    [els.uploadConfirmBtn, els.uploadCancelBtn],
-    isSubmitting
-  );
+  toggleDisabled([els.uploadConfirmBtn, els.uploadCancelBtn], isSubmitting);
   toggleHidden(els.uploadSpinner, !isSubmitting);
 
   const target = els.uploadConfirmText || els.uploadConfirmBtn;
-  const text = isSubmitting ? "Sending…" : "Send to Server";
+  const text = isSubmitting ? 'Sending…' : 'Send to Server';
   setTextContent(target, text);
 }
 
-function updateUploadStatus(message, variant = "info") {
+function updateUploadStatus(message, variant = 'info') {
   const el = downloadModalElements?.uploadStatus;
   if (!el) return;
 
-  setTextContent(el, message || "");
-  el.classList.remove("text-danger", "text-success");
+  setTextContent(el, message || '');
+  el.classList.remove('text-danger', 'text-success');
 
   if (!message) return;
 
   const variantClass =
-    variant === "error"
-      ? "text-danger"
-      : variant === "success"
-      ? "text-success"
+    variant === 'error'
+      ? 'text-danger'
+      : variant === 'success'
+      ? 'text-success'
       : null;
   if (variantClass) el.classList.add(variantClass);
 }
 
 function formatFileSize(bytes) {
-  if (typeof bytes !== "number" || !Number.isFinite(bytes)) return "—";
-  if (bytes === 0) return "0 bytes";
+  if (typeof bytes !== 'number' || !Number.isFinite(bytes)) return '—';
+  if (bytes === 0) return '0 bytes';
 
-  const units = ["bytes", "KB", "MB", "GB", "TB"];
+  const units = ['bytes', 'KB', 'MB', 'GB', 'TB'];
   let size = bytes;
   let unitIndex = 0;
 
@@ -252,27 +256,27 @@ function resetDownloadModalState(options = {}) {
 
   downloadModalState.token = null;
   if (!preserveMode) {
-    downloadModalState.mode = "list";
+    downloadModalState.mode = 'list';
   }
   if (!preservePending) {
     downloadModalState.pendingUpload = null;
   }
 
   els.form?.reset?.();
-  setTextContent(els.errorMessage, "");
+  setTextContent(els.errorMessage, '');
   setDownloadAuthLoading(false);
 
-  updateDownloadTableStatus("");
+  updateDownloadTableStatus('');
   clearDownloadTable();
 
-  els.loginSection?.classList.remove("d-none");
-  els.tableSection?.classList.add("d-none");
-  els.infoBanner?.classList.add("d-none");
-  els.uploadSection?.classList.add("d-none");
+  els.loginSection?.classList.remove('d-none');
+  els.tableSection?.classList.add('d-none');
+  els.infoBanner?.classList.add('d-none');
+  els.uploadSection?.classList.add('d-none');
 
   clearUploadPreview();
   setUploadSubmitting(false);
-  updateUploadStatus("");
+  updateUploadStatus('');
 
   applyModalMode(downloadModalState.mode);
 }
@@ -300,21 +304,21 @@ async function handleDownloadAuthSubmit(event) {
 
   if (!username || !password) {
     downloadModalElements.errorMessage.textContent =
-      "Please enter both username and password.";
+      'Please enter both username and password.';
     return;
   }
 
-  downloadModalElements.errorMessage.textContent = "";
+  downloadModalElements.errorMessage.textContent = '';
   setDownloadAuthLoading(true);
 
   try {
     // ✅ Use centralized API function
     const loginData = await apiLogin(username, password);
-    if (!loginData?.token) throw new Error("Token missing from response.");
+    if (!loginData?.token) throw new Error('Token missing from response.');
 
     downloadModalState.token = loginData.token;
 
-    if (downloadModalState.mode === "upload") {
+    if (downloadModalState.mode === 'upload') {
       await showUploadConfirmation();
     } else {
       switchToDownloadTable();
@@ -323,7 +327,7 @@ async function handleDownloadAuthSubmit(event) {
   } catch (err) {
     console.error(err);
     downloadModalElements.errorMessage.textContent =
-      err.message || "Login failed. Please try again.";
+      err.message || 'Login failed. Please try again.';
     downloadModalState.token = null;
   } finally {
     setDownloadAuthLoading(false);
@@ -337,13 +341,13 @@ function switchToDownloadTable() {
   const els = downloadModalElements;
   if (!els) return;
 
-  downloadModalState.mode = "list";
-  applyModalMode("list");
-  els.loginSection.classList.add("d-none");
-  els.tableSection.classList.remove("d-none");
-  els.infoBanner?.classList.remove("d-none");
-  els.uploadSection?.classList.add("d-none");
-  updateDownloadTableStatus("Loading available downloads…");
+  downloadModalState.mode = 'list';
+  applyModalMode('list');
+  els.loginSection.classList.add('d-none');
+  els.tableSection.classList.remove('d-none');
+  els.infoBanner?.classList.remove('d-none');
+  els.uploadSection?.classList.add('d-none');
+  updateDownloadTableStatus('Loading available downloads…');
   clearDownloadTable();
 }
 
@@ -356,10 +360,7 @@ async function loadDownloadTableData() {
     renderDownloadTable(Array.isArray(listData) ? listData : []);
   } catch (err) {
     console.error(err);
-    updateDownloadTableStatus(
-      err.message || "Unable to load data.",
-      true
-    );
+    updateDownloadTableStatus(err.message || 'Unable to load data.', true);
   }
 }
 
@@ -370,31 +371,31 @@ function renderDownloadTable(items) {
   clearDownloadTable();
 
   if (!items.length) {
-    updateDownloadTableStatus("No PDF marker exports found.");
+    updateDownloadTableStatus('No PDF marker exports found.');
     return;
   }
 
-  updateDownloadTableStatus("");
+  updateDownloadTableStatus('');
 
   const fragment = document.createDocumentFragment();
 
   items.forEach((item) => {
-    const row = document.createElement("tr");
+    const row = document.createElement('tr');
 
-    appendTableCell(row, item.carrierName ?? item.CarrierName ?? "—");
-    appendTableCell(row, item.pdfFileName ?? item.PdfFileName ?? "—");
+    appendTableCell(row, item.carrierName ?? item.CarrierName ?? '—');
+    appendTableCell(row, item.pdfFileName ?? item.PdfFileName ?? '—');
 
     const pdfSizeBytes = item.pdfFileSize ?? item.PdfFileSize ?? 0;
-    const pdfSizeKb = pdfSizeBytes ? (pdfSizeBytes / 1024).toFixed(1) : "0.0";
+    const pdfSizeKb = pdfSizeBytes ? (pdfSizeBytes / 1024).toFixed(1) : '0.0';
     appendTableCell(row, pdfSizeKb);
 
-    appendTableCell(row, item.csvFileName ?? item.CsvFileName ?? "—");
-    appendTableCell(row, item.notes ?? item.Notes ?? "—");
+    appendTableCell(row, item.csvFileName ?? item.CsvFileName ?? '—');
+    appendTableCell(row, item.notes ?? item.Notes ?? '—');
 
     const createdValue = item.createdUtc ?? item.CreatedUtc;
     const createdDate = createdValue
       ? new Date(createdValue).toLocaleString()
-      : "—";
+      : '—';
     appendTableCell(row, createdDate);
 
     appendActionCell(row, item);
@@ -406,28 +407,28 @@ function renderDownloadTable(items) {
 }
 
 function appendTableCell(row, text) {
-  const cell = document.createElement("td");
-  setTextContent(cell, text ?? "—");
+  const cell = document.createElement('td');
+  setTextContent(cell, text ?? '—');
   row.appendChild(cell);
 }
 
 function appendActionCell(row, item) {
-  const cell = document.createElement("td");
-  cell.classList.add("text-end");
+  const cell = document.createElement('td');
+  cell.classList.add('text-end');
 
   const id =
     item?.id ?? item?.Id ?? item?.autofillId ?? item?.AutofillId ?? null;
 
   if (!id) {
-    cell.textContent = "—";
+    cell.textContent = '—';
     row.appendChild(cell);
     return;
   }
 
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "btn btn-outline-danger btn-sm";
-  button.textContent = "Delete";
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'btn btn-outline-danger btn-sm';
+  button.textContent = 'Delete';
   button.dataset.deleteId = String(id);
 
   const label =
@@ -448,20 +449,20 @@ function appendActionCell(row, item) {
 
 function clearDownloadTable() {
   const body = downloadModalElements?.tableBody;
-  if (body) body.innerHTML = "";
+  if (body) body.innerHTML = '';
 }
 
 function updateDownloadTableStatus(message, isError = false) {
   const status = downloadModalElements?.tableStatus;
   if (!status) return;
-  setTextContent(status, message || "");
-  status.classList.toggle("text-danger", !!(isError && message));
+  setTextContent(status, message || '');
+  status.classList.toggle('text-danger', !!(isError && message));
 }
 
 async function handleDownloadTableClick(event) {
   if (!downloadModalElements) return;
 
-  const button = event.target.closest("button[data-delete-id]");
+  const button = event.target.closest('button[data-delete-id]');
   if (!button || button.disabled) return;
 
   const id = button.dataset.deleteId;
@@ -479,15 +480,14 @@ async function handleDownloadTableClick(event) {
 
   const originalText = button.textContent;
   button.disabled = true;
-  button.textContent = "Deleting…";
+  button.textContent = 'Deleting…';
 
   try {
     updateDownloadTableStatus(`Deleting ${label}…`);
     await apiDeleteAutofill_POST(id);
     await loadDownloadTableData();
-    const hadError = downloadModalElements.tableStatus.classList.contains(
-      "text-danger"
-    );
+    const hadError =
+      downloadModalElements.tableStatus.classList.contains('text-danger');
     if (!hadError) {
       updateDownloadTableStatus(`${label} deleted successfully.`);
     }
@@ -513,8 +513,8 @@ async function showUploadConfirmation() {
     const rebuilt = await buildUploadSummaryData();
     if (!rebuilt) {
       updateUploadStatus(
-        "Unable to prepare the upload summary. Close the modal and try again.",
-        "error"
+        'Unable to prepare the upload summary. Close the modal and try again.',
+        'error'
       );
       return;
     }
@@ -523,14 +523,14 @@ async function showUploadConfirmation() {
 
   const data = downloadModalState.pendingUpload;
 
-  applyModalMode("upload");
-  downloadModalElements.loginSection?.classList.add("d-none");
-  downloadModalElements.tableSection?.classList.add("d-none");
-  downloadModalElements.infoBanner?.classList.add("d-none");
-  downloadModalElements.uploadSection?.classList.remove("d-none");
+  applyModalMode('upload');
+  downloadModalElements.loginSection?.classList.add('d-none');
+  downloadModalElements.tableSection?.classList.add('d-none');
+  downloadModalElements.infoBanner?.classList.add('d-none');
+  downloadModalElements.uploadSection?.classList.remove('d-none');
 
   if (downloadModalElements.uploadPdfName) {
-    downloadModalElements.uploadPdfName.textContent = data.pdfName || "—";
+    downloadModalElements.uploadPdfName.textContent = data.pdfName || '—';
   }
   if (downloadModalElements.uploadPdfSize) {
     downloadModalElements.uploadPdfSize.textContent = formatFileSize(
@@ -556,21 +556,22 @@ async function showUploadConfirmation() {
       ? data.firstColumnHeaders
       : [];
     const headerStrings = headers.map((header, index) => {
-      const value = typeof header === "string" ? header.trim() : String(header ?? "");
+      const value =
+        typeof header === 'string' ? header.trim() : String(header ?? '');
       return value || `(Column ${index + 1})`;
     });
     downloadModalElements.firstColumnHeaders.textContent = headerStrings.length
-      ? headerStrings.join("\n")
-      : "None";
+      ? headerStrings.join('\n')
+      : 'None';
   }
 
-  updateUploadStatus("", "info");
+  updateUploadStatus('', 'info');
   setUploadSubmitting(false);
 }
 
 async function buildUploadSummaryData() {
-  if (typeof idbGet !== "function") {
-    console.error("IndexedDB helpers are unavailable.");
+  if (typeof idbGet !== 'function') {
+    console.error('IndexedDB helpers are unavailable.');
     return null;
   }
 
@@ -578,59 +579,65 @@ async function buildUploadSummaryData() {
   try {
     pdfBlob = await idbGet(PDF_KEY);
   } catch (err) {
-    console.error("Unable to read PDF from IndexedDB:", err);
+    console.error('Unable to read PDF from IndexedDB:', err);
     pdfBlob = null;
   }
 
   if (!pdfBlob) {
-    alert("Please select a PDF before sending data to the server.");
+    alert('Please select a PDF before sending data to the server.');
     return null;
   }
 
-  let pdfName = "";
-  if (typeof getPdfNameFromDb === "function") {
+  let pdfName = '';
+  if (typeof getPdfNameFromDb === 'function') {
     try {
-      pdfName = (await getPdfNameFromDb()) || "";
+      pdfName = (await getPdfNameFromDb()) || '';
     } catch (err) {
-      console.warn("Unable to read PDF name:", err);
+      console.warn('Unable to read PDF name:', err);
     }
   }
 
-  const pdfFileName = pdfName || pdfBlob.name || "form.pdf";
+  const pdfFileName = pdfName || pdfBlob.name || 'form.pdf';
 
-  let csvName = "";
-  if (typeof getCsvNameFromDb === "function") {
+  let csvName = '';
+  if (typeof getCsvNameFromDb === 'function') {
     try {
-      csvName = (await getCsvNameFromDb()) || "";
+      csvName = (await getCsvNameFromDb()) || '';
     } catch (err) {
-      console.warn("Unable to read CSV name:", err);
+      console.warn('Unable to read CSV name:', err);
     }
   }
 
   const rawLocData =
-    typeof locData !== "undefined" && locData && typeof locData === "object"
+    typeof locData !== 'undefined' && locData && typeof locData === 'object'
       ? locData
       : {};
   let locDataCopy;
   try {
     locDataCopy = JSON.parse(JSON.stringify(rawLocData));
   } catch (err) {
-    console.warn("Unable to clone locData for upload:", err);
+    console.warn('Unable to clone locData for upload:', err);
     locDataCopy = {};
   }
-  if (!locDataCopy || typeof locDataCopy !== "object" || Array.isArray(locDataCopy)) {
+  if (
+    !locDataCopy ||
+    typeof locDataCopy !== 'object' ||
+    Array.isArray(locDataCopy)
+  ) {
     locDataCopy = {};
   }
 
   const rawCustomText =
-    typeof customText !== "undefined" && customText && typeof customText === "object"
+    typeof customText !== 'undefined' &&
+    customText &&
+    typeof customText === 'object'
       ? customText
       : {};
   let customTextCopy;
   try {
     customTextCopy = JSON.parse(JSON.stringify(rawCustomText));
   } catch (err) {
-    console.warn("Unable to clone customText for upload:", err);
+    console.warn('Unable to clone customText for upload:', err);
     customTextCopy = Array.isArray(rawCustomText) ? [] : {};
   }
 
@@ -640,12 +647,12 @@ async function buildUploadSummaryData() {
       : [];
 
   Object.keys(locDataCopy).forEach((key) => {
-    if (key === "firstColumnHeaders") return;
+    if (key === 'firstColumnHeaders') return;
     const entry = locDataCopy[key];
-    if (!entry || typeof entry !== "object") return;
+    if (!entry || typeof entry !== 'object') return;
     const columnIndex = Number(key);
     if (Number.isFinite(columnIndex) && headerRow.length > columnIndex) {
-      entry.header = headerRow[columnIndex] ?? "";
+      entry.header = headerRow[columnIndex] ?? '';
     }
   });
 
@@ -660,14 +667,14 @@ async function buildUploadSummaryData() {
     2
   );
 
-  const carrierName = deriveCarrierName(headerRow, pdfName || csvName || pdfFileName);
-  const notes = `Uploaded via PDF-CSV Autofiller on ${new Date().toISOString()}`;
+  const carrierName = ''; // Will be entered on Modal
+  const notes = `Uploaded on ${new Date().toDateString()}`;
 
   return {
     pdfBlob,
-    pdfName: pdfName || pdfBlob.name || "form.pdf",
+    pdfName: pdfName || pdfBlob.name || 'form.pdf',
     pdfFileName,
-    pdfSizeBytes: typeof pdfBlob.size === "number" ? pdfBlob.size : 0,
+    pdfSizeBytes: typeof pdfBlob.size === 'number' ? pdfBlob.size : 0,
     csvName,
     locData: locDataCopy,
     customText: customTextCopy,
@@ -678,19 +685,19 @@ async function buildUploadSummaryData() {
   };
 }
 
-function deriveCarrierName(headerRow, fallbackName = "") {
+function deriveCarrierName(headerRow, fallbackName = '') {
   if (Array.isArray(headerRow) && headerRow.length > 0) {
     const firstHeader = headerRow[0];
-    if (typeof firstHeader === "string" && firstHeader.trim()) {
+    if (typeof firstHeader === 'string' && firstHeader.trim()) {
       return firstHeader.trim();
     }
   }
 
-  if (typeof fallbackName === "string" && fallbackName) {
-    return fallbackName.replace(/\.[^/.]+$/, "");
+  if (typeof fallbackName === 'string' && fallbackName) {
+    return fallbackName.replace(/\.[^/.]+$/, '');
   }
 
-  return "";
+  return '';
 }
 
 async function handleUploadConfirm() {
@@ -699,50 +706,63 @@ async function handleUploadConfirm() {
   const data = downloadModalState.pendingUpload;
   if (!data) {
     updateUploadStatus(
-      "No upload data available. Close the modal and try again.",
-      "error"
+      'No upload data available. Close the modal and try again.',
+      'error'
     );
     return;
   }
 
   if (!downloadModalState.token) {
-    updateUploadStatus("Please authenticate before sending the bundle.", "error");
-    downloadModalElements.loginSection?.classList.remove("d-none");
-    downloadModalElements.uploadSection?.classList.add("d-none");
+    updateUploadStatus(
+      'Please authenticate before sending the bundle.',
+      'error'
+    );
+    downloadModalElements.loginSection?.classList.remove('d-none');
+    downloadModalElements.uploadSection?.classList.add('d-none');
     return;
   }
 
   if (!data.pdfBlob) {
-    updateUploadStatus("Missing PDF data. Close the modal and try again.", "error");
+    updateUploadStatus(
+      'Missing PDF data. Close the modal and try again.',
+      'error'
+    );
     return;
   }
+  const carrierInput = document.getElementById('upload-carrier-name');
+  const carrierName = carrierInput?.value.trim() || '(none)';
+  data.carrierName = carrierName;
+
+  const notesInput = document.getElementById('upload-notes');
+  const notesText = notesInput?.value.trim() || '';
+  data.notes = notesText;
 
   setUploadSubmitting(true);
-  updateUploadStatus("Sending bundle to server…");
+  updateUploadStatus('Sending bundle to server…');
 
   try {
-    const pdfFileName = data.pdfFileName || data.pdfName || "form.pdf";
+    const pdfFileName = data.pdfFileName || data.pdfName || 'form.pdf';
     let pdfFile = data.pdfBlob;
 
-    if (!(pdfFile instanceof File) && typeof File === "function") {
+    if (!(pdfFile instanceof File) && typeof File === 'function') {
       pdfFile = new File([data.pdfBlob], pdfFileName, {
-        type: data.pdfBlob.type || "application/pdf",
+        type: data.pdfBlob.type || 'application/pdf',
       });
     }
 
     const createdId = await apiCreateAutofill({
-      carrierName: data.carrierName || "",
-      csvFileName: data.csvName || "",
-      csvMarkerData: data.csvMarkerData || "",
-      notes: data.notes || "",
+      carrierName: data.carrierName || '',
+      csvFileName: data.csvName || '',
+      csvMarkerData: data.csvMarkerData || '',
+      notes: data.notes || '',
       pdfFile,
       pdfFileName,
     });
 
-    updateUploadStatus(`Upload complete! Record ID: ${createdId}.`, "success");
+    updateUploadStatus(`Upload complete! Record ID: ${createdId}.`, 'success');
   } catch (err) {
     console.error(err);
-    updateUploadStatus(err?.message || "Failed to upload bundle.", "error");
+    updateUploadStatus(err?.message || 'Failed to upload bundle.', 'error');
   } finally {
     setUploadSubmitting(false);
   }
@@ -753,10 +773,10 @@ async function handleSendToServerClick() {
     const uploadData = await buildUploadSummaryData();
     if (!uploadData) return;
     downloadModalState.pendingUpload = uploadData;
-    await openQueryModal({ mode: "upload", uploadData });
+    await openQueryModal({ mode: 'upload', uploadData });
   } catch (err) {
-    console.error("Unable to open upload confirmation modal:", err);
-    alert(err?.message || "Unable to open the upload confirmation modal.");
+    console.error('Unable to open upload confirmation modal:', err);
+    alert(err?.message || 'Unable to open the upload confirmation modal.');
   }
 }
 
@@ -767,7 +787,7 @@ async function extractErrorText(response) {
   try {
     const data = await response.clone().json();
     if (data?.message) return data.message;
-    if (typeof data === "string") return data;
+    if (typeof data === 'string') return data;
   } catch (_) {}
   try {
     const text = await response.clone().text();
@@ -778,15 +798,15 @@ async function extractErrorText(response) {
 }
 
 async function verifyExistingToken() {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem('token');
   if (!token) return null;
 
   try {
     const res = await apiTestAuth(); // ✅ use centralized function
-    if (!res?.message?.includes("authorized")) return null;
+    if (!res?.message?.includes('authorized')) return null;
     return token;
   } catch (err) {
-    console.warn("Token verification failed:", err);
+    console.warn('Token verification failed:', err);
     return null;
   }
 }

@@ -3,10 +3,13 @@
 // --------------------
 function initCanvasClicks() {
   const canvas = document.getElementById('pdf-canvas');
-  if (!canvas) { log('No canvas'); return; }
+  if (!canvas) {
+    log('No canvas');
+    return;
+  }
 
   canvas.addEventListener('click', async (e) => {
-    if (!inputSelection && (selectedColIndex == null)) {
+    if (!inputSelection && selectedColIndex == null) {
       log('ERROR: no column or custom text selected.');
       return;
     }
@@ -26,24 +29,60 @@ function initCanvasClicks() {
     const spacingEl = document.getElementById('spacing-select');
 
     const selectedSize = Number.parseInt(sizeEl?.value, 10) || 12;
-    const selectedFont = (fontEl?.value || 'monospace');
+    const selectedFont = fontEl?.value || 'monospace';
     const selectedSpacing = Number.parseFloat(spacingEl?.value) || 0;
 
     if (inputSelection === 'checkmark') {
-      const currentText = "__checkmark";
-      newCustomText(currentPage, x, y, currentText, 24, '_symbol', selectedSpacing, { stageW, stageH });
+      const currentText = '__checkmark';
+      newCustomText(
+        currentPage,
+        x,
+        y,
+        currentText,
+        24,
+        '_symbol',
+        selectedSpacing,
+        { stageW, stageH }
+      );
       return;
     } else if (inputSelection === 'custom_text') {
-      await userInputCustomText(x, y, selectedSize, selectedFont, selectedSpacing, stageW, stageH);
+      await userInputCustomText(
+        x,
+        y,
+        selectedSize,
+        selectedFont,
+        selectedSpacing,
+        stageW,
+        stageH
+      );
       return;
     } else if (inputSelection === 'saved_text') {
       const el = document.getElementById('saved-text-input');
-      if (!el) { return; }
-      const currentText = el.value
-      newCustomText(currentPage, x, y, currentText, 24, selectedFont, selectedSpacing, { stageW, stageH });
+      if (!el) {
+        return;
+      }
+      const currentText = el.value;
+      newCustomText(
+        currentPage,
+        x,
+        y,
+        currentText,
+        24,
+        selectedFont,
+        selectedSpacing,
+        { stageW, stageH }
+      );
     } else if (selectedColIndex != null) {
       // place a CSV marker
-      newMarker(x, y, currentPage, selectedSize, selectedFont, selectedSpacing, { stageW, stageH });
+      newMarker(
+        x,
+        y,
+        currentPage,
+        selectedSize,
+        selectedFont,
+        selectedSpacing,
+        { stageW, stageH }
+      );
       return;
     }
   });
@@ -52,8 +91,14 @@ function initCanvasClicks() {
 // Ask user for string, sanitize, and place
 async function userInputCustomText(x, y, size, font, spacing, stageW, stageH) {
   const currentText = await promptForSafeString('Enter text', 200);
-  if (!currentText) { log('Canceled or empty text'); return; }
-  newCustomText(currentPage, x, y, currentText, size, font, spacing, { stageW, stageH });
+  if (!currentText) {
+    log('Canceled or empty text');
+    return;
+  }
+  newCustomText(currentPage, x, y, currentText, size, font, spacing, {
+    stageW,
+    stageH,
+  });
 }
 
 // Simple prompt + sanitize
@@ -67,20 +112,28 @@ async function promptForSafeString(message = 'Enter text', maxLen = 200) {
 // Example sanitizer (keep yours if you already defined it)
 function sanitizePlainString(input, maxLen = 200) {
   if (input == null) return null;
-  const withoutControls = String(input).replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+  const withoutControls = String(input).replace(
+    /[\u0000-\u001F\u007F-\u009F]/g,
+    ''
+  );
   const trimmed = withoutControls.trim().normalize('NFC');
   return trimmed.slice(0, maxLen);
 }
-
 
 //
 // Rendering elements
 //
 async function renderAll() {
   // If current page has any elements with spacing, render those elements on the page, not the overlay
-  if (typeof currentPage !== 'number') { log('No page/text to render.'); return; }
+  if (typeof currentPage !== 'number') {
+    log('No page/text to render.');
+    return;
+  }
 
-  if (!syncOverlayBoxToCanvas()) { log('no overlay or canvas'); return; }
+  if (!syncOverlayBoxToCanvas()) {
+    log('no overlay or canvas');
+    return;
+  }
 
   const overlay = document.getElementById('pdf-overlay');
 
@@ -96,10 +149,6 @@ async function renderAll() {
   renderAllCustomText();
 }
 
-
-
-
-
 function syncOverlayBoxToCanvas() {
   const overlay = document.getElementById('pdf-overlay');
   const canvas = document.getElementById('pdf-canvas');
@@ -114,5 +163,3 @@ function syncOverlayBoxToCanvas() {
   overlay.style.pointerEvents = 'none'; // markers can re-enable selectively
   return true;
 }
-
-

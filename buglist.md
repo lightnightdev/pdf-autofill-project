@@ -1,5 +1,4 @@
 BUGS
-- Choose file name output for many PDFs
 - Uploading does not work perfectly
 
 QUALITY OF LIFE
