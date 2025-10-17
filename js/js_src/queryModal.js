@@ -256,7 +256,7 @@ function renderDownloadTable(items) {
 
     // ✅ Add a flex wrapper
     const btnGroup = document.createElement('div');
-    btnGroup.className = 'd-flex justify-content-end gap-2';
+    btnGroup.className = 'btn-group d-flex justify-content-end gap-2';
 
     // Delete button
     const btnDelete = document.createElement('button');
@@ -303,6 +303,7 @@ async function handleTableClick(e) {
   const isLoad = btn.classList.contains('btn-load-data');
 
   // === DELETE ACTION ===
+
   if (isDelete) {
     if (!confirm(`Delete record ${id}?`)) return;
 
@@ -328,10 +329,27 @@ async function handleTableClick(e) {
     btn.textContent = 'Loading...';
 
     try {
-      const data = await apiGetData(id); // ✅ replace with your actual API call
+      const pdfData = await apiGetPdf(id);
+      if (!pdfData) throw new Error('No PDF returned.');
+      const data = await apiGetData(id);
       if (!data) throw new Error('No data returned.');
-      await parseApiData(data);
+
       setText(els.tableStatus, `Loaded record ${id} successfully!`);
+
+      await parseApiData(data);
+      // this function handles uploading state data
+
+      const pdfAB = pdfData?.pdfAB;
+      const pdfFN = pdfData?.filename;
+
+      
+      await Promise.all([
+        savePdfToIndexedDb(pdfAB, pdfFN),
+        loadPDF(pdfAB),
+      ]);
+
+      pdfButton(true, pdfFN),
+      
       setTimeout(() => {
         if (modalInstance) modalInstance.hide();
         window.location.reload();
@@ -446,120 +464,4 @@ async function verifyExistingToken() {
     console.warn('Token verification failed:', err);
     return null;
   }
-}
-
-async function buildUploadSummaryData() {
-  if (typeof idbGet !== 'function') {
-    console.error('IndexedDB helpers are unavailable.');
-    return null;
-  }
-
-  let pdfBlob;
-  try {
-    pdfBlob = await idbGet(PDF_KEY);
-  } catch (err) {
-    console.error('Unable to read PDF from IndexedDB:', err);
-    pdfBlob = null;
-  }
-
-  if (!pdfBlob) {
-    alert('Please select a PDF before sending data to the server.');
-    return null;
-  }
-
-  let pdfName = '';
-  if (typeof getPdfNameFromDb === 'function') {
-    try {
-      pdfName = (await getPdfNameFromDb()) || '';
-    } catch (err) {
-      console.warn('Unable to read PDF name:', err);
-    }
-  }
-
-  const pdfFileName = pdfName || pdfBlob.name || 'form.pdf';
-
-  let csvName = '';
-  if (typeof getCsvNameFromDb === 'function') {
-    try {
-      csvName = (await getCsvNameFromDb()) || '';
-    } catch (err) {
-      console.warn('Unable to read CSV name:', err);
-    }
-  }
-
-  const rawLocData =
-    typeof locData !== 'undefined' && locData && typeof locData === 'object'
-      ? locData
-      : {};
-  let locDataCopy;
-  try {
-    locDataCopy = JSON.parse(JSON.stringify(rawLocData));
-  } catch (err) {
-    console.warn('Unable to clone locData for upload:', err);
-    locDataCopy = {};
-  }
-  if (
-    !locDataCopy ||
-    typeof locDataCopy !== 'object' ||
-    Array.isArray(locDataCopy)
-  ) {
-    locDataCopy = {};
-  }
-
-  const rawCustomText =
-    typeof customText !== 'undefined' &&
-    customText &&
-    typeof customText === 'object'
-      ? customText
-      : {};
-  let customTextCopy;
-  try {
-    customTextCopy = JSON.parse(JSON.stringify(rawCustomText));
-  } catch (err) {
-    console.warn('Unable to clone customText for upload:', err);
-    customTextCopy = Array.isArray(rawCustomText) ? [] : {};
-  }
-
-  const headerRow =
-    Array.isArray(csvData) && csvData.length > 0 && Array.isArray(csvData[0])
-      ? [...csvData[0]]
-      : [];
-
-  Object.keys(locDataCopy).forEach((key) => {
-    if (key === 'firstColumnHeaders') return;
-    const entry = locDataCopy[key];
-    if (!entry || typeof entry !== 'object') return;
-    const columnIndex = Number(key);
-    if (Number.isFinite(columnIndex) && headerRow.length > columnIndex) {
-      entry.header = headerRow[columnIndex] ?? '';
-    }
-  });
-
-  locDataCopy.firstColumnHeaders = headerRow;
-
-  const csvMarkerData = JSON.stringify(
-    {
-      customText: customTextCopy,
-      locData: locDataCopy,
-    },
-    null,
-    2
-  );
-
-  const carrierName = ''; // Will be entered on Modal
-  const notes = `Uploaded on ${new Date().toDateString()}`;
-
-  return {
-    pdfBlob,
-    pdfName: pdfName || pdfBlob.name || 'form.pdf',
-    pdfFileName,
-    pdfSizeBytes: typeof pdfBlob.size === 'number' ? pdfBlob.size : 0,
-    csvName,
-    locData: locDataCopy,
-    customText: customTextCopy,
-    csvMarkerData,
-    firstColumnHeaders: headerRow,
-    carrierName,
-    notes,
-  };
 }

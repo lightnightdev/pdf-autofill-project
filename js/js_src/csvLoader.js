@@ -31,8 +31,6 @@ async function uploadCSV() {
         // Save to local environment
         csvData = data;
         csvButton(true, file.name);
-        clearCustomText();
-        clearLocData();
 
         // Save to IndexedDB
         saveCsvData(file.name);
@@ -128,6 +126,37 @@ function getSelectedFileNameHeaders(csvData) {
     selectedHeaders.push(colIdx);
   });
   return selectedHeaders;
+}
+
+function downloadCsvTemplate(headerRow) {
+  if (!headerRow || headerRow.length === 0) { return; }
+
+  const shouldDownload = confirm('Download CSV template for this form?');
+
+  if (!shouldDownload) {
+    return;
+  }
+
+  // Convert header row into a CSV string (UTF-8)
+  const csvContent = headerRow.join(',') + '\n';
+
+  // Create a UTF-8 BOM so Excel opens it correctly
+  const bom = '\uFEFF'; // Byte Order Mark for UTF-8
+  const blob = new Blob([bom + csvContent], {
+    type: 'text/csv;charset=utf-8',
+  });
+
+  // Create temporary download link
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'template.csv';
+  document.body.appendChild(a);
+  a.click();
+
+  // Clean up
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // // Display table with headers and first two data rows

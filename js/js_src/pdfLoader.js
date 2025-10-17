@@ -66,7 +66,7 @@ async function processPDF(file) {
   }
 }
 
-function pdfButton(isUpload, fileName = 'file.pdf') {
+function pdfButton(isUpload, fileName = currentPdfName || 'file.pdf') {
   const pdfBtn = document.getElementById('pdf-input');
   if (isUpload) {
     pdfBtn.classList.remove('btn-outline-success');
