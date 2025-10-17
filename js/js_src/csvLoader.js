@@ -3,7 +3,7 @@
 // CSV Handling with headers
 // --------------------
 
-let csvData;
+let csvData = [];
 
 async function uploadCSV() {
   const input = document.createElement('input');

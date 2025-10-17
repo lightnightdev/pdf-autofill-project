@@ -336,19 +336,20 @@ async function handleTableClick(e) {
 
       setText(els.tableStatus, `Loaded record ${id} successfully!`);
 
-      await parseApiData(data);
-      // this function handles uploading state data
-
       const pdfAB = pdfData?.pdfAB;
       const pdfFN = pdfData?.filename;
 
       
       await Promise.all([
-        savePdfToIndexedDb(pdfAB, pdfFN),
         loadPDF(pdfAB),
+        savePdfToIndexedDb(pdfAB, pdfFN),
       ]);
 
       pdfButton(true, pdfFN),
+      
+
+      await parseApiData(data);
+      // this function handles uploading state data
       
       setTimeout(() => {
         if (modalInstance) modalInstance.hide();

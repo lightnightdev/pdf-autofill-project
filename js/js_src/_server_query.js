@@ -144,6 +144,8 @@ async function apiDeleteAutofill(id) {
 }
 
 async function parseApiData(apiData) {
+  console.log('hi');
+  
   if (!apiData || typeof apiData !== 'object') {
     throw new Error('Invalid API response');
   }
@@ -170,7 +172,10 @@ async function parseApiData(apiData) {
       ? markerPayload.customText
       : {};
 
+  console.log('hihih');
+
   await Promise.all([saveLocData(), saveCustomText()]);
+  console.log('hihih');
 
 
   const headerRow = Array.isArray(markerPayload.firstColumnHeaders)
