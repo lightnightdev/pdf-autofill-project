@@ -6,18 +6,23 @@ async function generateAndExportPDFs() {
   // Calculate total number of data rows (excluding header row)
   const total = (csvData?.length || 0) - 1;
   if (total <= 0) {
-    log("CSV has no data rows.");
+    log('CSV has no data rows.');
     return;
   }
-  const exportSingle = document.getElementById("export-single-pdf")?.checked ?? true;
-  const rasterizeOutput = document.getElementById("rasterize-output")?.checked ?? false;
+  const exportSingle =
+    document.getElementById('export-single-pdf')?.checked ?? true;
+  const rasterizeOutput =
+    document.getElementById('rasterize-output')?.checked ?? false;
   const confirmMessage = exportSingle
     ? `Generate and download ${total} flattened PDF(s) as a single merged PDF?`
     : `Generate and download ${total} flattened PDF(s) as a ZIP?`;
   if (!confirm(confirmMessage)) return;
 
   if (rasterizeOutput) {
-    if (!confirm('Files size will be a bit larger but more compatible. Continue?')) return;
+    if (
+      !confirm('Files size will be a bit larger but more compatible. Continue?')
+    )
+      return;
   }
 
   // Validate environment and inputs
@@ -26,32 +31,30 @@ async function generateAndExportPDFs() {
   }
 
   if (!window.PDFLib) {
-    log("pdf-lib not available");
+    log('pdf-lib not available');
     return;
   }
   if (!currentPdfBytes) {
-    log("No base PDF loaded.");
+    log('No base PDF loaded.');
     return;
   }
   if (!locData || Object.keys(locData).length === 0) {
-    log("No markers set.");
+    log('No markers set.');
     return;
   }
 
   try {
-    log("Preparing source PDF…");
+    log('Preparing source PDF…');
     const srcDoc = await PDFLib.PDFDocument.load(currentPdfBytes);
 
     // collect files for zipping or merged export
     const filesForZip = [];
-    const combinedDoc = exportSingle
-      ? await PDFLib.PDFDocument.create()
-      : null;
+    const combinedDoc = exportSingle ? await PDFLib.PDFDocument.create() : null;
 
     const fonts = await embedFontsForDoc(srcDoc);
     drawCustText(srcDoc, fonts);
 
-
+    const fileNameCols = getSelectedFileNameHeaders(csvData);
     // Iterate through each data row in the CSV (skipping header)
     for (let r = 1; r < csvData.length; r++) {
       log(`Generating row ${r} of ${total}`);
@@ -74,22 +77,35 @@ async function generateAndExportPDFs() {
         // Save and queue this file for the ZIP (no per-file download)
         let bytes;
         if (rasterizeOutput) {
-          bytes = rasterizeFile(await outDoc.save({
-            useObjectStreams: false,
-            compress: true,
-          }), { dpi: 100 })
+          bytes = rasterizeFile(
+            await outDoc.save({
+              useObjectStreams: false,
+              compress: true,
+            }),
+            { dpi: 100 }
+          );
         } else {
           bytes = await outDoc.save({
             useObjectStreams: false,
             compress: true,
           });
-        };
+        }
 
-        const stemRaw = (csvData[r]?.[0] || "").toString();
+        // Set FileName
+        let stemRaw = '';
+        for (const nm of fileNameCols) {
+          stemRaw += (csvData[r]?.[nm] || '').toString();
+        }
+        if (stemRaw === '') {
+          stemRaw = (csvData[r]?.[0] || '').toString();
+        }
+
         // To get leading 0's if more than 9 rows
-        const paddedRow = String(r).padStart(String(total).length, "0");
+        const paddedRow = String(r).padStart(String(total).length, '0');
         const sanitized = sanitizeStem(stemRaw);
-        const stem = sanitized ? `${paddedRow}-${sanitized}` : `Row-${paddedRow}`;
+        const stem = sanitized
+          ? `${paddedRow}-${sanitized}`
+          : `${paddedRow}-Row`;
 
         filesForZip.push({ name: `${stem}.pdf`, data: bytes });
       }
@@ -103,12 +119,14 @@ async function generateAndExportPDFs() {
       const mergedName = `autofilled_pdfs_${new Date()
         .toISOString()
         .slice(0, 19)
-        .replace(/[:T]/g, "-")}.pdf`;
+        .replace(/[:T]/g, '-')}.pdf`;
       if (rasterizeOutput) {
-        log('Rasterizing output file...')
-        const rasterizedMergedBytes = await rasterizeFile(mergedBytes)
+        log('Rasterizing output file...');
+        const rasterizedMergedBytes = await rasterizeFile(mergedBytes);
         downloadPdf(rasterizedMergedBytes, mergedName);
-        log(`All ${total} PDFs generated, merged, and rasterized into ${mergedName}.`);
+        log(
+          `All ${total} PDFs generated, merged, and rasterized into ${mergedName}.`
+        );
       } else {
         downloadPdf(mergedBytes, mergedName);
         log(`All ${total} PDFs generated and merged into ${mergedName}.`);
@@ -118,22 +136,19 @@ async function generateAndExportPDFs() {
       const zipName = `autofilled_pdfs_${new Date()
         .toISOString()
         .slice(0, 19)
-        .replace(/[:T]/g, "-")}.zip`;
+        .replace(/[:T]/g, '-')}.zip`;
       await downloadZip(filesForZip, zipName);
 
       log(`All ${total} flattened PDFs generated and zipped into ${zipName}.`);
     }
   } catch (err) {
     console.error(err);
-    log("Export error: " + (err?.message || err));
+    log('Export error: ' + (err?.message || err));
   }
 }
 
-
-
-
 function cloneFontBytes(rawBytes) {
-  const requiredKeys = ["_signature", "_normal", "_monospace", "_symbol"];
+  const requiredKeys = ['_signature', '_normal', '_monospace', '_symbol'];
   const cloned = {};
 
   for (const key of requiredKeys) {
@@ -152,7 +167,7 @@ async function loadAllCustomFontBytes() {
 
   const fontBytes = initFontBytes(); // Call the init function
   if (!fontBytes) {
-    throw new Error("Custom font bytes were not initialised");
+    throw new Error('Custom font bytes were not initialised');
   }
 
   CUSTOM_FONT_BYTE_CACHE = cloneFontBytes(fontBytes);
@@ -162,7 +177,7 @@ async function loadAllCustomFontBytes() {
 async function embedFontsForDoc(doc) {
   const fontkitGlobal = window.fontkit || globalThis.fontkit;
   if (!fontkitGlobal) {
-    throw new Error("fontkit library was not loaded");
+    throw new Error('fontkit library was not loaded');
   }
 
   doc.registerFontkit(fontkitGlobal);
@@ -174,14 +189,13 @@ async function embedFontsForDoc(doc) {
   try {
     const bytes = await loadAllCustomFontBytes();
 
-
     // Embed fonts to PDF document
     sig = await doc.embedFont(bytes._signature, { subset: false });
     norm = await doc.embedFont(bytes._normal, { subset: false });
     mono = await doc.embedFont(bytes._monospace, { subset: false });
     symb = await doc.embedFont(bytes._symbol, { subset: false });
   } catch (e) {
-    console.warn("Falling back to standard fonts:", e);
+    console.warn('Falling back to standard fonts:', e);
     sig = await doc.embedFont(PDFLib.StandardFonts.HelveticaOblique);
     norm = await doc.embedFont(PDFLib.StandardFonts.Helvetica);
     mono = await doc.embedFont(PDFLib.StandardFonts.Courier);
@@ -197,14 +211,14 @@ async function embedFontsForDoc(doc) {
 }
 
 function pickFontForPdf(fontKey, embedded) {
-  switch ((fontKey || "").toLowerCase()) {
-    case "_signature":
+  switch ((fontKey || '').toLowerCase()) {
+    case '_signature':
       return embedded._signature;
-    case "_monospace":
+    case '_monospace':
       return embedded._monospace;
-    case "_symbol":
+    case '_symbol':
       return embedded._symbol;
-    case "_normal":
+    case '_normal':
     default:
       return embedded._normal;
   }
@@ -212,30 +226,25 @@ function pickFontForPdf(fontKey, embedded) {
 
 function getCellOrHeader(rowIdx, colIdx) {
   const val = csvData?.[rowIdx]?.[colIdx];
-  if (val && String(val).trim() !== "") return String(val);
+  if (val && String(val).trim() !== '') return String(val);
   const header = csvData?.[0]?.[colIdx];
-  if (header && String(header).trim() !== "") return `[${header}]`;
+  if (header && String(header).trim() !== '') return `[${header}]`;
   return `Col ${colIdx}`;
 }
 
 function getCellOrBlank(rowIdx, colIdx) {
   const val = csvData?.[rowIdx]?.[colIdx];
-  if (val && String(val).trim() !== "") return String(val);
-  return ""; // Return empty string instead of falling back to header
+  if (val && String(val).trim() !== '') return String(val);
+  return ''; // Return empty string instead of falling back to header
 }
-
-
-
-
-
 
 function sanitizeStem(s) {
   return (
-    (s || "")
+    (s || '')
       .toString()
       .trim()
-      .replace(/[^\w\-]+/g, "_")
-      .slice(0, 64) || ""
+      .replace(/[^\w\-]+/g, '_')
+      .slice(0, 64) || ''
   );
 }
 
@@ -243,58 +252,57 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-
 async function deepSanitizePdf(outDoc) {
   const { PDFName, PDFDict, PDFArray } = PDFLib;
 
   // 1) Flatten AcroForm fields (safe if no form present)
   try {
     outDoc.getForm().flatten();
-  } catch { }
+  } catch {}
 
   // 2) Remove page annotations & additional actions
   try {
     for (const page of outDoc.getPages()) {
       const node = page.node;
       // Clear annotations array (comments, links, etc.)
-      if (node.get(PDFName.of("Annots")))
-        node.set(PDFName.of("Annots"), outDoc.context.obj([]));
+      if (node.get(PDFName.of('Annots')))
+        node.set(PDFName.of('Annots'), outDoc.context.obj([]));
       // Remove page-level actions (AA)
-      if (node.get(PDFName.of("AA"))) node.delete(PDFName.of("AA"));
+      if (node.get(PDFName.of('AA'))) node.delete(PDFName.of('AA'));
     }
-  } catch { }
+  } catch {}
 
   // 3) Remove document open actions
   try {
     const cat = outDoc.catalog; // Catalog dict
-    if (cat.dict.has(PDFName.of("OpenAction")))
-      cat.dict.delete(PDFName.of("OpenAction"));
-    if (cat.dict.has(PDFName.of("AA"))) cat.dict.delete(PDFName.of("AA"));
-  } catch { }
+    if (cat.dict.has(PDFName.of('OpenAction')))
+      cat.dict.delete(PDFName.of('OpenAction'));
+    if (cat.dict.has(PDFName.of('AA'))) cat.dict.delete(PDFName.of('AA'));
+  } catch {}
 
   // 4) Remove JavaScript & EmbeddedFiles name trees from /Names
   try {
     const cat = outDoc.catalog;
-    const names = cat.dict.get(PDFName.of("Names"));
+    const names = cat.dict.get(PDFName.of('Names'));
     if (names) {
       const namesDict = outDoc.context.lookup(names, PDFDict);
       if (namesDict) {
-        if (namesDict.has(PDFName.of("JavaScript")))
-          namesDict.delete(PDFName.of("JavaScript"));
-        if (namesDict.has(PDFName.of("EmbeddedFiles")))
-          namesDict.delete(PDFName.of("EmbeddedFiles"));
+        if (namesDict.has(PDFName.of('JavaScript')))
+          namesDict.delete(PDFName.of('JavaScript'));
+        if (namesDict.has(PDFName.of('EmbeddedFiles')))
+          namesDict.delete(PDFName.of('EmbeddedFiles'));
         // If /Names becomes empty, drop it
-        if (namesDict.size === 0) cat.dict.delete(PDFName.of("Names"));
+        if (namesDict.size === 0) cat.dict.delete(PDFName.of('Names'));
       }
     }
-  } catch { }
+  } catch {}
 
   // 5) Remove metadata/XMP (optional)
   try {
     const cat = outDoc.catalog;
-    if (cat.dict.has(PDFName.of("Metadata")))
-      cat.dict.delete(PDFName.of("Metadata"));
-  } catch { }
+    if (cat.dict.has(PDFName.of('Metadata')))
+      cat.dict.delete(PDFName.of('Metadata'));
+  } catch {}
 
   // 6) Ensure fonts are subset & standard where possible (you already use { subset: true })
   // Nothing to do here programmatically unless re-embedding. You’re good.
@@ -302,15 +310,15 @@ async function deepSanitizePdf(outDoc) {
   // 7) Clear viewer prefs that can trigger behaviors (optional)
   try {
     const cat = outDoc.catalog;
-    if (cat.dict.has(PDFName.of("ViewerPreferences")))
-      cat.dict.delete(PDFName.of("ViewerPreferences"));
-  } catch { }
+    if (cat.dict.has(PDFName.of('ViewerPreferences')))
+      cat.dict.delete(PDFName.of('ViewerPreferences'));
+  } catch {}
 }
 
 // downloader
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
+  const a = document.createElement('a');
   a.href = url;
   a.download = filename;
   document.body.appendChild(a);
@@ -319,15 +327,15 @@ function downloadBlob(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-async function downloadZip(files, zipName = "output.zip") {
+async function downloadZip(files, zipName = 'output.zip') {
   // files: Array<{ name: string, data: Uint8Array | ArrayBuffer | Blob | string }>
   const zip = new JSZip();
   for (const f of files) {
     zip.file(f.name, f.data);
   }
-  const blob = await zip.generateAsync({ type: "blob" });
+  const blob = await zip.generateAsync({ type: 'blob' });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
+  const a = document.createElement('a');
   a.href = url;
   a.download = zipName;
   document.body.appendChild(a);
@@ -336,10 +344,8 @@ async function downloadZip(files, zipName = "output.zip") {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function downloadPdf(data, filename = "output.pdf") {
+function downloadPdf(data, filename = 'output.pdf') {
   const blob =
-    data instanceof Blob
-      ? data
-      : new Blob([data], { type: "application/pdf" });
+    data instanceof Blob ? data : new Blob([data], { type: 'application/pdf' });
   downloadBlob(blob, filename);
 }

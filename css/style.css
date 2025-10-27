@@ -203,6 +203,12 @@ body {
   background-color: #afa;
 }
 
+.card.file-name-select {
+  background-color: #cfc;
+  font-weight: bold;
+  color: #020;
+}
+
 .csvbar {
   padding: 8px;
   background: #e3e4e6;

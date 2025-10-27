@@ -10,12 +10,6 @@ function b64ToU8(base64) {
   return bytes;
 }
 
-
-
-
-
-
-
 /**
  * Rasterize a PDF into an image-only PDF.
  * Requires pdfjsLib (PDF.js) and PDFLib (pdf-lib) to be loaded globally.
@@ -31,9 +25,9 @@ function b64ToU8(base64) {
 async function rasterizeFile(input, opts = {}) {
   const {
     dpi = 144,
-    imageType = "jpeg",
+    imageType = 'jpeg',
     jpegQuality = 0.92,
-    onProgress
+    onProgress,
   } = opts;
 
   // ------------- helpers -------------
@@ -41,19 +35,22 @@ async function rasterizeFile(input, opts = {}) {
     if (x instanceof ArrayBuffer) return x;
     if (x instanceof Uint8Array) return x.buffer;
     if (x instanceof Blob) return await x.arrayBuffer();
-    throw new Error("Unsupported input type for rasterizeFile");
+    throw new Error('Unsupported input type for rasterizeFile');
   };
 
   const makeCanvas = (w, h) => {
     // Prefer OffscreenCanvas when available to avoid layout thrash
-    if (typeof OffscreenCanvas !== "undefined") {
-      const c = new OffscreenCanvas(Math.max(1, Math.ceil(w)), Math.max(1, Math.ceil(h)));
-      return { canvas: c, ctx: c.getContext("2d") };
+    if (typeof OffscreenCanvas !== 'undefined') {
+      const c = new OffscreenCanvas(
+        Math.max(1, Math.ceil(w)),
+        Math.max(1, Math.ceil(h))
+      );
+      return { canvas: c, ctx: c.getContext('2d') };
     } else {
-      const c = document.createElement("canvas");
+      const c = document.createElement('canvas');
       c.width = Math.max(1, Math.ceil(w));
       c.height = Math.max(1, Math.ceil(h));
-      return { canvas: c, ctx: c.getContext("2d") };
+      return { canvas: c, ctx: c.getContext('2d') };
     }
   };
 
@@ -61,7 +58,9 @@ async function rasterizeFile(input, opts = {}) {
     if (canvas instanceof OffscreenCanvas) {
       return canvas.convertToBlob({ type: `image/${type}`, quality });
     }
-    return new Promise((resolve) => canvas.toBlob(resolve, `image/${type}`, quality));
+    return new Promise((resolve) =>
+      canvas.toBlob(resolve, `image/${type}`, quality)
+    );
   };
 
   // ------------- load source PDF with PDF.js -------------
@@ -95,22 +94,30 @@ async function rasterizeFile(input, opts = {}) {
     await page.render({ canvasContext: ctx, viewport }).promise;
 
     // Extract bitmap as Blob
-    const blob = await canvasToBlob(canvas, imageType === "png" ? "png" : "jpeg", jpegQuality);
+    const blob = await canvasToBlob(
+      canvas,
+      imageType === 'png' ? 'png' : 'jpeg',
+      jpegQuality
+    );
     const imgBytes = new Uint8Array(await blob.arrayBuffer());
 
     // Embed into out PDF
-    const img = (imageType === "png")
-      ? await outDoc.embedPng(imgBytes)
-      : await outDoc.embedJpg(imgBytes);
+    const img =
+      imageType === 'png'
+        ? await outDoc.embedPng(imgBytes)
+        : await outDoc.embedJpg(imgBytes);
 
     const outPage = outDoc.addPage([widthPts, heightPts]);
     outPage.drawImage(img, { x: 0, y: 0, width: widthPts, height: heightPts });
 
     // Cleanup memory for this page
-    try { page.cleanup(); } catch { }
+    try {
+      page.cleanup();
+    } catch {}
     if (!(canvas instanceof OffscreenCanvas)) {
       // help GC
-      canvas.width = 1; canvas.height = 1;
+      canvas.width = 1;
+      canvas.height = 1;
     }
 
     onProgress?.(i, pageCount);
@@ -121,12 +128,17 @@ async function rasterizeFile(input, opts = {}) {
     const meta = await pdf.getMetadata();
     if (meta?.info?.Title) outDoc.setTitle(meta.info.Title);
     if (meta?.info?.Author) outDoc.setAuthor(meta.info.Author);
-  } catch { /* metadata is optional */ }
+  } catch {
+    /* metadata is optional */
+  }
 
   // Save rasterized PDF
-  return await outDoc.save({ useObjectStreams: false, addDefaultPage: false, compress: true });
+  return await outDoc.save({
+    useObjectStreams: false,
+    addDefaultPage: false,
+    compress: true,
+  });
 }
-
 
 // PDF-Specific Utils
 // --- coordinate + font helpers reused by preview + export for character spacing ---
@@ -163,8 +175,6 @@ function getCorrectYCoordinate(exportYTop, fontSize, fontKey) {
   return exportY;
 }
 
-
-
 function copyArrayColumn(arr, idx) {
   let i = arr.length;
   while (i--) {
@@ -174,16 +184,12 @@ function copyArrayColumn(arr, idx) {
   return arr[0].length - 1;
 }
 
-
-
 function drawPlacedText(page, cfg, text, fontsMap) {
   const font = pickFontForPdf(cfg.font, fontsMap);
   const spacing = Number(cfg.spacing) || 0;
   const { pdfFontSize, exportX, exportY } = computeExportCoords(page, cfg);
 
   if (!spacing) {
-    console.log('drawText:')
-    console.log(text)
     page.drawText(text, { x: exportX, y: exportY, size: pdfFontSize, font });
     return;
   }
@@ -201,15 +207,13 @@ function drawPlacedText(page, cfg, text, fontsMap) {
 }
 
 function drawCustText(doc, docFonts) {
-
   for (const pgNumRaw of Object.keys(customText)) {
     let pgNum = parseInt(pgNumRaw, 10);
     const page = doc.getPage(pgNum - 1);
     const cTextsOnPg = customText[pgNum];
     for (cTexts of cTextsOnPg) {
-      const cTextP = resolveCustomTextValue(cTexts.text)
-      console.log(cTextP)
-      drawPlacedText(page, cTexts, cTextP, docFonts)
+      const cTextP = resolveCustomTextValue(cTexts.text);
+      drawPlacedText(page, cTexts, cTextP, docFonts);
     }
   }
 }
@@ -227,7 +231,6 @@ function drawRowText(doc, docFonts, row) {
     drawPlacedText(page, cfg, text, docFonts); // <--- single call now
   }
 }
-
 
 // essentially drawRowText but Row 1 only (after header) and checks for sizing
 function drawSizingText(doc, docFonts) {
@@ -259,51 +262,75 @@ function drawSizingText(doc, docFonts) {
       if (!Number.isFinite(spacing) || spacing <= 0) continue;
 
       // Use the stored cfg.text directly
-      const rawText = cfg.text || "";
-      const text = resolveCustomTextValue(rawText)
+      const rawText = cfg.text || '';
+      const text = resolveCustomTextValue(rawText);
       drawPlacedText(page, cfg, text, docFonts);
     }
   }
 }
 
-
 function initKeyCaptures() {
   document.addEventListener('keydown', function (event) {
-
     if (selectedColIndex === null && selectedCustomTextId === null) {
       return;
     }
 
-    let action = "";
+    let action = '';
     switch (event.key) {
-      case 'ArrowUp': action = "y-"; break;
-      case 'ArrowDown': action = "y+"; break;
-      case 'ArrowLeft': action = "x-"; break;
-      case 'ArrowRight': action = "x+"; break;
-      case '-': action = "s-"; break;
-      case '=': action = "s+"; break;
-      case '+': action = "s+"; break;
-      case 'Delete': action = "d"; break;
-      case 'Backspace': action = "d"; break;
-      case '[': action = "sp-"; break;
-      case ']': action = "sp+"; break;
-      default: return;
+      case 'ArrowUp':
+        action = 'y-';
+        break;
+      case 'ArrowDown':
+        action = 'y+';
+        break;
+      case 'ArrowLeft':
+        action = 'x-';
+        break;
+      case 'ArrowRight':
+        action = 'x+';
+        break;
+      case '-':
+        action = 's-';
+        break;
+      case '=':
+        action = 's+';
+        break;
+      case '+':
+        action = 's+';
+        break;
+      case 'Delete':
+        action = 'd';
+        break;
+      case 'Backspace':
+        action = 'd';
+        break;
+      case '[':
+        action = 'sp-';
+        break;
+      case ']':
+        action = 'sp+';
+        break;
+      default:
+        return;
     }
     event.preventDefault();
     if (selectedColIndex !== null) {
-      colAction(action)
+      colAction(action);
     } else if (selectedCustomTextId !== null) {
-      customTextAction(action)
-    };
+      customTextAction(action);
+    }
   });
 }
 
-
 function colAction(move) {
-  if (selectedColIndex == null || !locData) { return; }
+  if (selectedColIndex == null || !locData) {
+    return;
+  }
 
   const markerData = locData[selectedColIndex];
-  if (!markerData) { return; }
+  if (!markerData) {
+    return;
+  }
 
   // Parse numeric fields first to prevent string concatenation bugs
   markerData.x = parseInt(markerData.x, 10) || 50;
@@ -311,58 +338,66 @@ function colAction(move) {
   markerData.size = parseInt(markerData.size, 10) || 12;
 
   switch (move) {
-    case "x+":
+    case 'x+':
       markerData.x += 1;
       break;
-    case "x-":
-      if (markerData.x > 1) { markerData.x -= 1; }
+    case 'x-':
+      if (markerData.x > 1) {
+        markerData.x -= 1;
+      }
       break;
-    case "y+":
+    case 'y+':
       markerData.y += 1;
       break;
-    case "y-":
-      if (markerData.y > 1) { markerData.y -= 1; }
+    case 'y-':
+      if (markerData.y > 1) {
+        markerData.y -= 1;
+      }
       break;
-    case "s-":
+    case 's-':
       if (markerData.size > 3) {
         markerData.size -= 1;
         setFontSizeSelectors(selectedColIndex);
       }
       break;
-    case "s+":
+    case 's+':
       markerData.size = parseInt(markerData.size, 10) + 1;
       setFontSizeSelectors(selectedColIndex);
       break;
-    case "sp-":
+    case 'sp-':
       if (markerData.spacing > 0) {
         markerData.spacing -= 1;
         setFontSizeSelectors(selectedColIndex);
         queueUpdateRenderDoc();
       }
       break;
-    case "sp+":
+    case 'sp+':
       markerData.spacing = parseInt(markerData.spacing, 10) + 1;
       setFontSizeSelectors(selectedColIndex);
       queueUpdateRenderDoc();
       break;
-    case "d":
+    case 'd':
       removeMarker(selectedColIndex);
       break;
     default:
-      console.warn("Move error: unknown direction", move);
+      console.warn('Move error: unknown direction', move);
   }
 
-  try { saveLocData(); } catch { }
+  try {
+    saveLocData();
+  } catch {}
   updateMarker(selectedColIndex); // incremental re-render for this one
 }
 
 function customTextAction(move) {
-
-  if (selectedCustomTextId == null || !customText) { return; }
+  if (selectedCustomTextId == null || !customText) {
+    return;
+  }
 
   const customTextData = customText[currentPage][selectedCustomTextId];
-  if (!customTextData) { return; }
-
+  if (!customTextData) {
+    return;
+  }
 
   // Normalize numeric fields
   customTextData.x = parseInt(customTextData.x, 10) || 50;
@@ -370,45 +405,46 @@ function customTextAction(move) {
   customTextData.size = parseInt(customTextData.size, 10) || 12;
 
   switch (move) {
-    case "x+":
+    case 'x+':
       customTextData.x += 1;
       break;
-    case "x-":
+    case 'x-':
       customTextData.x -= 1;
       break;
-    case "y+":
+    case 'y+':
       customTextData.y += 1;
       break;
-    case "y-":
+    case 'y-':
       customTextData.y -= 1;
       break;
-    case "s-":
-      if (customTextData.size > 3) { customTextData.size -= 1; }
+    case 's-':
+      if (customTextData.size > 3) {
+        customTextData.size -= 1;
+      }
       break;
-    case "s+":
+    case 's+':
       customTextData.size += 1;
       break;
-    case "sp-":
+    case 'sp-':
       if (customTextData.spacing > 0) {
         customTextData.spacing -= 1;
         queueUpdateRenderDoc();
       }
       break;
-    case "sp+":
+    case 'sp+':
       customTextData.spacing = parseInt(customTextData.spacing, 10) + 1;
       queueUpdateRenderDoc();
       break;
-    case "d":
+    case 'd':
       removeCustomText(currentPage, selectedCustomTextId);
       break;
     default:
-      console.warn("Custom Text move error: unknown direction", move);
+      console.warn('Custom Text move error: unknown direction', move);
   }
   checkRender(customTextData);
   updateCustomText(selectedCustomTextId); // incremental re-render for this one
   setCustomTextSelectors(selectedCustomTextId);
 }
-
 
 const logicalXOR = (a, b) => (a || b) && !(a && b);
 
@@ -416,7 +452,10 @@ const logicalXOR = (a, b) => (a || b) && !(a && b);
 function sanitizePlainString(input, maxLen = 200) {
   if (input == null) return null;
   // strip control chars (except newline/tab if you want to keep them)
-  const withoutControls = String(input).replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+  const withoutControls = String(input).replace(
+    /[\u0000-\u001F\u007F-\u009F]/g,
+    ''
+  );
   // trim & normalize unicode
   const trimmed = withoutControls.trim().normalize('NFC');
   // cap length
@@ -439,7 +478,7 @@ function objectToHTMLTable(data, options = {}) {
     tableClass = '',
     headerClass = '',
     rowClass = '',
-    cellClass = ''
+    cellClass = '',
   } = options;
 
   // Start building the table
@@ -452,18 +491,22 @@ function objectToHTMLTable(data, options = {}) {
 
     // Create header row
     html += '<thead><tr>';
-    headers.forEach(header => {
-      html += `<th${headerClass ? ` class="${headerClass}"` : ''}>${escapeHtml(header)}</th>`;
+    headers.forEach((header) => {
+      html += `<th${headerClass ? ` class="${headerClass}"` : ''}>${escapeHtml(
+        header
+      )}</th>`;
     });
     html += '</tr></thead>';
 
     // Create data rows
     html += '<tbody>';
-    data.forEach(row => {
+    data.forEach((row) => {
       html += `<tr${rowClass ? ` class="${rowClass}"` : ''}>`;
-      headers.forEach(header => {
+      headers.forEach((header) => {
         const value = row[header];
-        html += `<td${cellClass ? ` class="${cellClass}"` : ''}>${formatValue(value)}</td>`;
+        html += `<td${cellClass ? ` class="${cellClass}"` : ''}>${formatValue(
+          value
+        )}</td>`;
       });
       html += '</tr>';
     });
@@ -479,8 +522,12 @@ function objectToHTMLTable(data, options = {}) {
     html += '<tbody>';
     Object.entries(data).forEach(([key, value]) => {
       html += `<tr${rowClass ? ` class="${rowClass}"` : ''}>`;
-      html += `<td${cellClass ? ` class="${cellClass}"` : ''}>${escapeHtml(key)}</td>`;
-      html += `<td${cellClass ? ` class="${cellClass}"` : ''}>${formatValue(value)}</td>`;
+      html += `<td${cellClass ? ` class="${cellClass}"` : ''}>${escapeHtml(
+        key
+      )}</td>`;
+      html += `<td${cellClass ? ` class="${cellClass}"` : ''}>${formatValue(
+        value
+      )}</td>`;
       html += '</tr>';
     });
     html += '</tbody>';
@@ -488,8 +535,7 @@ function objectToHTMLTable(data, options = {}) {
   // Handle empty array
   else if (Array.isArray(data) && data.length === 0) {
     html += '<tbody><tr><td>No data available</td></tr></tbody>';
-  }
-  else {
+  } else {
     throw new Error('Data must be an object or array of objects');
   }
 

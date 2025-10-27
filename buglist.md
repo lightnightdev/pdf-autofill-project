@@ -1,6 +1,9 @@
 BUGS
-- Choose file name output for many PDFs
-- Uploading does not work perfectly
+- Clear All Markers not clearing render
+- Need parseApiData!
+- When uploading PDF & CSV files, check if both are loaded, If so, run the script that closes menu 1 and opens menu 2 and menu 1 (if >1pg)
+- When uploading JsonData, re-render the csvCards and customTextcards too
+- Make user:password autofill. no user?
 
 QUALITY OF LIFE
 

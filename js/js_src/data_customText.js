@@ -9,12 +9,12 @@ let customText = {};
 //
 
 function checkmarkCreate() {
-  inputSelection = "checkmark";
+  inputSelection = 'checkmark';
   selectCustomInputs(true, false, false);
 }
 
 function customTextCreate() {
-  inputSelection = "custom_text";
+  inputSelection = 'custom_text';
   selectCustomInputs(false, true, false);
 }
 
@@ -22,15 +22,15 @@ function unselectCustomTextCreate() {
   inputSelection = null;
   selectCustomInputs(false, false, false);
 
-  const elements = document.querySelectorAll(".select.ct-data-el");
+  const elements = document.querySelectorAll('.select.ct-data-el');
   if (elements.length) {
     for (const el of elements) {
-      el.classList.remove("select");
+      el.classList.remove('select');
     }
   }
 
-  document.getElementById("font-select").disabled = false;
-  document.getElementById("spacing-select").disabled = false;
+  document.getElementById('font-select').disabled = false;
+  document.getElementById('spacing-select').disabled = false;
 
   highlightCustomTextCard(null);
 }
@@ -42,29 +42,29 @@ function selectCustomInputs(
 ) {
   selectedColIndex = null;
   selectedCustomTextId = null;
-  const cardC = document.getElementById("checkmark-card");
-  const cardT = document.getElementById("custom-text-card");
-  const cardS = document.getElementById("saved-text-card");
-  const inputS = document.getElementById("saved-text-input");
+  const cardC = document.getElementById('checkmark-card');
+  const cardT = document.getElementById('custom-text-card');
+  const cardS = document.getElementById('saved-text-card');
+  const inputS = document.getElementById('saved-text-input');
   selectCheckmark
-    ? cardC?.classList.add("select")
-    : cardC?.classList.remove("select");
+    ? cardC?.classList.add('select')
+    : cardC?.classList.remove('select');
   selectCustomText
-    ? cardT?.classList.add("select")
-    : cardT?.classList.remove("select");
+    ? cardT?.classList.add('select')
+    : cardT?.classList.remove('select');
   selectSavedText
-    ? cardS?.classList.add("select")
-    : cardS?.classList.remove("select");
+    ? cardS?.classList.add('select')
+    : cardS?.classList.remove('select');
   selectSavedText
-    ? inputS?.classList.add("select")
-    : inputS?.classList.remove("select");
+    ? inputS?.classList.add('select')
+    : inputS?.classList.remove('select');
   if (selectCheckmark || selectCustomText || selectSavedText) {
     selectMarkersAndCards(-1);
   }
 }
 
 function newCustomText(page, x, y, text, size, font, spacing = 0) {
-  const canvas = document.getElementById("pdf-canvas");
+  const canvas = document.getElementById('pdf-canvas');
   if (!customText[page]) {
     customText[page] = [];
   }
@@ -122,24 +122,24 @@ function renderCustomText(ctId, data) {
     return;
   }
   // add marker to page
-  const overlay = document.getElementById("pdf-overlay");
-  const el = document.createElement("div");
+  const overlay = document.getElementById('pdf-overlay');
+  const el = document.createElement('div');
   el.id = `ct-${ctId}`;
-  el.classList.add("custom-text");
-  el.classList.add("ct-data-el");
+  el.classList.add('custom-text');
+  el.classList.add('ct-data-el');
   if (selectedCustomTextId == ctId) {
-    el.classList.add("select");
+    el.classList.add('select');
   }
   el.dataset.ctId = String(ctId);
-  el.addEventListener("click", () => selectCustomText(parseInt(ctId, 10)));
-  el.style.position = "absolute";
-  el.style.pointerEvents = "auto";
+  el.addEventListener('click', () => selectCustomText(parseInt(ctId, 10)));
+  el.style.position = 'absolute';
+  el.style.pointerEvents = 'auto';
   applyDataToMarker(el, data);
   // --- handle spacing ---
   const spacing = Number(data.spacing);
   if (!isNaN(spacing) && spacing > 0) {
     // replace each character (including spaces) with a space
-    el.classList.add("invisible-text");
+    el.classList.add('invisible-text');
   }
   el.textContent = resolveCustomTextValue(data.text);
   overlay.appendChild(el);
@@ -150,10 +150,10 @@ function selectCustomText(ctId) {
   unselectCustomTextCreate();
   selectedCustomTextId = ctId;
   const el = document.getElementById(`ct-${ctId}`);
-  el.classList.add("select");
+  el.classList.add('select');
 
   if (el) {
-    el.classList.add("select");
+    el.classList.add('select');
   }
   highlightCustomTextCard(ctId);
   setCustomTextSelectors(ctId);
@@ -179,17 +179,17 @@ function removeCustomTextFromPage() {
 }
 
 function renderCustomTextCards(pageNumber) {
-  const container = document.getElementById("custom-cards");
+  const container = document.getElementById('custom-cards');
   if (!container) {
     return;
   }
 
-  container.innerHTML = "";
+  container.innerHTML = '';
 
   const resolvedPage =
-    typeof pageNumber === "number"
+    typeof pageNumber === 'number'
       ? pageNumber
-      : typeof currentPage === "number"
+      : typeof currentPage === 'number'
       ? currentPage
       : 1;
 
@@ -199,26 +199,26 @@ function renderCustomTextCards(pageNumber) {
   }
 
   entries.forEach((entry, ctId) => {
-    if (!entry || entry.text === "__checkmark") {
+    if (!entry || entry.text === '__checkmark') {
       return;
     }
 
-    const card = document.createElement("div");
-    card.className = "card p-2 text-start loc-data-exists";
+    const card = document.createElement('div');
+    card.className = 'card p-2 text-start loc-data-exists';
     card.dataset.ctId = String(ctId);
     card.id = `custom-card-${ctId}`;
 
     if (selectedCustomTextId === ctId) {
-      card.classList.add("select");
+      card.classList.add('select');
     }
 
-    const titleDiv = document.createElement("div");
-    titleDiv.className = "fw-bold mb-1 text-start";
-    titleDiv.textContent = resolveCustomTextValue(entry.text) || "";
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'fw-bold mb-1 text-start';
+    titleDiv.textContent = resolveCustomTextValue(entry.text) || '';
     card.appendChild(titleDiv);
 
-    const detailsDiv = document.createElement("div");
-    detailsDiv.className = "text-start text-muted small";
+    const detailsDiv = document.createElement('div');
+    detailsDiv.className = 'text-start text-muted small';
     const fontValue = entry.font;
     const sizeValue = Number.isFinite(Number(entry.size))
       ? Number(entry.size)
@@ -229,7 +229,7 @@ function renderCustomTextCards(pageNumber) {
     detailsDiv.textContent = `Font ${fontValue} • Size ${sizeValue} • Spacing ${spacingValue}`;
     card.appendChild(detailsDiv);
 
-    card.addEventListener("click", () => {
+    card.addEventListener('click', () => {
       selectCustomText(parseInt(card.dataset.ctId, 10));
     });
 
@@ -238,7 +238,7 @@ function renderCustomTextCards(pageNumber) {
 }
 
 function highlightCustomTextCard(ctId) {
-  const container = document.getElementById("custom-cards");
+  const container = document.getElementById('custom-cards');
   if (!container) {
     return;
   }
@@ -246,9 +246,9 @@ function highlightCustomTextCard(ctId) {
   Array.from(container.children).forEach((card) => {
     const cardId = parseInt(card.dataset.ctId, 10);
     if (ctId != null && cardId === ctId) {
-      card.classList.add("select");
+      card.classList.add('select');
     } else {
-      card.classList.remove("select");
+      card.classList.remove('select');
     }
   });
 }
@@ -259,26 +259,26 @@ function setCustomTextSelectors(ctId) {
     return;
   }
 
-  const isCheckmark = ctEntry.text === "__checkmark";
+  const isCheckmark = ctEntry.text === '__checkmark';
   if (isCheckmark) {
-    document.getElementById("font-select").disabled = true;
-    document.getElementById("spacing-select").disabled = true;
+    document.getElementById('font-select').disabled = true;
+    document.getElementById('spacing-select').disabled = true;
     return;
   }
 
-  const fontSelect = document.getElementById("font-select");
+  const fontSelect = document.getElementById('font-select');
   if (fontSelect) {
-    fontSelect.value = ctEntry.font || "_normal";
+    fontSelect.value = ctEntry.font || '_normal';
   }
 
-  const sizeInput = document.getElementById("size-select");
+  const sizeInput = document.getElementById('size-select');
   if (sizeInput) {
     const numericSize = Number(ctEntry.size);
     sizeInput.value =
       Number.isFinite(numericSize) && numericSize > 0 ? numericSize : 12;
   }
 
-  const spacingInput = document.getElementById("spacing-select");
+  const spacingInput = document.getElementById('spacing-select');
   if (spacingInput) {
     const numericSpacing = Number(ctEntry.spacing);
     spacingInput.value = Number.isFinite(numericSpacing) ? numericSpacing : 0;

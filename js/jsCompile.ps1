@@ -27,4 +27,4 @@ $response = Invoke-RestMethod -Uri "https://www.toptal.com/developers/javascript
 
 # Save output
 Set-Content -Path $outFile -Value $response -Encoding UTF8
-Write-Host "✅ Minified JS saved to $outFile"
+Write-Host "Minified JS saved to $outFile"
