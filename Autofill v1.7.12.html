@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF Batch Merge</title>
+  <link rel="icon" href="css/LND.ico" />
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/style.css?v=1.0.4" />
+  <link rel="stylesheet" href="css/style_general.css?v=1.0.4" />
+
+  </style>
+  <!-- Bootstrap  -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+</head>
+
+<body>
+  <div class="layout">
+    <aside class="sidebar left">
+      <div class="mb-3">
+        <h1>PDF-CSV Autofiller</h1>
+        <span id="webapp_version_id">v1.7.12</span>
+      </div>
+      <hr />
+
+      <div class="menu-block">
+        <div id="menu-header-1" class="menu-header d-flex justify-content-between align-items-center header-open"
+          data-bs-toggle="collapse" data-bs-target="#menu-content-1" onclick="menuToggleExtra(1)">
+          <h2 id="file-select-menu-header" class="mb-0 fs-5">Select Files</h2>
+          <i class="bi bi-caret-down-fill"></i>
+        </div>
+        <div id="menu-content-1" class="menu-content text-center collapse show body-open">
+          <div class="file-input">
+            <div class="file-row">
+              <button id="pdf-input" class="btn btn-outline-success w-100 fw-bold" onclick="uploadPDF()">
+                Select a PDF
+              </button>
+            </div>
+            <div class="file-row">
+              <button id="csv-input" class="btn btn-outline-success w-100 fw-bold" onclick="uploadCSV()">
+                Select a CSV
+              </button>
+            </div>
+          </div>
+          <div>
+            <button id="btn-remove-files" class="btn btn-outline-danger m-2" type="button" onclick="clearFiles()">
+              <i class="bi bi-trash"></i> Remove all files
+            </button>
+            <!-- <button id="btn-download-loc" class="btn btn-outline-primary m-2" type="button" onclick="openQueryModal()">
+              <i class="bi bi-trash"></i> Download PDF/CSV template
+            </button> -->
+          </div>
+        </div>
+      </div>
+
+      <div class="menu-block">
+        <div role="button" id="menu-header-2"
+          class="menu-header d-flex justify-content-between align-items-center collapsed" data-bs-toggle="collapse"
+          data-bs-target="#menu-content-2" onclick="menuToggleExtra(2)" aria-expanded="false">
+          <h2 class="mb-0 fs-5">PDF Navigation</h2>
+          <i class="bi bi-caret-down-fill"></i>
+        </div>
+        <div id="menu-content-2" class="menu-content text-center collapse">
+          <div id="pdf-page-info">
+            <span id="page-info">Page 0 / 0</span>
+          </div>
+          <div class="text-center">
+            <div id="pdf-page-buttons">
+              <button id="prev-page" class="btn btn-secondary btn-sm">
+                Previous Page
+              </button>
+              <button id="next-page" class="btn btn-secondary btn-sm">
+                Next Page
+              </button>
+            </div>
+            <button id="btn-remove-page" class="btn btn-danger m-3 w-50" type="button" onclick="removeCurrentPage()">
+              <i class="bi bi-trash"></i> Remove Current Page
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="menu-block">
+        <div role="button" id="menu-header-3"
+          class="menu-header d-flex justify-content-between align-items-center collapsed" data-bs-toggle="collapse"
+          data-bs-target="#menu-content-3" onclick="menuToggleExtra(3)" aria-expanded="false">
+          <h2 class="mb-0 fs-5">PDF Marker Data</h2>
+          <i class="bi bi-caret-down-fill"></i>
+        </div>
+
+        <div id="menu-content-3" class="menu-content text-center collapse">
+          <div>
+            <button id="btn-clear-loc" class="btn btn-danger m-2 w40" type="button" onclick="clearAllMarkers()">
+              <i class="bi bi-trash"></i> Clear All Markers
+            </button>
+
+            <!-- <button type="button" class="btn btn-primary m-2 w40" onclick="handleSendToServerClick()">
+              Send to Server
+            </button> -->
+          </div>
+          <div>
+            <button class="btn btn-outline-success m-2 fw-bold w30" type="button" onclick="downloadMarkers()">
+              <i class="bi bi-download"></i> Download
+            </button>
+
+            <button class="btn btn-outline-warning m-2 fw-bold w30" type="button" onclick="uploadMarkers()">
+              <i class="bi bi-upload"></i> Upload
+            </button>
+          </div>
+        </div>
+      </div>
+      <hr />
+
+      <div class="mt-3">
+        <button id="btn-make-pdfs" class="btn btn-outline-success m-1 btn-lg w-100" type="button"
+          onclick="generateAndExportPDFs()">
+          Generate PDFs
+        </button>
+        <div class="form-check m-3 output-options-checkbox d-flex selected" onclick="toggleCheckbox(this)">
+          <input class="form-check-input" type="checkbox" id="export-single-pdf" checked />
+          <label class="form-check-label" for="export-single-pdf">
+            Export all rows as one PDF (for printing)
+          </label>
+        </div>
+        <div class="form-check m-3 output-options-checkbox d-flex" onclick="toggleCheckbox(this)">
+          <input class="form-check-input" type="checkbox" id="rasterize-output" />
+          <label class="form-check-label" for="rasterize-output">
+            Rasterize output. Removes any compatibility issues, but increases
+            file size.
+          </label>
+        </div>
+      </div>
+
+      <hr />
+      <div id="logbox" class="logbox"></div>
+
+      <div class="menu-block">
+        <div role="button" id="menu-header-4"
+          class="menu-header d-flex justify-content-between align-items-center bg-off-white" data-bs-toggle="collapse"
+          data-bs-target="#menu-content-4" onclick="menuToggleExtra(4)" aria-expanded="true">
+          <h2 class="mb-0 fs-6">Tips / Shortcuts</h2>
+          <i class="bi bi-caret-down-fill"></i>
+        </div>
+        <div id="menu-content-4" class="menu-content collapse">
+          <p class="tip m-2">
+            <b>Placing a marker:</b><br />
+            - Choose a column on the right<br />
+            - Click to place a marker<br />
+            - Click the column again to duplicate it<br />
+          </p>
+          <p class="tip m-2">
+            <b>Editing a marker:</b><br />
+            - Click an existing marker or it's column card to selected it<br />
+            - Use (+/=) and (-) keys to adjust font size<br />
+            - Use arrow keys to adjust the location<br />
+            - Press the (Delete) key to delete that marker<br />
+          </p>
+          <p class="tip m-2">
+            <b>Unzipping on Windows:</b><br />
+            - Right click the file > Properties > Unblock
+          </p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main PDF Display -->
+    <div class="wrapper">
+      <main class="content">
+        <div id="pdf-stage">
+          <canvas id="pdf-canvas"></canvas>
+          <div id="pdf-overlay"></div>
+        </div>
+      </main>
+    </div>
+
+    <aside class="sidebar right">
+      <h2>Select Columns</h2>
+      <div class="">
+        <!-- Controls column -->
+        <div class="">
+          <div class="d-flex align-items-center m-2">
+            <label for="font-select" class="form-label mb-0">Font:</label>
+            <select id="font-select" class="form-select form-select-sm">
+              <option value="_normal">Normal</option>
+              <option value="_monospace">Monospace</option>
+              <option value="_signature">Signature</option>
+            </select>
+          </div>
+
+          <div class="d-flex align-items-center m-2">
+            <label for="size-select" class="form-label mb-0">Size:</label>
+            <input type="number" class="form-control" id="size-select" placeholder="12" />
+          </div>
+
+          <div class="d-flex align-items-center m-2">
+            <label for="spacing-select" class="form-label mb-0">Spacing:</label>
+            <input type="number" class="form-control" id="spacing-select" value="0" />
+          </div>
+        </div>
+
+        <!-- Table column -->
+        <div class="">
+          <div class="table-responsive">
+            <div class="d-flex justify-content-between">
+              <div id="checkmark-card" class="card text-center custom-input-card" onclick="checkmarkCreate()">
+                <div class="fw-bold mb-1 text-start">Add checkmark ✓</div>
+              </div>
+
+              <div id="custom-text-card" class="card text-center custom-input-card" onclick="customTextCreate()">
+                <div class="fw-bold mb-1 text-start">Add custom text</div>
+              </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center">
+              <div id="saved-text-card" class="card text-center custom-input-card crsr-ptr w40px"
+                onclick="savedTextCreate()">
+                <div class="fw-bold mb-1">Add:</div>
+              </div>
+              <div class="flex-fill mw40px">
+                <label for="saved-text-input" class="form-label d-none">Saved Text</label>
+                <select id="saved-text-input" class="form-select" onclick="savedTextCreate()">
+                  <optgroup label="Choose One"></optgroup>
+                </select>
+              </div>
+            </div>
+
+            <div id="csv-cards" class="d-flex flex-column gap-2"></div>
+            <hr />
+            <h2>Custom Text</h2>
+            <div id="custom-cards" class="d-flex flex-column gap-2"></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Insert DownloadModal.html here after Server Setup -->
+
+
+  <!-- Libraries -->
+
+
+  <!-- PDF-Lib, FontKit, PDF.Js -->
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
+  </script>
+
+  <!-- PapaParse for CSV parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+  <!-- My min.js -->
+  <!-- <script src="js/autofill.min.js?v=1.0.3"></script> -->
+
+  <!-- Server Interaction -- curently not used -->
+  <script src="js/js_src/_server_query.js"></script>
+  <script src="js/js_src/queryModal.js"></script>
+
+  <!-- Font Data -->
+  <script src="js/font_data.js"></script>
+
+  <!-- Regular Usage -->
+  <script src="js/js_src/csvLoader.js"></script>
+  <script src="js/js_src/data_customText.js"></script>
+  <script src="js/js_src/data_markers.js"></script>
+  <script src="js/js_src/data_savedText.js"></script>
+  <script src="js/js_src/db.js?v=1.0.1"></script>
+  <script src="js/js_src/log.js"></script>
+  <script src="js/js_src/menu.js"></script>
+  <script src="js/js_src/overlay.js"></script>
+  <script src="js/js_src/pdfExport.js"></script>
+  <script src="js/js_src/pdfLoader.js"></script>
+  <script src="js/js_src/utils.js"></script>
+
+  <!-- Startup Script -->
+  <script src="js/_startup.js"></script>
+
+</body>
+
+</html>
