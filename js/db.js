@@ -139,7 +139,7 @@ async function saveLocData() {
 async function savePdfToIndexedDb() {
     const ab = Alpine.store('pdfState').pdfBytes
     const pg = Alpine.store('pdfState').pdfPages
-    let pn = Alpine.store('pdfState').pdfFileName
+    let pn = Alpine.store('pdfState').pdfName
 
     if (!ab) { return; }
     if (!pn || pn === '') { pn = 'form.pdf'; }

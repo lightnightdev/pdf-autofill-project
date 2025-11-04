@@ -57,7 +57,7 @@ async function processPDF(file) {
 
     // Save PDF bytes to Alpine store
     Alpine.store('pdfState').pdfBytes = processed;
-    Alpine.store('pdfState').pdfFileName = pn;
+    Alpine.store('pdfState').pdfName = pn;
 
     savePdfToIndexedDb();
 

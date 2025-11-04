@@ -72,9 +72,20 @@ document.addEventListener('alpine:init', () => {
   Alpine.store('csvState', {
     csvData: null,
     csvFileName: null,
+    fileNameCols: [],
+
+    toggleFileNameCol(colIdx) {
+      const i = this.fileNameCols.indexOf(colIdx);
+      if (i >= 0) {
+        this.fileNameCols.splice(i, 1);
+      } else {
+        this.fileNameCols.push(colIdx);
+      }
+    },
     clear() {
       this.csvData = null;
       this.csvFileName = null;
+      this.fileNameCols = [];
     }
   });
 
@@ -95,7 +106,7 @@ document.addEventListener('alpine:init', () => {
       this.openMenus = {};
     }
   });
-  
+
 
   Alpine.data('pdfOverlay', () => ({
     init() {

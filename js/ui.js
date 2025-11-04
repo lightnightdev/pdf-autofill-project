@@ -5,9 +5,8 @@ async function uploadPDF() {
 }
 
 
-function uploadCSV() {
-  console.log('CSV Upload triggered');
-  // implement CSV picker, then update csvState
+async function uploadCSV() {
+  selectCsvFile();
 }
 
 

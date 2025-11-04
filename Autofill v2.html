@@ -53,7 +53,7 @@
               <button @click="uploadCSV()"
                 :class="{'btn-success': $store.csvState.csvData, 'btn-outline-success': !$store.csvState.csvData}"
                 class="btn w-100 fw-bold">
-                Select a CSV
+                <span x-text="$store.csvState.csvName || 'Select a CSV'"></span>
               </button>
             </div>
           </div>
@@ -163,7 +163,7 @@
       </div>
     </aside>
 
-    <!-- Main PDF Display -->
+    <!-- ====================== Main PDF Display!!! ====================== -->
     <div class="wrapper">
       <main class="content">
 
@@ -196,6 +196,7 @@
     <aside class="sidebar right">
       <h2>Select Columns</h2>
 
+      <!-- ====================== Font Options ====================== -->
       <div class="d-flex align-items-center m-2">
         <label for="font-select" class="form-label mb-0">Font:</label>
         <select id="font-select" class="form-select form-select-sm" x-model="$store.viewState.selectedFont">
@@ -216,6 +217,8 @@
         <input type="number" class="form-control" id="spacing-select" value="0"
           x-model="$store.viewState.selectedSpacing" />
       </div>
+
+      <!-- ====================== Custom/Saved Text ====================== -->
 
       <div class="d-flex justify-content-between">
         <div id="checkmark-card" class="card text-center custom-input-card" @click="checkmarkCreate()">
@@ -239,8 +242,52 @@
         </div>
       </div>
 
-      <div id="csv-cards" class="d-flex flex-column gap-2"></div>
+      <!-- ====================== CSV Cards ====================== -->
+      <div x-data>
+        <!-- Only render once csvData exists and has rows -->
+        <template x-if="$store.csvState.csvData && $store.csvState.csvData.length > 0">
+          <hr />
+          <h2>CSV Columns</h2>
+
+          <div id="csv-cards" class="d-flex flex-column gap-2">
+
+            <!-- Loop through columns (headers) -->
+            <template x-for="(colName, colIdx) in $store.csvState.csvData[0]" :key="colIdx">
+              <div class="card col-card p-2 text-center cursor-pointer" @click="selectCard(colIdx)">
+                <div class="d-flex justify-content-between align-items-start">
+
+                  <div class="col-8 text-start">
+                    <div class="fw-bold mb-1" x-text="colName"></div>
+
+                    <!-- Show first two data rows safely -->
+                    <template
+                      x-for="(row, i) in $store.csvState.csvData.slice(1, Math.min(3, $store.csvState.csvData.length))"
+                      :key="i">
+                      <div class="text-start text-sm" x-text="row[colIdx] || ''"></div>
+                    </template>
+                  </div>
+
+                  <!-- Toggle mini-card -->
+                  <div class="card file-name-toggle mt-2 text-center col-4"
+                    :class="{'file-name-select': $store.csvState.fileNameCols?.includes(colIdx)}"
+                    @click.stop="$store.csvState.toggleFileNameCol(colIdx)">
+                    Add to File Name
+                  </div>
+
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
+
+      </div>
+
+
+
       <hr />
+
+      <!-- ====================== Custom Text Cards ====================== -->
+
       <h2>Custom Text</h2>
       <div id="custom-cards" class="d-flex flex-column gap-2"></div>
     </aside>
@@ -264,6 +311,7 @@
   <script src="js/db.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/utils.js"></script>
+  <script src="js/csvLoader.js"></script>
   <script src="js/pdfUtils.js"></script>
   <script src="js/pdfLoader.js"></script>
   <script src="js/pdfExport.js"></script>
