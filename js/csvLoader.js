@@ -123,17 +123,6 @@ function displayCSVPreviewAsCards() {
   });
 }
 
-// get selected headers
-function getSelectedFileNameHeaders(csvData) {
-  const selectedCards = document.querySelectorAll('.file-name-select');
-  const selectedHeaders = [];
-  selectedCards.forEach((div) => {
-    const colIdx = parseInt(div.closest('.col-card').dataset.colIdx);
-    selectedHeaders.push(colIdx);
-  });
-  return selectedHeaders;
-}
-
 function downloadCsvTemplate(headerRow) {
   if (!headerRow || headerRow.length === 0) { return; }
 

@@ -5,7 +5,6 @@
 // Keep editDoc, editDocFonts, renderDoc as local variables
 let editDoc = null;
 let editDocFonts = null;
-let renderDoc = null;
 let pdfDoc = null;
 let renderInProgress = false;
 let updateQueued = false;
@@ -55,6 +54,9 @@ async function processPDF(file) {
       ? await flattenAndCompressFile(file_ab)
       : await rasterizeFile(file_ab, { dpi: 100 });
 
+    const pdfDoc = await pdfjsLib.getDocument({data: file_ab}).promise;
+    Alpine.store('pdfState').pdfPages = pdfDoc.numPages;
+
     // Save PDF bytes to Alpine store
     Alpine.store('pdfState').pdfBytes = processed;
     Alpine.store('pdfState').pdfName = pn;
@@ -85,56 +87,44 @@ function getAb() {
 async function loadPDF(pageNum = 1) {
   if (!isValidPdf) return;
 
-  await createEditDoc(pageNum);
 
   // Load renderDoc
   queueUpdateRenderDoc(pageNum);
 }
 
 // --------------------
-// Create editable PDF-lib doc
+// Queue Update
 // --------------------
-async function createEditDoc(pageNum = 1) {
-  const arrayBuffer = getAb();
-  editDoc = await PDFLib.PDFDocument.load(arrayBuffer);
-  editDocFonts = await embedFontsForDoc(editDoc);
-}
-
-function queueUpdateRenderDoc(pageNum) {
+function queueUpdateRenderDoc(pageNum = -1) {
+  if (pageNum = -1) { pageNum = Alpine.store('viewState').currentPage ;}
   if (updateQueued) return;
   updateQueued = true;
 
   Promise.resolve().then(async () => {
     updateQueued = false;
-    await updateRenderDoc(pageNum);
-  });
-}
-
-async function updateRenderDoc(pageNum = 1) {
-  renderDoc = null;
-  if (!editDoc) await createEditDoc(pageNum);
-
-  const bytes = await editDoc.save();
-  renderDoc = await PDFLib.PDFDocument.load(bytes);
-  await drawSizingText(renderDoc, editDocFonts);
-
-  const typedarray = new Uint8Array(await renderDoc.save());
-  pdfDoc = await pdfjsLib.getDocument({ data: typedarray }).promise;
-
-  Alpine.store('viewState').currentPage = pageNum;
-  Alpine.store('pdfState').pdfPages = pdfDoc.numPages;
-
-  await renderPage(pageNum);
+    await renderPage(pageNum);
+  })
 }
 
 // --------------------
 // Render a page
 // --------------------
-async function renderPage(pageNum) {
-  if (renderInProgress || !pdfDoc) return;
+async function renderPage(pageNum = 1) {
+  if (renderInProgress) { return; }
   renderInProgress = true;
 
   try {
+    const arrayBuffer = getAb();
+    const renderDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+    const renderDocFonts = await embedFontsForDoc(renderDoc);
+
+    const ld = Alpine.store('locData').pages[pageNum]
+
+    await drawSizingText(renderDoc, renderDocFonts, ld, pageNum - 1)
+
+    const typedarray = new Uint8Array(await renderDoc.save());
+    pdfDoc = await pdfjsLib.getDocument({ data: typedarray }).promise;
+
     const page = await pdfDoc.getPage(pageNum);
     const viewport = page.getViewport({ scale: 1.5 });
 
@@ -159,10 +149,10 @@ async function renderPage(pageNum) {
 }
 
 function checkMenu() {
-    const open2 = Alpine.store('pdfState').pdfPages > 1;
-    if (open2) {
-        Alpine.store('menuState').open(2);
-    }
+  const open2 = Alpine.store('pdfState').pdfPages > 1;
+  if (open2) {
+    Alpine.store('menuState').open(2);
+  }
 }
 
 function syncOverlayBoxToCanvas() {
@@ -207,7 +197,7 @@ async function removeCurrentPage() {
 
   // Go to previous page
   const newPage = viewState.currentPage > 1 ? viewState.currentPage - 1 : 1;
-  await renderPage(newPage);
+  await queueUpdateRenderDoc(newPage);
 }
 
 async function removePageBytes(pageNum) {

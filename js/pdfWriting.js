@@ -1,7 +1,7 @@
+// --- PDF-Specific Utils ---
 
-// PDF-Specific Utils
-// --- coordinate + font helpers reused by preview + export for character spacing ---
 
+// Computes scaled PDF coordinates and font size based on page size and config
 function computeExportCoords(page, cfg) {
   const pageW = page.getWidth();
   const pageH = page.getHeight();
@@ -20,9 +20,10 @@ function computeExportCoords(page, cfg) {
   const exportYTop = pageH - (Number(cfg.y) || 0) * scaleY;
   const exportY = getCorrectYCoordinate(exportYTop, pdfFontSize, cfg.font);
 
-  return { pageW, pageH, scaleX, scaleY, pdfFontSize, exportX, exportY };
+  return { pdfFontSize, exportX, exportY };
 }
 
+// Adjusts Y coordinate to account for font ascender and PDF units
 function getCorrectYCoordinate(exportYTop, fontSize, fontKey) {
   const ascender = FONT_STYPODESCENDERS[fontKey];
   const unitsPerEm = FONT_UNITS_PER_EM[fontKey] || 1000;
@@ -34,88 +35,18 @@ function getCorrectYCoordinate(exportYTop, fontSize, fontKey) {
   return exportY;
 }
 
+// Copies a specified column in a 2D array to a new column
 function copyArrayColumn(arr, idx) {
-  let i = arr.length;
-  while (i--) {
-    const row = arr[i];
-    row[row.length] = row[idx];
+  for (let i = 0; i < arr.length; i++) {
+    arr[i].push(arr[i][idx]);
   }
   return arr[0].length - 1;
 }
 
-
-
-
-
-async function drawAllPdfContent(doc, docFonts, row = null) {
-  const bytes = Alpine.store('pdfState').pdfBytes;
-  const pages = Alpine.store('locData').pages;
-
-  // ========= Phase 1: Sizing Text (rasterized) =========
-  for (const [pgNumStr, pageData] of Object.entries(pages)) {
-    const pageNum = parseInt(pgNumStr, 10);
-    const page = doc.getPage(pageNum - 1);
-    if (!page) continue;
-
-    // CSV-based spacing previews
-    if (pageData.csvColumns) {
-      for (const [key, cfg] of Object.entries(pageData.csvColumns)) {
-        const spacing = Number(cfg.spacing);
-        if (!Number.isFinite(spacing) || spacing <= 0) continue;
-
-        const text = getCellOrHeader(1, parseInt(key, 10)); // header row for sizing
-        drawPlacedText(page, cfg, text, docFonts);
-      }
-    }
-
-    // CustomText spacing previews
-    if (pageData.customText) {
-      for (const cfg of Object.values(pageData.customText)) {
-        const spacing = Number(cfg.spacing);
-        if (!Number.isFinite(spacing) || spacing <= 0) continue;
-
-        const text = resolveCustomTextValue(cfg.text || '');
-        drawPlacedText(page, cfg, text, docFonts);
-      }
-    }
-  }
-
-  // ========= Phase 2: Actual Text Content =========
-  for (const [pgNumStr, pageData] of Object.entries(pages)) {
-    const pageNum = parseInt(pgNumStr, 10);
-    const page = doc.getPage(pageNum - 1);
-    if (!page) continue;
-
-    // CSV-driven text (per row)
-    if (pageData.csvColumns && row !== null) {
-      for (const [key, cfg] of Object.entries(pageData.csvColumns)) {
-        const text = getCellOrBlank(row, parseInt(key, 10));
-        drawPlacedText(page, cfg, text, docFonts);
-      }
-    }
-
-    // Saved text (manual user text saved on page)
-    if (pageData.savedText) {
-      for (const [key, cfg] of Object.entries(pageData.savedText)) {
-        const text = cfg.text || '';
-        drawPlacedText(page, cfg, text, docFonts);
-      }
-    }
-
-    // Custom text (user-specified static entries)
-    if (pageData.customText) {
-      for (const cfg of Object.values(pageData.customText)) {
-        const text = resolveCustomTextValue(cfg.text || '');
-        drawPlacedText(page, cfg, text, docFonts);
-      }
-    }
-  }
-}
-
-
+// Draws text on a page with optional per-character spacing
 function drawPlacedText(page, cfg, text, fontsMap) {
   const font = pickFontForPdf(cfg.font, fontsMap);
-  const spacing = Number(cfg.spacing) || 0;
+  const spacing = Number(cfg.spacing) * 0.5 || 0;
   const { pdfFontSize, exportX, exportY } = computeExportCoords(page, cfg);
 
   if (!spacing) {
@@ -123,7 +54,7 @@ function drawPlacedText(page, cfg, text, fontsMap) {
     return;
   }
 
-  // Per-character draw with spacing
+  // Per-character draw (manual spacing). Skip extra space after last char.
   let cursorX = exportX;
   for (const [i, ch] of Array.from(text).entries()) {
     page.drawText(ch, { x: cursorX, y: exportY, size: pdfFontSize, font });
@@ -133,65 +64,92 @@ function drawPlacedText(page, cfg, text, fontsMap) {
   }
 }
 
-
-function drawCustText(doc, docFonts) {
-  const pages = Alpine.store('locData').pages;
-  for (const [pgNumStr, pageData] of Object.entries(pages)) {
-    const pageNum = parseInt(pgNumStr, 10);
-    const page = doc.getPage(pageNum - 1);
-    if (!page || !pageData.customText) continue;
-
-    for (const cfg of Object.values(pageData.customText)) {
-      const resolvedText = resolveCustomTextValue(cfg.text || '');
-      drawPlacedText(page, cfg, resolvedText, docFonts);
+// drawAllText
+function drawStaticText(doc, docFonts, locDataPages) {
+  console.log(locDataPages);
+  if (!locDataPages) { return; };
+  let pageLocData;
+  for (pgNum of Object.keys(locData)) {
+    const page = doc.getPage(Number(pgNum));
+    pageLocData = locData[pgNum];
+    for (obj of Object.values(pageLocData.customText)) {
+      drawPlacedText(page, obj, obj.text, docFonts)
+    }
+    for (obj of Object.values(pageLocData.savedText)) {
+      drawPlacedText(page, obj, obj.text, docFonts)
     }
   }
 }
 
 
-function drawRowText(doc, docFonts, row) {
-  const pages = Alpine.store('locData').pages;
-
-  for (const [pgNumStr, pageData] of Object.entries(pages)) {
-    const pageNum = parseInt(pgNumStr, 10);
-    const page = doc.getPage(pageNum - 1);
-    if (!page || !pageData.csvColumns) continue;
-
-    for (const [key, cfg] of Object.entries(pageData.csvColumns)) {
-      const text = getCellOrBlank(row, parseInt(key, 10));
-      drawPlacedText(page, cfg, text, docFonts);
+function drawRowText(doc, docFonts, locDataPages, rowIdx) {
+  if (!locDataPages) { return; };
+  let pageLocData;
+  for (pgNum of Object.keys(locDataPages)) {
+    const page = doc.getPage(Number(pgNum));
+    pageLocData = locDataPages[pgNum];
+    for (obj of Object.values(pageLocData.csvColumns)) {
+      const txt = getCellOrBlank(rowIdx, obj.colIdx);
+      drawPlacedText(page, obj, txt, docFonts)
     }
   }
 }
 
 
-function drawSizingText(doc, docFonts) {
-  const pages = Alpine.store('locData').pages;
+// essentially drawRowText but Row 1 only (after header) and checks for sizing
+function drawSizingText(doc, docFonts, pageLocData, pagenum) {
+  const page = doc.getPage(pagenum);
+  log("Drawing spacing text");
+  if (!pageLocData) { console.log('error drawing sizing text'); return; };
 
-  // Loop CSV columns for spacing checks
-  for (const [pgNumStr, pageData] of Object.entries(pages)) {
-    const pageNum = parseInt(pgNumStr, 10);
-    const page = doc.getPage(pageNum - 1);
-    if (!page || !pageData.csvColumns) continue;
-
-    for (const [key, cfg] of Object.entries(pageData.csvColumns)) {
-      if (!Number.isFinite(Number(cfg.spacing)) || cfg.spacing <= 0) continue;
-      const text = getCellOrHeader(1, parseInt(key, 10));
-      drawPlacedText(page, cfg, text, docFonts);
+  for (obj of Object.values(pageLocData.customText)) {
+    if (obj.spacing && obj.spacing > 0) {
+      log("Drawing " + obj.text);
+      drawPlacedText(page, obj, obj.text, docFonts)
     }
   }
-
-  // Loop custom text entries for spacing
-  for (const [pgNumStr, pageData] of Object.entries(pages)) {
-    const pageNum = parseInt(pgNumStr, 10);
-    const page = doc.getPage(pageNum - 1);
-    if (!page || !pageData.customText) continue;
-
-    for (const cfg of Object.values(pageData.customText)) {
-      if (!Number.isFinite(Number(cfg.spacing)) || cfg.spacing <= 0) continue;
-      const text = resolveCustomTextValue(cfg.text || '');
-      drawPlacedText(page, cfg, text, docFonts);
+  for (obj of Object.values(pageLocData.savedText)) {
+    if (obj.spacing && obj.spacing > 0) {
+      log("Drawing " + obj.text);
+      drawPlacedText(page, obj, obj.text, docFonts)
+    }
+  }
+  for (obj of Object.values(pageLocData.csvColumns)) {
+    if (obj.spacing && obj.spacing > 0) {
+      const txt = getCellOrHeader(1, obj.colIdx);
+      log("Drawing " + txt);
+      drawPlacedText(page, obj, txt, docFonts)
     }
   }
 }
 
+
+function pickFontForPdf(fontKey, embedded) {
+  switch ((fontKey || '').toLowerCase()) {
+    case '_signature':
+      return embedded._signature;
+    case '_monospace':
+      return embedded._monospace;
+    case '_symbol':
+      return embedded._symbol;
+    case '_normal':
+    default:
+      return embedded._normal;
+  }
+}
+
+function getCellOrHeader(rowIdx, colIdx) {
+  csvData = Alpine.store('csvState').csvData
+  const val = csvData?.[rowIdx]?.[colIdx];
+  if (val && String(val).trim() !== '') return String(val);
+  const header = csvData?.[0]?.[colIdx];
+  if (header && String(header).trim() !== '') return `[${header}]`;
+  return `Col ${colIdx}`;
+}
+
+function getCellOrBlank(rowIdx, colIdx) {
+  csvData = Alpine.store('csvState').csvData
+  const val = csvData?.[rowIdx]?.[colIdx];
+  if (val && String(val).trim() !== '') return String(val);
+  return ''; // Return empty string instead of falling back to header
+}

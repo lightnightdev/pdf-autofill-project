@@ -180,22 +180,27 @@
               <template x-for="(item, id) in ($store.locData.pages[$store.viewState.currentPage]?.customText || [])"
                 :key="id">
                 <div :id="'ct-'+id" class="custom-text loc-data-el" :data-id="id"
-                  :class="$store.viewState.selectId === 'ct-'+id ? 'select' : ''"
-                  :style="`position: absolute; pointer-events: auto; left:${item.x}px; top:${item.y}px; font-family:${item.font}; font-size:${item.size}px;`"
-                  @click="$store.viewState.selectId = 'ct-'+id" x-text="item.text">
+                  :class="{
+                    'select': $store.viewState.selectId === id,
+                    'spacing-yes': item.spacing > 0
+                  }"
+                  :style="`position: absolute; pointer-events: auto; left:${item.x}px; top:${item.y}px; font-family:${item.font}; font-size:${item.size}px; letter-spacing:${item.spacing}px;`"
+                  @click="$store.viewState.selectId = id" x-text="item.text">
 
                 </div>
               </template>
             </div>
 
-
             <div id="saved-text-overlay" class="absolute top-0 left-0">
               <template x-for="(item, id) in ($store.locData.pages[$store.viewState.currentPage]?.savedText || [])"
                 :key="id">
                 <div :id="'st-'+id" class="saved-text loc-data-el" :data-id="id"
-                  :class="$store.viewState.selectId === 'st-'+id ? 'select' : ''"
-                  :style="`position: absolute; pointer-events: auto; left:${item.x}px; top:${item.y}px; font-family:${item.font}; font-size:${item.size}px;`"
-                  @click="$store.viewState.selectId = 'st-'+id" x-text="$store.locData.resolveSavedText(item.key)">
+                  :class="{
+                    'select': $store.viewState.selectId === id,
+                    'spacing-yes': item.spacing > 0
+                  }"
+                  :style="`position: absolute; pointer-events: auto; left:${item.x}px; top:${item.y}px; font-family:${item.font}; font-size:${item.size}px; letter-spacing:${item.spacing}px;`"
+                  @click="$store.viewState.selectId = id" x-text="$store.locData.resolveSavedText(item.key)">
                 </div>
               </template>
 
@@ -204,10 +209,12 @@
               <template x-for="(item, id) in ($store.locData.pages[$store.viewState.currentPage]?.csvColumns || [])"
                 :key="id">
                 <div :id="'co-'+id" class="column-text loc-data-el" :data-id="id"
-                  :class="$store.viewState.selectId === 'co-'+id ? 'select' : ''"
-                  :style="`position: absolute; pointer-events: auto; left:${item.x}px; top:${item.y}px; font-family:${item.font}; font-size:${item.size}px;`"
-                  @click="$store.viewState.selectId = 'ct-'+id">;"
-                  x-text="$store.csvState.getSampleRow(item.colIdx)">
+                  :class="{
+                    'select': $store.viewState.selectId === id,
+                    'spacing-yes': item.spacing > 0
+                  }"
+                  :style="`position: absolute; pointer-events: auto; left:${item.x}px; top:${item.y}px; font-family:${item.font}; font-size:${item.size}px; letter-spacing:${item.spacing}px;`"
+                  @click="$store.viewState.selectId = id" x-text="$store.csvState.getSampleRow(item.colIdx)">
                 </div>
               </template>
             </div>
@@ -228,7 +235,7 @@
       <!-- ====================== Font Options ====================== -->
       <div class="d-flex align-items-center m-2">
         <label for="font-select" class="form-label mb-0">Font:</label>
-        <select id="font-select" class="form-select form-select-sm" x-model="$store.viewState.selectedFont">
+        <select id="font-select" class="form-select form-select-sm" x-model="$store.fontState.selectedFont">
           <option value="_normal">Normal</option>
           <option value="_monospace">Monospace</option>
           <option value="_signature">Signature</option>
@@ -238,13 +245,13 @@
       <div class="d-flex align-items-center m-2">
         <label for="size-select" class="form-label mb-0">Size:</label>
         <input type="number" class="form-control" id="size-select" placeholder="12"
-          x-model="$store.viewState.selectedSize" />
+          x-model="$store.fontState.selectedSize" />
       </div>
 
       <div class="d-flex align-items-center m-2">
         <label for="spacing-select" class="form-label mb-0">Spacing:</label>
         <input type="number" class="form-control" id="spacing-select" value="0"
-          x-model="$store.viewState.selectedSpacing" />
+          x-model="$store.fontState.selectedSpacing" />
       </div>
 
       <!-- ====================== Custom/Saved Text ====================== -->
@@ -271,7 +278,8 @@
         </div>
         <div class="flex-fill mw40px">
           <label for="saved-text-input" class="form-label d-none">Saved Text</label>
-          <select id="saved-text-input" class="form-select" x-model="$store.viewState.savedTextSelection">
+          <select id="saved-text-input" class="form-select" x-model="$store.viewState.savedTextSelection"
+            @click="$store.viewState.selectType = 'savedText'">
             <optgroup label="Choose One"></optgroup>
           </select>
         </div>
@@ -290,9 +298,11 @@
               <!-- Loop through columns (headers) -->
               <template x-for="(colName, colIdx) in $store.csvState.csvData[0]" :key="colIdx">
                 <div class="card col-card p-2 text-center cursor-pointer"
-                  @click="$store.viewState.selectType = 'column'; $store.viewState.selectId = colIdx"
-                  :class="$store.viewState.selectType === 'column' && $store.viewState.selectId === colIdx ? 'select' : ''">
-                  <div class="d-flex justify-content-between align-items-start">
+                  @click="$store.viewState.selectType = 'column'; $store.viewState.selectId = colIdx" :class="{
+                    'select': $store.viewState.selectType === 'column' && $store.viewState.selectId === colIdx,
+                    'loc-data-exists':$store.locData.colSel(colIdx)
+                  }">
+                  <div class=" d-flex justify-content-between align-items-start">
 
                     <div class="col-8 text-start">
                       <div class="fw-bold mb-1" x-text="colName"></div>
@@ -331,6 +341,30 @@
       <div id="custom-cards" class="d-flex flex-column gap-2"></div>
     </aside>
   </div>
+  <!-- ====================== Global key listeners ====================== -->
+  <div @keydown.window.backspace.prevent="$store.locData.delCurrIdx()"
+    @keydown.window.delete.prevent="$store.locData.delCurrIdx()"
+    @keydown.window.arrow-up.prevent="$store.locData.moveSelected(0, -1)"
+    @keydown.window.arrow-down.prevent="$store.locData.moveSelected(0, 1)"
+    @keydown.window.arrow-left.prevent="$store.locData.moveSelected(-1, 0)"
+    @keydown.window.arrow-right.prevent="$store.locData.moveSelected(1, 0)"
+    @keydown.window.minus.prevent="$store.locData.adjustSelectedSize(-1)"
+    @keydown.window.equal.prevent="$store.locData.adjustSelectedSize(1)"
+    @keydown.window.plus.prevent="$store.locData.adjustSelectedSize(1)" @keydown.window="parsekey($event.key)">
+
+  </div>
+
+  <script>
+    function parsekey(key) {
+      const ld = Alpine.store('locData')
+      switch (key) {
+        case '[': ld.adjustSelectedSpacing(-1); break;
+        case ']': ld.adjustSelectedSpacing(1); break;
+        case 'f': ld.cycleFont(); break;
+      }
+    }
+  </script>
+
 
   <!-- ====================== Libraries ====================== -->
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>

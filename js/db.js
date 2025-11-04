@@ -130,6 +130,8 @@ async function fetchCachedLocData() {
 
 async function saveLocData() {
     try {
+        const locData = Alpine.store('locData')
+        const locDataJSON = JSON.stringify(locData);
         await idbPut(LOC_KEY, locData);
     } catch (err) {
         log('Error saving ' + String(LOC_KEY) + ':' + (err?.message || err));

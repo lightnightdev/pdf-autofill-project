@@ -13,7 +13,7 @@ const CUSTOM_SYMBOLS = {
   __checkmark: { textContent: '\u2713', label: 'Checkmark' },
 };
 
-function resolveCustomTextValue(value) {
+function resolveSavedTextValue(value) {
   if (value == null) return '';
 
   if (value === '__today') {

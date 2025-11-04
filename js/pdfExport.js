@@ -3,10 +3,10 @@ let CUSTOM_FONT_BYTE_CACHE = null;
 // main function
 async function generateAndExportPDFs() {
   // Calculate total number of data rows (excluding header row)
+  let csvData = Alpine.store('csvState').csvData
   const total = (csvData?.length || 0) - 1;
   if (total <= 0) {
     log('CSV has no data rows.');
-    return;
   }
   const exportSingle =
     document.getElementById('export-single-pdf')?.checked ?? true;
@@ -19,41 +19,32 @@ async function generateAndExportPDFs() {
 
   if (rasterizeOutput) {
     if (
-      !confirm('Files size will be a bit larger but more compatible. Continue?')
+      !confirm('Files size will be larger but more compatible. Continue?')
     )
       return;
   }
 
-  // Validate environment and inputs
-  if (!currentPdfBytes) {
-    loadCachedPDF();
-  }
+  const currentPdfBytes = Alpine.store('pdfState').pdfBytes
+  const locDataPages = Alpine.store('locData').pages
 
-  if (!window.PDFLib) {
-    log('pdf-lib not available');
-    return;
-  }
-  if (!currentPdfBytes) {
-    log('No base PDF loaded.');
-    return;
-  }
-  if (!locData || Object.keys(locData).length === 0) {
-    log('No markers set.');
-    return;
-  }
+  if (!currentPdfBytes) { log('No base PDF loaded.'); return; }
+  if (!locDataPages || Object.keys(locDataPages).length === 0) { log('No markers set.'); return; }
+  if (!window.PDFLib) { log('pdf-lib not available'); return; }
 
   try {
-    log('Preparing source PDF…');
-    const srcDoc = await PDFLib.PDFDocument.load(currentPdfBytes);
-
     // collect files for zipping or merged export
     const filesForZip = [];
     const combinedDoc = exportSingle ? await PDFLib.PDFDocument.create() : null;
 
+    
+    log('Preparing source PDF…');
+    const srcDoc = await PDFLib.PDFDocument.load(currentPdfBytes);
     const fonts = await embedFontsForDoc(srcDoc);
-    drawCustText(srcDoc, fonts);
 
-    const fileNameCols = getSelectedFileNameHeaders(csvData);
+    drawStaticText(srcDoc, fonts, locDataPages);
+
+    const fileNameCols = Alpine.store('csvState').fileNameCols;
+
     // Iterate through each data row in the CSV (skipping header)
     for (let r = 1; r < csvData.length; r++) {
       log(`Generating row ${r} of ${total}`);
@@ -63,7 +54,7 @@ async function generateAndExportPDFs() {
       const fonts = await embedFontsForDoc(outDoc);
 
       // Draw placements for this row
-      drawRowText(outDoc, fonts, r);
+      drawRowText(outDoc, fonts, locDataPages, r);
 
       if (exportSingle) {
         // Save output to combinedDoc -- will rasterize all at end!
@@ -147,34 +138,6 @@ async function generateAndExportPDFs() {
 }
 
 
-function pickFontForPdf(fontKey, embedded) {
-  switch ((fontKey || '').toLowerCase()) {
-    case '_signature':
-      return embedded._signature;
-    case '_monospace':
-      return embedded._monospace;
-    case '_symbol':
-      return embedded._symbol;
-    case '_normal':
-    default:
-      return embedded._normal;
-  }
-}
-
-function getCellOrHeader(rowIdx, colIdx) {
-  const val = csvData?.[rowIdx]?.[colIdx];
-  if (val && String(val).trim() !== '') return String(val);
-  const header = csvData?.[0]?.[colIdx];
-  if (header && String(header).trim() !== '') return `[${header}]`;
-  return `Col ${colIdx}`;
-}
-
-function getCellOrBlank(rowIdx, colIdx) {
-  const val = csvData?.[rowIdx]?.[colIdx];
-  if (val && String(val).trim() !== '') return String(val);
-  return ''; // Return empty string instead of falling back to header
-}
-
 function sanitizeStem(s) {
   return (
     (s || '')
@@ -195,7 +158,7 @@ async function deepSanitizePdf(outDoc) {
   // 1) Flatten AcroForm fields (safe if no form present)
   try {
     outDoc.getForm().flatten();
-  } catch {}
+  } catch { }
 
   // 2) Remove page annotations & additional actions
   try {
@@ -207,7 +170,7 @@ async function deepSanitizePdf(outDoc) {
       // Remove page-level actions (AA)
       if (node.get(PDFName.of('AA'))) node.delete(PDFName.of('AA'));
     }
-  } catch {}
+  } catch { }
 
   // 3) Remove document open actions
   try {
@@ -215,7 +178,7 @@ async function deepSanitizePdf(outDoc) {
     if (cat.dict.has(PDFName.of('OpenAction')))
       cat.dict.delete(PDFName.of('OpenAction'));
     if (cat.dict.has(PDFName.of('AA'))) cat.dict.delete(PDFName.of('AA'));
-  } catch {}
+  } catch { }
 
   // 4) Remove JavaScript & EmbeddedFiles name trees from /Names
   try {
@@ -232,14 +195,14 @@ async function deepSanitizePdf(outDoc) {
         if (namesDict.size === 0) cat.dict.delete(PDFName.of('Names'));
       }
     }
-  } catch {}
+  } catch { }
 
   // 5) Remove metadata/XMP (optional)
   try {
     const cat = outDoc.catalog;
     if (cat.dict.has(PDFName.of('Metadata')))
       cat.dict.delete(PDFName.of('Metadata'));
-  } catch {}
+  } catch { }
 
   // 6) Ensure fonts are subset & standard where possible (you already use { subset: true })
   // Nothing to do here programmatically unless re-embedding. You’re good.
@@ -249,7 +212,7 @@ async function deepSanitizePdf(outDoc) {
     const cat = outDoc.catalog;
     if (cat.dict.has(PDFName.of('ViewerPreferences')))
       cat.dict.delete(PDFName.of('ViewerPreferences'));
-  } catch {}
+  } catch { }
 }
 
 // downloader

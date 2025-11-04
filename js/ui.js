@@ -10,7 +10,6 @@ async function uploadCSV() {
 }
 
 function changePdfName() {
-  console.log('hi');
   const currentName = Alpine.store('pdfState').pdfName || 'form.pdf';
   const newName = prompt('Edit PDF name:', currentName);
 
@@ -47,6 +46,8 @@ function nextPage() {
 function removeCurrentPage() {
   console.log('Remove current page')
 }
+
+
 
 // ====================== MARKER DATA ======================
 function clearAllMarkers() {

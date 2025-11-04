@@ -5,5 +5,11 @@ document.addEventListener('alpine:initialized', () => {
 
     Promise.resolve().then(() => {
         loadCachedData();
+        
     });
 });
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    renderSavedCustomTextOptions();
+})

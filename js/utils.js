@@ -23,6 +23,16 @@ function getCanvasClickCoords(canvas, event) {
 }
 
 
+function verifyPage(pageNum) {
+  if (!Alpine.store('locData').pages[pageNum]) {
+    Alpine.store('locData').pages[pageNum] = {
+      csvColumns: [],
+      customText: [],
+      savedText: [],
+    };
+  }
+}
+
 function clearState() {
   const stores = ['locData', 'pdfState', 'csvState', 'viewState'];
   stores.forEach(name => Alpine.store(name).clear());
