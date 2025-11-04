@@ -264,7 +264,6 @@ body {
   border: 1px solid #0f172a;
 }
 
-.ct-data-el,
 .loc-data-el {
   line-height: 1;
   transform: translate(0%, -100%);
@@ -276,7 +275,6 @@ body {
   display: inline-block;
 }
 
-.ct-data-el.select,
 .loc-data-el.select {
   background: rgba(100, 255, 193, 0.5);
 }

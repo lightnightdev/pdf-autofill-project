@@ -170,41 +170,46 @@
     <div class="wrapper">
       <main class="content">
 
-
-        <div x-data="pdfOverlay" class="relative">
+        <div id="pdf-stage" class="relative">
           <!-- Base PDF canvas -->
-          <canvas id="pdf-canvas" @click="handleCanvasClick($event)">
-          </canvas>
+          <canvas id="pdf-canvas" x-data="pdfCanvas" @click="handleCanvasClick($event)"> </canvas>
           <!-- Overlay -->
           <div id="pdf-overlay" class="absolute top-0 left-0" x-ref="overlay">
             <!-- Loop through elements on the current page -->
-            <div id="custom-text-overlay">
-              <!-- Only render if customText exists and has items -->
-              <template x-if="$store.locData.pages[$store.viewState.currentPage]?.customText?.length">
-                <template x-for="(item, id) in $store.locData.pages[$store.viewState.currentPage].customText" :key="id">
-                  <div :id="`ct-${id}`" class="absolute text-sm font-mono cursor-pointer select-none"
-                    :style="`left:${item.x}px; top:${item.y}px; font-family:${item.font}; font-size:${item.size}px; letter-spacing:${item.spacing}pt;`"
-                    x-text="item.text"></div>
-                </template>
+            <div x-data id="custom-text-overlay" class="absolute top-0 left-0">
+              <template x-for="(item, id) in ($store.locData.pages[$store.viewState.currentPage]?.customText || [])"
+                :key="id">
+                <div :id="'ct-'+id" class="custom-text loc-data-el" :data-id="id"
+                  :class="$store.viewState.selectId === 'ct-'+id ? 'select' : ''"
+                  :style="`position: absolute; pointer-events: auto; left:${item.x}px; top:${item.y}px; font-family:${item.font}; font-size:${item.size}px;`"
+                  @click="$store.viewState.selectId = 'ct-'+id" x-text="item.text">
+
+                </div>
               </template>
             </div>
 
 
-            <div id="saved-text-overlay">
-              <template x-if="$store.locData.pages[$store.viewState.currentPage]?.savedText?.length"
-                x-for="[id, item] of Object.entries($store.locData.pages[$store.viewState.currentPage].savedText || {})">
-
+            <div id="saved-text-overlay" class="absolute top-0 left-0">
+              <template x-for="(item, id) in ($store.locData.pages[$store.viewState.currentPage]?.savedText || [])"
+                :key="id">
+                <div :id="'st-'+id" class="saved-text loc-data-el" :data-id="id"
+                  :class="$store.viewState.selectId === 'st-'+id ? 'select' : ''"
+                  :style="`position: absolute; pointer-events: auto; left:${item.x}px; top:${item.y}px; font-family:${item.font}; font-size:${item.size}px;`"
+                  @click="$store.viewState.selectId = 'st-'+id" x-text="$store.locData.resolveSavedText(item.key)">
+                </div>
               </template>
 
             </div>
-            <div id="column-overlay">
-              <template x-if="$store.locData.pages[$store.viewState.currentPage]?.csvColumns?.length"
-                x-for="[id, item] of Object.entries($store.locData.pages[$store.viewState.currentPage].csvColumns || {})">
+            <div id="column-overlay" class="absolute top-0 left-0">
+              <template x-for="(item, id) in ($store.locData.pages[$store.viewState.currentPage]?.csvColumns || [])"
+                :key="id">
+                <div :id="'co-'+id" class="column-text loc-data-el" :data-id="id"
+                  :class="$store.viewState.selectId === 'co-'+id ? 'select' : ''"
+                  :style="`position: absolute; pointer-events: auto; left:${item.x}px; top:${item.y}px; font-family:${item.font}; font-size:${item.size}px;`"
+                  @click="$store.viewState.selectId = 'ct-'+id">;"
+                  x-text="$store.csvState.getSampleRow(item.colIdx)">
+                </div>
               </template>
-            </div>
-            <div class="absolute text-sm font-mono cursor-pointer select-none ring-2 ring-blue-500 bg-blue-100/50"
-              style="left:50px; top:50px;">
-              HELLO HELLO HELLO
             </div>
 
           </div>

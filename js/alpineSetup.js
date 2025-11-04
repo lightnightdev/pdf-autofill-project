@@ -9,20 +9,32 @@ document.addEventListener('alpine:init', () => {
     },
     pages: {
       1: {
-        csvColumns: [],
-        customText: [],
-        savedText: [],
+        csvColumns: {},
+        customText: {},
+        savedText: {},
       }
     },
     clear() {
       this.meta = { pdfName: '', totalPages: 0, lastModifiedUtc: '' };
       this.pages = {
         1: {
-          csvColumns: [],
-          customText: [],
-          savedText: [],
+          csvColumns: {},
+          customText: {},
+          savedText: {},
         }
       };
+    }
+    , resolveSavedText(value) {
+      if (value == null) return '';
+
+      if (value === '__today') {
+        const date = new Date();
+        return date.toLocaleDateString('en-US');
+      }
+
+      // Safely return mapped text or the raw value if not found
+      const entry = CUSTOM_SYMBOLS[value];
+      return entry ? entry.textContent : value;
     }
   });
 
@@ -93,6 +105,14 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    getSampleRow(colIdx) {
+      const firstRowData = this.csvData[1][colIdx]
+      if (firstRowData === null || firstRowData === "") {
+        return `(${this.csvData[0][colIdx]})`
+      }
+      return firstRowData;
+    },
+
     clear() {
       this.csvData = [];
       this.csvName = '';
@@ -120,7 +140,7 @@ document.addEventListener('alpine:init', () => {
   });
 
 
-  Alpine.data('pdfOverlay', () => ({
+  Alpine.data('pdfCanvas', () => ({
     init() {
       this.$watch('$store.viewState.currentPage', (page) => {
         renderPage(page);
@@ -156,20 +176,20 @@ document.addEventListener('alpine:init', () => {
         case "checkmark":
           package.key = "__checkmark";
           package.font = "_symbol"
-          ld.pages[pageNum].savedText.push(package);
+          ld.pages[pageNum].savedText[crypto.randomUUID()] = package;
           break;
         case "savedText":
           package.key = vs.savedTextSelection
-          ld.pages[pageNum].savedText.push(package);
+          ld.pages[pageNum].savedText[crypto.randomUUID()] = package;
           break;
         case "column":
           package.colIdx = vs.selectId;
-          ld.pages[pageNum].csvColumns.push(package);
+          ld.pages[pageNum].csvColumns[crypto.randomUUID()] = package;
           break;
         case "customText":
           let customTxt = prompt("Enter custom text:")
           package.text = customTxt
-          ld.pages[pageNum].customText.push(package);
+          ld.pages[pageNum].customText[crypto.randomUUID()] = package;
           break;
       }
     }
