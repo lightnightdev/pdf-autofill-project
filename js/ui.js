@@ -9,7 +9,6 @@ async function uploadCSV() {
   selectCsvFile();
 }
 
-
 function changePdfName() {
   console.log('hi');
   const currentName = Alpine.store('pdfState').pdfName || 'form.pdf';
@@ -39,16 +38,14 @@ function prevPage() {
 function nextPage() {
   const view = Alpine.store('viewState');
   const pdf = Alpine.store('pdfState');
-  if (view.currentPage < pdf.pdfPages) view.currentPage++;
+  if (view.currentPage < pdf.pdfPages) {
+    view.currentPage++;
+    verifyPage(view.currentPage);
+  }
 }
 
 function removeCurrentPage() {
-  const view = Alpine.store('viewState');
-  const locData = Alpine.store('locData');
-  if (locData.pages[view.currentPage]) {
-    delete locData.pages[view.currentPage];
-  }
-  console.log(`Page ${view.currentPage} removed`);
+  console.log('Remove current page')
 }
 
 // ====================== MARKER DATA ======================

@@ -7,14 +7,20 @@ document.addEventListener('alpine:init', () => {
       totalPages: 0,
       lastModifiedUtc: ''
     },
-    pages: {},
+    pages: {
+      1: {
+        csvColumns: [],
+        customText: [],
+        savedText: [],
+      }
+    },
     clear() {
       this.meta = { pdfName: '', totalPages: 0, lastModifiedUtc: '' };
       this.pages = {
         1: {
-          csvColumns: {},
-          customText: {},
-          savedText: {}
+          csvColumns: [],
+          customText: [],
+          savedText: [],
         }
       };
     }
@@ -23,22 +29,27 @@ document.addEventListener('alpine:init', () => {
   // ====================== VIEW STATE STORE ======================
   Alpine.store('viewState', {
     currentPage: 1,
-    currentRender: null,
+    selectType: '',
+    selectId: null,
+    savedTextSelection: '',
+
     exportSingle: true,
-    rasterize: false,
+    exportRasterize: false,
     selectedFont: '_normal',
     selectedSize: 12,
     selectedSpacing: 0,
-    savedTextSelection: null,
     clear() {
       this.currentPage = 1;
-      this.currentRender = null;
+      this.selectType = '';
+      this.selectedId = null;
+      this.savedTextSelection = '';
+
       this.exportSingle = true;
-      this.rasterize = false;
+      this.exportRasterize = false;
+
       this.selectedFont = '_normal';
       this.selectedSize = 12;
       this.selectedSpacing = 0;
-      this.savedTextSelection = null;
     }
   });
 
@@ -70,24 +81,25 @@ document.addEventListener('alpine:init', () => {
 
   // ====================== CSV STATE STORE ======================
   Alpine.store('csvState', {
-    csvData: null,
-    csvFileName: null,
-    fileNameCols: [],
+    csvData: [],
+    csvName: '',       // keep consistent name
+    fileNameCols: new Set(),
 
     toggleFileNameCol(colIdx) {
-      const i = this.fileNameCols.indexOf(colIdx);
-      if (i >= 0) {
-        this.fileNameCols.splice(i, 1);
+      if (this.fileNameCols.has(colIdx)) {
+        this.fileNameCols.delete(colIdx);
       } else {
-        this.fileNameCols.push(colIdx);
+        this.fileNameCols.add(colIdx);
       }
     },
+
     clear() {
-      this.csvData = null;
-      this.csvFileName = null;
-      this.fileNameCols = [];
+      this.csvData = [];
+      this.csvName = '';
+      this.fileNameCols = new Set();
     }
   });
+
 
   // ====================== MENU STATE STORE ======================
   Alpine.store('menuState', {
@@ -122,46 +134,55 @@ document.addEventListener('alpine:init', () => {
       const stageW = canvas.width;
       const stageH = canvas.height;
 
-      const view = Alpine.store('viewState');
-      const selection = view.savedTextSelection;
-      const pageNum = view.currentPage;
+      const ld = Alpine.store('locData');
+      const vs = Alpine.store('viewState');
+      const selType = vs.selectType;
+      const selFont = vs.selectedFont;
+      const selFontSize = vs.selectedSize;
+      const selSpacing = vs.selectedSpacing;
+      const pageNum = vs.currentPage;
 
-      if (!selection) {
-        log('No selection active');
-        return;
+      let package = {
+        "x": x,
+        "y": y,
+        "font": selFont,
+        "size": selFontSize,
+        "spacing": selSpacing,
       }
 
-      const locStore = Alpine.store('locData');
-      if (!locStore.pages[pageNum]) {
-        locStore.pages[pageNum] = {};
+      verifyPage(pageNum);
+
+      switch (selType) {
+        case "checkmark":
+          package.key = "__checkmark";
+          package.font = "_symbol"
+          ld.pages[pageNum].savedText.push(package);
+          break;
+        case "savedText":
+          package.key = vs.savedTextSelection
+          ld.pages[pageNum].savedText.push(package);
+          break;
+        case "column":
+          package.colIdx = vs.selectId;
+          ld.pages[pageNum].csvColumns.push(package);
+          break;
+        case "customText":
+          let customTxt = prompt("Enter custom text:")
+          package.text = customTxt
+          ld.pages[pageNum].customText.push(package);
+          break;
       }
-
-      if (selection === 'custom_text') {
-        const text = prompt('Enter custom text')?.trim();
-        if (!text) return;
-
-        const id = crypto.randomUUID();
-        locStore.pages[pageNum][id] = {
-          type: 'customText',
-          text,
-          x,
-          y,
-          font: view.selectedFont,
-          size: view.selectedSize,
-          spacing: view.selectedSpacing,
-          stageW,
-          stageH
-        };
-
-        // Auto-select new element
-        view.selectedElementId = id;
-      }
-    },
-
-    selectElement(id) {
-      Alpine.store('viewState').selectedElementId = id;
-      log(`Selected element: ${id}`);
     }
   }));
-
 });
+
+
+function verifyPage(pageNum) {
+  if (!Alpine.store('locData').pages[pageNum]) {
+    Alpine.store('locData').pages[pageNum] = {
+      csvColumns: [],
+      customText: [],
+      savedText: [],
+    };
+  }
+}

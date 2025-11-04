@@ -5,5 +5,5 @@ document.addEventListener('alpine:initialized', () => {
 
     Promise.resolve().then(() => {
         loadCachedData();
-    }); 
+    });
 });

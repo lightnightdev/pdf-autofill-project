@@ -144,6 +144,7 @@ async function renderPage(pageNum) {
     canvas.height = viewport.height;
 
     await page.render({ canvasContext: ctx, viewport }).promise;
+    syncOverlayBoxToCanvas();
 
     // Update Alpine stores
     Alpine.store('viewState').currentPage = pageNum;
@@ -162,6 +163,21 @@ function checkMenu() {
     if (open2) {
         Alpine.store('menuState').open(2);
     }
+}
+
+function syncOverlayBoxToCanvas() {
+  const overlay = document.getElementById('pdf-overlay');
+  const canvas = document.getElementById('pdf-canvas');
+  if (!overlay || !canvas) return false;
+
+  overlay.style.width = canvas.width + 'px';
+  overlay.style.height = canvas.height + 'px';
+  overlay.style.left = '0px';
+  overlay.style.top = '0px';
+  overlay.style.position = 'absolute';
+  overlay.style.zIndex = 10;
+  overlay.style.pointerEvents = 'none'; // markers can re-enable selectively
+  return true;
 }
 
 // --------------------
@@ -204,8 +220,5 @@ async function removePageBytes(pageNum) {
   const newBytes = await doc.save();
   Alpine.store('pdfState').pdfBytes = newBytes;
 
-  const currentPdfName = (await getPdfNameFromDb()) || 'unknown.pdf';
-  const newPdfName = currentPdfName.startsWith('edited_') ? currentPdfName : 'edited_' + currentPdfName;
-
-  savePdfToIndexedDb(newBytes, newPdfName);
+  savePdfToIndexedDb();
 }

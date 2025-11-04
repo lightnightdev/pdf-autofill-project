@@ -50,9 +50,10 @@
               </button>
             </div>
             <div class="file-row">
-              <button @click="uploadCSV()"
-                :class="{'btn-success': $store.csvState.csvData, 'btn-outline-success': !$store.csvState.csvData}"
-                class="btn w-100 fw-bold">
+              <button @click="uploadCSV()" :class="{
+                  'btn-success': $store.csvState.csvData && $store.csvState.csvData.length > 0,
+                  'btn-outline-success': !$store.csvState.csvData || $store.csvState.csvData.length === 0
+                }" class="btn w-100 fw-bold">
                 <span x-text="$store.csvState.csvName || 'Select a CSV'"></span>
               </button>
             </div>
@@ -132,10 +133,12 @@
           </label>
         </div>
 
-        <div class="form-check m-3 output-options-checkbox d-flex" :class="{selected: $store.viewState.rasterize}">
-          <input class="form-check-input" type="checkbox" id="rasterize-output" x-model="$store.viewState.rasterize" />
+        <div class="form-check m-3 output-options-checkbox d-flex"
+          :class="{selected: $store.viewState.exportRasterize}">
+          <input class="form-check-input" type="checkbox" id="rasterize-output"
+            x-model="$store.viewState.exportRasterize" />
           <label class="form-check-label" for="rasterize-output"
-            @click.prevent="$store.viewState.rasterize = !$store.viewState.rasterize">
+            @click.prevent="$store.viewState.exportRasterize = !$store.viewState.exportRasterize">
             Rasterize output. Removes compatibility issues, but increases file size.
           </label>
         </div>
@@ -170,18 +173,39 @@
 
         <div x-data="pdfOverlay" class="relative">
           <!-- Base PDF canvas -->
-          <canvas id="pdf-canvas" @click="handleCanvasClick($event)"></canvas>
+          <canvas id="pdf-canvas" @click="handleCanvasClick($event)">
+          </canvas>
           <!-- Overlay -->
           <div id="pdf-overlay" class="absolute top-0 left-0" x-ref="overlay">
             <!-- Loop through elements on the current page -->
-            <template x-for="[id, item] of Object.entries($store.locData.pages[$store.viewState.currentPage] || {})"
-              :key="id">
-              <div class="absolute text-sm font-mono cursor-pointer select-none"
-                :style="`left:${item.x}px; top:${item.y}px;`" :class="{
-          'ring-2 ring-blue-500 bg-blue-100/50': $store.viewState.selectedElementId === id,
-          'hover:ring-1 hover:ring-gray-400': $store.viewState.selectedElementId !== id
-        }" x-text="item.text" @click.stop="selectElement(id)"></div>
-            </template>
+            <div id="custom-text-overlay">
+              <!-- Only render if customText exists and has items -->
+              <template x-if="$store.locData.pages[$store.viewState.currentPage]?.customText?.length">
+                <template x-for="(item, id) in $store.locData.pages[$store.viewState.currentPage].customText" :key="id">
+                  <div :id="`ct-${id}`" class="absolute text-sm font-mono cursor-pointer select-none"
+                    :style="`left:${item.x}px; top:${item.y}px; font-family:${item.font}; font-size:${item.size}px; letter-spacing:${item.spacing}pt;`"
+                    x-text="item.text"></div>
+                </template>
+              </template>
+            </div>
+
+
+            <div id="saved-text-overlay">
+              <template x-if="$store.locData.pages[$store.viewState.currentPage]?.savedText?.length"
+                x-for="[id, item] of Object.entries($store.locData.pages[$store.viewState.currentPage].savedText || {})">
+
+              </template>
+
+            </div>
+            <div id="column-overlay">
+              <template x-if="$store.locData.pages[$store.viewState.currentPage]?.csvColumns?.length"
+                x-for="[id, item] of Object.entries($store.locData.pages[$store.viewState.currentPage].csvColumns || {})">
+              </template>
+            </div>
+            <div class="absolute text-sm font-mono cursor-pointer select-none ring-2 ring-blue-500 bg-blue-100/50"
+              style="left:50px; top:50px;">
+              HELLO HELLO HELLO
+            </div>
 
           </div>
         </div>
@@ -221,17 +245,23 @@
       <!-- ====================== Custom/Saved Text ====================== -->
 
       <div class="d-flex justify-content-between">
-        <div id="checkmark-card" class="card text-center custom-input-card" @click="checkmarkCreate()">
+        <div id="checkmark-card" class="card text-center custom-input-card"
+          @click="$store.viewState.selectType = 'checkmark'"
+          :class="$store.viewState.selectType === 'checkmark' ? 'select' : ''">
           <div class="fw-bold mb-1 text-start">Add checkmark ✓</div>
         </div>
 
-        <div id="custom-text-card" class="card text-center custom-input-card" @click="customTextCreate()">
+        <div id="custom-text-card" class="card text-center custom-input-card"
+          @click="$store.viewState.selectType = 'customText'"
+          :class="$store.viewState.selectType === 'customText' ? 'select' : ''">
           <div class="fw-bold mb-1 text-start">Add custom text</div>
         </div>
       </div>
 
       <div class="d-flex justify-content-between align-items-center">
-        <div id="saved-text-card" class="card text-center custom-input-card crsr-ptr w40px" @click="savedTextCreate()">
+        <div id="saved-text-card" class="card text-center custom-input-card crsr-ptr w40px"
+          @click="$store.viewState.selectType = 'savedText'"
+          :class="$store.viewState.selectType === 'savedText' ? 'select' : ''">
           <div class="fw-bold mb-1">Add:</div>
         </div>
         <div class="flex-fill mw40px">
@@ -246,40 +276,44 @@
       <div x-data>
         <!-- Only render once csvData exists and has rows -->
         <template x-if="$store.csvState.csvData && $store.csvState.csvData.length > 0">
-          <hr />
-          <h2>CSV Columns</h2>
+          <div>
+            <hr />
+            <h2>CSV Columns</h2>
 
-          <div id="csv-cards" class="d-flex flex-column gap-2">
+            <div id="csv-cards" class="d-flex flex-column gap-2">
 
-            <!-- Loop through columns (headers) -->
-            <template x-for="(colName, colIdx) in $store.csvState.csvData[0]" :key="colIdx">
-              <div class="card col-card p-2 text-center cursor-pointer" @click="selectCard(colIdx)">
-                <div class="d-flex justify-content-between align-items-start">
+              <!-- Loop through columns (headers) -->
+              <template x-for="(colName, colIdx) in $store.csvState.csvData[0]" :key="colIdx">
+                <div class="card col-card p-2 text-center cursor-pointer"
+                  @click="$store.viewState.selectType = 'column'; $store.viewState.selectId = colIdx"
+                  :class="$store.viewState.selectType === 'column' && $store.viewState.selectId === colIdx ? 'select' : ''">
+                  <div class="d-flex justify-content-between align-items-start">
 
-                  <div class="col-8 text-start">
-                    <div class="fw-bold mb-1" x-text="colName"></div>
+                    <div class="col-8 text-start">
+                      <div class="fw-bold mb-1" x-text="colName"></div>
 
-                    <!-- Show first two data rows safely -->
-                    <template
-                      x-for="(row, i) in $store.csvState.csvData.slice(1, Math.min(3, $store.csvState.csvData.length))"
-                      :key="i">
-                      <div class="text-start text-sm" x-text="row[colIdx] || ''"></div>
-                    </template>
-                  </div>
+                      <!-- Show first two data rows safely -->
+                      <template
+                        x-for="(row, i) in $store.csvState.csvData.slice(1, Math.min(3, $store.csvState.csvData.length))"
+                        :key="i">
+                        <div class="text-start text-sm" x-text="row[colIdx] || ''"></div>
+                      </template>
+                    </div>
 
-                  <!-- Toggle mini-card -->
-                  <div class="card file-name-toggle mt-2 text-center col-4"
-                    :class="{'file-name-select': $store.csvState.fileNameCols?.includes(colIdx)}"
-                    @click.stop="$store.csvState.toggleFileNameCol(colIdx)">
-                    Add to File Name
-                  </div>
+                    <!-- Toggle mini-card inside card -->
+                    <div class="card file-name-toggle mt-2 text-center col-4"
+                      :class="{'file-name-select': Array.from($store.csvState.fileNameCols).includes(colIdx)}"
+                      @click.stop="$store.csvState.toggleFileNameCol(colIdx)">
+                      Add to File Name
+                    </div>
 
-                </div>
-              </div>
-            </template>
+                  </div> <!-- end d-flex -->
+                </div> <!-- end card -->
+              </template>
+
+            </div> <!-- end csv-cards -->
           </div>
         </template>
-
       </div>
 
 
@@ -311,6 +345,10 @@
   <script src="js/db.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/utils.js"></script>
+  <script src="js/locData.js"></script>
+  <script src="js/menu.js"></script>
+  <script src="js/viewState.js"></script>
+  <script src="js/data_savedText.js"></script>
   <script src="js/csvLoader.js"></script>
   <script src="js/pdfUtils.js"></script>
   <script src="js/pdfLoader.js"></script>

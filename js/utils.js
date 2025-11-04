@@ -5,6 +5,22 @@ function log(msg) {
   logStore.output += `> ${msg}\n`;
 }
 
+function getCanvasClickCoords(canvas, event) {
+  if (!canvas || !event) return null;
+
+  // Get canvas bounding rectangle
+  const rect = canvas.getBoundingClientRect();
+
+  // Coordinates relative to top-left of the canvas
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+
+  // Optional: normalized coordinates (0–1), useful if canvas is scaled
+  const normX = x / rect.width;
+  const normY = y / rect.height;
+
+  return { x, y, normX, normY };
+}
 
 
 function clearState() {
