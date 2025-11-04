@@ -9,158 +9,156 @@
 
   <!-- CSS -->
   <link rel="stylesheet" href="css/style.css?v=1.0.0" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
-  <!-- Bootstrap  -->
+  <!-- Bootstrap -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
-
 </head>
 
-<body>
+<body x-data>
   <div class="layout">
+    <!-- Left Sidebar -->
     <aside class="sidebar left">
+
       <div class="mb-3">
         <h1>PDF-CSV Autofiller</h1>
         <span id="webapp_version_id">v2.0.0</span>
       </div>
       <hr />
 
+      <!-- ====================== FILE SELECTION ====================== -->
       <div class="menu-block">
-        <div id="menu-header-1" class="menu-header d-flex justify-content-between align-items-center header-open"
-          data-bs-toggle="collapse" data-bs-target="#menu-content-1" onclick="menuToggleExtra(1)">
-          <h2 id="file-select-menu-header" class="mb-0 fs-5">Select Files</h2>
+        <div class="menu-header d-flex justify-content-between align-items-center" @click="$store.menuState.toggle(1)">
+          <h2 class="mb-0 fs-5">Select Files</h2>
+          <i :class="{'bi-caret-down-fill': !$store.menuState.isOpen(1), 'bi-caret-up-fill': $store.menuState.isOpen(1)}"
+            class="bi"></i>
         </div>
-        <div id="menu-content-1" class="menu-content text-center collapse show body-open">
+        <div x-cloak class="menu-content text-center" x-show="$store.menuState.isOpen(1)" x-transition>
           <div class="file-input">
-            <div class="file-row">
-              <button id="pdf-input" class="btn btn-outline-success w-100 fw-bold" onclick="uploadPDF()">
-                Select a PDF
+            <div class="file-row d-flex align-items-center gap-1">
+              <button @click="uploadPDF()"
+                :class="{'btn-success': $store.pdfState.pdfBytes, 'btn-outline-success': !$store.pdfState.pdfBytes}"
+                class="btn w-100 fw-bold">
+                <span x-text="$store.pdfState.pdfName || 'Select a PDF'"></span>
+              </button>
+              <!-- Rename button (only visible if a PDF is loaded) -->
+              <button x-show="$store.pdfState.pdfBytes" @click="changePdfName()"
+                :class="{'btn-warning': $store.pdfState.pdfBytes, 'btn-outline-warning': !$store.pdfState.pdfBytes}"
+                class="btn btn-sm fw-bold px-2 py-1">
+                🖉
               </button>
             </div>
             <div class="file-row">
-              <button id="csv-input" class="btn btn-outline-success w-100 fw-bold" onclick="uploadCSV()">
+              <button @click="uploadCSV()"
+                :class="{'btn-success': $store.csvState.csvData, 'btn-outline-success': !$store.csvState.csvData}"
+                class="btn w-100 fw-bold">
                 Select a CSV
               </button>
             </div>
           </div>
+
           <div>
-            <button id="btn-remove-files" class="btn btn-outline-danger m-2" type="button" onclick="clearFiles()">
+            <button @click="clearFiles()" class="btn btn-outline-danger m-2" type="button">
               <i class="bi bi-trash"></i> Remove all files
             </button>
-            <!-- <button id="btn-download-loc" class="btn btn-outline-primary m-2" type="button" onclick="openQueryModal()">
-              <i class="bi bi-trash"></i> Download PDF/CSV template
-            </button> -->
           </div>
         </div>
       </div>
 
+      <!-- ====================== PDF NAVIGATION ====================== -->
       <div class="menu-block">
-        <div role="button" id="menu-header-2"
-          class="menu-header d-flex justify-content-between align-items-center collapsed" data-bs-toggle="collapse"
-          data-bs-target="#menu-content-2" onclick="menuToggleExtra(2)" aria-expanded="false">
+        <div class="menu-header d-flex justify-content-between align-items-center" @click="$store.menuState.toggle(2)">
           <h2 class="mb-0 fs-5">PDF Navigation</h2>
-          <i class="bi bi-caret-down-fill"></i>
+          <i :class="{'bi-caret-down-fill': !$store.menuState.isOpen(2), 'bi-caret-up-fill': $store.menuState.isOpen(2)}"
+            class="bi"></i>
         </div>
-        <div id="menu-content-2" class="menu-content text-center collapse">
+        <div x-cloak class="menu-content text-center" x-show="$store.menuState.isOpen(2)" x-transition>
           <div id="pdf-page-info">
-            <span id="page-info">Page 0 / 0</span>
+            Page <span x-text="$store.viewState.currentPage || 0"></span> /
+            <span x-text="$store.pdfState.pdfPages || 0"></span>
           </div>
           <div class="text-center">
             <div id="pdf-page-buttons">
-              <button id="prev-page" class="btn btn-secondary btn-sm">
-                Previous Page
-              </button>
-              <button id="next-page" class="btn btn-secondary btn-sm">
-                Next Page
-              </button>
+              <button @click="prevPage()" class="btn btn-secondary btn-sm">Previous Page</button>
+              <button @click="nextPage()" class="btn btn-secondary btn-sm">Next Page</button>
             </div>
-            <button id="btn-remove-page" class="btn btn-danger m-3 w-50" type="button" onclick="removeCurrentPage()">
+            <button @click="removeCurrentPage()" class="btn btn-danger m-3" type="button">
               <i class="bi bi-trash"></i> Remove Current Page
             </button>
           </div>
         </div>
       </div>
 
+      <!-- ====================== PDF MARKER DATA ====================== -->
       <div class="menu-block">
-        <div role="button" id="menu-header-3"
-          class="menu-header d-flex justify-content-between align-items-center collapsed" data-bs-toggle="collapse"
-          data-bs-target="#menu-content-3" onclick="menuToggleExtra(3)" aria-expanded="false">
+        <div class="menu-header d-flex justify-content-between align-items-center" @click="$store.menuState.toggle(3)">
           <h2 class="mb-0 fs-5">PDF Marker Data</h2>
-          <i class="bi bi-caret-down-fill"></i>
+          <i :class="{'bi-caret-down-fill': !$store.menuState.isOpen(3), 'bi-caret-up-fill': $store.menuState.isOpen(3)}"
+            class="bi"></i>
         </div>
-
-        <div id="menu-content-3" class="menu-content text-center collapse">
+        <div x-cloak class="menu-content text-center" x-show="$store.menuState.isOpen(3)" x-transition>
           <div>
-            <button id="btn-clear-loc" class="btn btn-danger m-2 w40" type="button" onclick="clearAllMarkers()">
+            <button @click="clearAllMarkers()" class="btn btn-danger m-2 w40" type="button">
               <i class="bi bi-trash"></i> Clear All Markers
             </button>
-
-            <!-- <button type="button" class="btn btn-primary m-2 w40" onclick="handleSendToServerClick()">
-              Send to Server
-            </button> -->
           </div>
           <div>
-            <button class="btn btn-outline-success m-2 fw-bold w30" type="button" onclick="downloadMarkers()">
+            <button @click="downloadMarkers()" class="btn m-2 fw-bold w30"
+              :class="$store.locData.pages ? 'btn-outline-success' : 'btn-outline-secondary'">
               <i class="bi bi-download"></i> Download
             </button>
-
-            <button class="btn btn-outline-warning m-2 fw-bold w30" type="button" onclick="uploadMarkers()">
+            <button @click="uploadMarkers()" class="btn btn-outline-warning m-2 fw-bold w30">
               <i class="bi bi-upload"></i> Upload
             </button>
           </div>
         </div>
       </div>
+
       <hr />
 
+      <!-- ====================== OUTPUT OPTIONS ====================== -->
       <div class="mt-3">
-        <button id="btn-make-pdfs" class="btn btn-outline-success m-1 btn-lg w-100" type="button"
-          onclick="generateAndExportPDFs()">
+        <button @click="generateAndExportPDFs()" class="btn btn-outline-success m-1 btn-lg w-100">
           Generate PDFs
         </button>
-        <div class="form-check m-3 output-options-checkbox d-flex selected" onclick="toggleCheckbox(this)">
-          <input class="form-check-input" type="checkbox" id="export-single-pdf" checked />
-          <label class="form-check-label" for="export-single-pdf">
+
+        <div class="form-check m-3 output-options-checkbox d-flex" :class="{selected: $store.viewState.exportSingle}">
+          <input class="form-check-input" type="checkbox" id="export-single-pdf"
+            x-model="$store.viewState.exportSingle" />
+          <label class="form-check-label" for="export-single-pdf"
+            @click.prevent="$store.viewState.exportSingle = !$store.viewState.exportSingle">
             Export all rows as one PDF (for printing)
           </label>
         </div>
-        <div class="form-check m-3 output-options-checkbox d-flex" onclick="toggleCheckbox(this)">
-          <input class="form-check-input" type="checkbox" id="rasterize-output" />
-          <label class="form-check-label" for="rasterize-output">
-            Rasterize output. Removes any compatibility issues, but increases
-            file size.
+
+        <div class="form-check m-3 output-options-checkbox d-flex" :class="{selected: $store.viewState.rasterize}">
+          <input class="form-check-input" type="checkbox" id="rasterize-output" x-model="$store.viewState.rasterize" />
+          <label class="form-check-label" for="rasterize-output"
+            @click.prevent="$store.viewState.rasterize = !$store.viewState.rasterize">
+            Rasterize output. Removes compatibility issues, but increases file size.
           </label>
         </div>
       </div>
 
       <hr />
-      <div id="logbox" class="logbox"></div>
+      <div id="logbox" class="logbox" x-data x-text="$store.logbox.output" x-effect="$el.scrollTop = $el.scrollHeight">
+      </div>
 
+      <!-- ====================== TIPS ====================== -->
       <div class="menu-block">
-        <div role="button" id="menu-header-4"
-          class="menu-header d-flex justify-content-between align-items-center bg-off-white" data-bs-toggle="collapse"
-          data-bs-target="#menu-content-4" onclick="menuToggleExtra(4)" aria-expanded="true">
+        <div class="menu-header d-flex justify-content-between align-items-center bg-off-white"
+          @click="$store.menuState.toggle(4)">
           <h2 class="mb-0 fs-6">Tips / Shortcuts</h2>
-          <i class="bi bi-caret-down-fill"></i>
+          <i :class="{'bi-caret-down-fill': !$store.menuState.isOpen(4), 'bi-caret-up-fill': $store.menuState.isOpen(4)}"
+            class="bi"></i>
         </div>
-        <div id="menu-content-4" class="menu-content collapse">
-          <p class="tip m-2">
-            <b>Placing a marker:</b><br />
-            - Choose a column on the right<br />
-            - Click to place a marker<br />
-            - Click the column again to duplicate it<br />
-          </p>
-          <p class="tip m-2">
-            <b>Editing a marker:</b><br />
-            - Click an existing marker or it's column card to selected it<br />
-            - Use (+/=) and (-) keys to adjust font size<br />
-            - Use arrow keys to adjust the location<br />
-            - Press the (Delete) key to delete that marker<br />
-          </p>
-          <p class="tip m-2">
-            <b>Unzipping on Windows:</b><br />
-            - Right click the file > Properties > Unblock
-          </p>
+        <div x-cloak class="menu-content" x-show="$store.menuState.isOpen(4)" x-transition>
+          <p class="tip m-2"><b>Placing a marker:</b><br>- Choose a column on the right<br>- Click to place a
+            marker<br>- Click the column again to duplicate it</p>
+          <p class="tip m-2"><b>Editing a marker:</b><br>- Click an existing marker or its column card<br>- Use (+/=)
+            and (-) keys to adjust font size<br>- Use arrow keys to move<br>- Press (Delete) to delete marker</p>
+          <p class="tip m-2"><b>Unzipping on Windows:</b><br>- Right click file > Properties > Unblock</p>
         </div>
       </div>
     </aside>
@@ -168,83 +166,88 @@
     <!-- Main PDF Display -->
     <div class="wrapper">
       <main class="content">
-        <div id="pdf-stage">
-          <canvas id="pdf-canvas"></canvas>
-          <div id="pdf-overlay"></div>
+
+
+        <div x-data="pdfOverlay" class="relative">
+          <!-- Base PDF canvas -->
+          <canvas id="pdf-canvas" @click="handleCanvasClick($event)"></canvas>
+          <!-- Overlay -->
+          <div id="pdf-overlay" class="absolute top-0 left-0" x-ref="overlay">
+            <!-- Loop through elements on the current page -->
+            <template x-for="[id, item] of Object.entries($store.locData.pages[$store.viewState.currentPage] || {})"
+              :key="id">
+              <div class="absolute text-sm font-mono cursor-pointer select-none"
+                :style="`left:${item.x}px; top:${item.y}px;`" :class="{
+          'ring-2 ring-blue-500 bg-blue-100/50': $store.viewState.selectedElementId === id,
+          'hover:ring-1 hover:ring-gray-400': $store.viewState.selectedElementId !== id
+        }" x-text="item.text" @click.stop="selectElement(id)"></div>
+            </template>
+
+          </div>
         </div>
+
+
+
+
       </main>
     </div>
 
+    <!-- Right Sidebar -->
     <aside class="sidebar right">
       <h2>Select Columns</h2>
-      <div class="">
-        <!-- Controls column -->
-        <div class="">
-          <div class="d-flex align-items-center m-2">
-            <label for="font-select" class="form-label mb-0">Font:</label>
-            <select id="font-select" class="form-select form-select-sm">
-              <option value="_normal">Normal</option>
-              <option value="_monospace">Monospace</option>
-              <option value="_signature">Signature</option>
-            </select>
-          </div>
 
-          <div class="d-flex align-items-center m-2">
-            <label for="size-select" class="form-label mb-0">Size:</label>
-            <input type="number" class="form-control" id="size-select" placeholder="12" />
-          </div>
+      <div class="d-flex align-items-center m-2">
+        <label for="font-select" class="form-label mb-0">Font:</label>
+        <select id="font-select" class="form-select form-select-sm" x-model="$store.viewState.selectedFont">
+          <option value="_normal">Normal</option>
+          <option value="_monospace">Monospace</option>
+          <option value="_signature">Signature</option>
+        </select>
+      </div>
 
-          <div class="d-flex align-items-center m-2">
-            <label for="spacing-select" class="form-label mb-0">Spacing:</label>
-            <input type="number" class="form-control" id="spacing-select" value="0" />
-          </div>
+      <div class="d-flex align-items-center m-2">
+        <label for="size-select" class="form-label mb-0">Size:</label>
+        <input type="number" class="form-control" id="size-select" placeholder="12"
+          x-model="$store.viewState.selectedSize" />
+      </div>
+
+      <div class="d-flex align-items-center m-2">
+        <label for="spacing-select" class="form-label mb-0">Spacing:</label>
+        <input type="number" class="form-control" id="spacing-select" value="0"
+          x-model="$store.viewState.selectedSpacing" />
+      </div>
+
+      <div class="d-flex justify-content-between">
+        <div id="checkmark-card" class="card text-center custom-input-card" @click="checkmarkCreate()">
+          <div class="fw-bold mb-1 text-start">Add checkmark ✓</div>
         </div>
 
-        <!-- Table column -->
-        <div class="">
-          <div class="table-responsive">
-            <div class="d-flex justify-content-between">
-              <div id="checkmark-card" class="card text-center custom-input-card" onclick="checkmarkCreate()">
-                <div class="fw-bold mb-1 text-start">Add checkmark ✓</div>
-              </div>
-
-              <div id="custom-text-card" class="card text-center custom-input-card" onclick="customTextCreate()">
-                <div class="fw-bold mb-1 text-start">Add custom text</div>
-              </div>
-            </div>
-            <div class="d-flex justify-content-between align-items-center">
-              <div id="saved-text-card" class="card text-center custom-input-card crsr-ptr w40px"
-                onclick="savedTextCreate()">
-                <div class="fw-bold mb-1">Add:</div>
-              </div>
-              <div class="flex-fill mw40px">
-                <label for="saved-text-input" class="form-label d-none">Saved Text</label>
-                <select id="saved-text-input" class="form-select" onclick="savedTextCreate()">
-                  <optgroup label="Choose One"></optgroup>
-                </select>
-              </div>
-            </div>
-
-            <div id="csv-cards" class="d-flex flex-column gap-2"></div>
-            <hr />
-            <h2>Custom Text</h2>
-            <div id="custom-cards" class="d-flex flex-column gap-2"></div>
-          </div>
+        <div id="custom-text-card" class="card text-center custom-input-card" @click="customTextCreate()">
+          <div class="fw-bold mb-1 text-start">Add custom text</div>
         </div>
       </div>
+
+      <div class="d-flex justify-content-between align-items-center">
+        <div id="saved-text-card" class="card text-center custom-input-card crsr-ptr w40px" @click="savedTextCreate()">
+          <div class="fw-bold mb-1">Add:</div>
+        </div>
+        <div class="flex-fill mw40px">
+          <label for="saved-text-input" class="form-label d-none">Saved Text</label>
+          <select id="saved-text-input" class="form-select" x-model="$store.viewState.savedTextSelection">
+            <optgroup label="Choose One"></optgroup>
+          </select>
+        </div>
+      </div>
+
+      <div id="csv-cards" class="d-flex flex-column gap-2"></div>
+      <hr />
+      <h2>Custom Text</h2>
+      <div id="custom-cards" class="d-flex flex-column gap-2"></div>
     </aside>
   </div>
 
-
-  <!-- Libraries -->
-
-
-
-  <!-- Alpine.js -->
+  <!-- ====================== Libraries ====================== -->
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-
-
-  <!-- PDF-Lib, FontKit, PDF.Js -->
   <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
   <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -252,18 +255,19 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc =
       "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
   </script>
-
-  <!-- PapaParse for CSV parsing -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
-  <!-- Font Data -->
+  <!-- JS -->
   <script src="js/font_data.js"></script>
-
-  <!-- Alpine Setup -->
   <script src="js/alpineSetup.js"></script>
-
-  <!-- Startup Script -->
+  <script src="js/db.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/pdfUtils.js"></script>
+  <script src="js/pdfLoader.js"></script>
+  <script src="js/pdfExport.js"></script>
+  <script src="js/pdfWriting.js"></script>
   <script src="js/_setup.js"></script>
 
 </body>

@@ -1,14 +1,9 @@
-document.addEventListener('alpine:init', () => {
-  initAlpineLocData();
-  initAlpineViewState();
-  initAlpinePdfState();
-  initAlpineCsvState();
-  initAlpineLogbox();
-});
-
+// Note: Alpine loads after DOM
 document.addEventListener('alpine:initialized', () => {
-  window.locData = Alpine.store('locData');
-  window.viewState = Alpine.store('viewState');
-  window.pdfState = Alpine.store('pdfState');
-  window.csvState = Alpine.store('csvState');
+    window.viewState = Alpine.store('viewState');
+    Alpine.store('menuState').toggle(1);
+
+    Promise.resolve().then(() => {
+        loadCachedData();
+    }); 
 });

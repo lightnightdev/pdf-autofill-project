@@ -335,3 +335,9 @@ body {
 .invisible-text {
   color: rgba(255, 255, 255, 0);
 }
+
+[x-cloak] { display: none !important; }
+
+.bi {
+  opacity: 0.5;
+}
