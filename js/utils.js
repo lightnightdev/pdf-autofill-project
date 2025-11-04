@@ -26,9 +26,9 @@ function getCanvasClickCoords(canvas, event) {
 function verifyPage(pageNum) {
   if (!Alpine.store('locData').pages[pageNum]) {
     Alpine.store('locData').pages[pageNum] = {
-      csvColumns: [],
-      customText: [],
-      savedText: [],
+      csvColumns: {},
+      customText: {},
+      savedText: {},
     };
   }
 }

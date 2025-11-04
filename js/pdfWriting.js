@@ -66,16 +66,15 @@ function drawPlacedText(page, cfg, text, fontsMap) {
 
 // drawAllText
 function drawStaticText(doc, docFonts, locDataPages) {
-  console.log(locDataPages);
   if (!locDataPages) { return; };
-  let pageLocData;
-  for (pgNum of Object.keys(locData)) {
-    const page = doc.getPage(Number(pgNum));
-    pageLocData = locData[pgNum];
-    for (obj of Object.values(pageLocData.customText)) {
+  let pgld;
+  for (pgNum of Object.keys(locDataPages)) {
+    const page = doc.getPage(Number(pgNum) - 1);
+    pgld = locDataPages[pgNum];
+    for (obj of Object.values(pgld.customText)) {
       drawPlacedText(page, obj, obj.text, docFonts)
     }
-    for (obj of Object.values(pageLocData.savedText)) {
+    for (obj of Object.values(pgld.savedText)) {
       drawPlacedText(page, obj, obj.text, docFonts)
     }
   }
@@ -84,11 +83,11 @@ function drawStaticText(doc, docFonts, locDataPages) {
 
 function drawRowText(doc, docFonts, locDataPages, rowIdx) {
   if (!locDataPages) { return; };
-  let pageLocData;
+  let pgld;
   for (pgNum of Object.keys(locDataPages)) {
-    const page = doc.getPage(Number(pgNum));
-    pageLocData = locDataPages[pgNum];
-    for (obj of Object.values(pageLocData.csvColumns)) {
+    const page = doc.getPage(Number(pgNum) - 1);
+    pgld = locDataPages[pgNum];
+    for (obj of Object.values(pgld.csvColumns)) {
       const txt = getCellOrBlank(rowIdx, obj.colIdx);
       drawPlacedText(page, obj, txt, docFonts)
     }
@@ -97,27 +96,23 @@ function drawRowText(doc, docFonts, locDataPages, rowIdx) {
 
 
 // essentially drawRowText but Row 1 only (after header) and checks for sizing
-function drawSizingText(doc, docFonts, pageLocData, pagenum) {
-  const page = doc.getPage(pagenum);
-  log("Drawing spacing text");
+function drawSizingText(doc, docFonts, pageLocData, pgNum) {
+  const page = doc.getPage(Number(pgNum) - 1);
   if (!pageLocData) { console.log('error drawing sizing text'); return; };
 
   for (obj of Object.values(pageLocData.customText)) {
     if (obj.spacing && obj.spacing > 0) {
-      log("Drawing " + obj.text);
       drawPlacedText(page, obj, obj.text, docFonts)
     }
   }
   for (obj of Object.values(pageLocData.savedText)) {
     if (obj.spacing && obj.spacing > 0) {
-      log("Drawing " + obj.text);
       drawPlacedText(page, obj, obj.text, docFonts)
     }
   }
   for (obj of Object.values(pageLocData.csvColumns)) {
     if (obj.spacing && obj.spacing > 0) {
       const txt = getCellOrHeader(1, obj.colIdx);
-      log("Drawing " + txt);
       drawPlacedText(page, obj, txt, docFonts)
     }
   }

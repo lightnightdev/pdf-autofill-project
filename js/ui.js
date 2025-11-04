@@ -43,16 +43,52 @@ function nextPage() {
   }
 }
 
-function removeCurrentPage() {
-  console.log('Remove current page')
+async function removeCurrentPage() {
+  const viewState = Alpine.store('viewState');
+  const pdfState = Alpine.store('pdfState');
+
+  if (!pdfDoc || pdfState.pdfPages <= 1) {
+    log('Only one page!');
+    return;
+  }
+
+  if (!confirm(`Hide page ${viewState.currentPage}? This will remove all markers.`)) return;
+
+  // Remove locData
+  removePageLocData(viewState.currentPage);
+  await removePageBytes(viewState.currentPage);
+
+  log('Page hidden and removed.');
+
+  // Go to previous page
+  viewState.currentPage = Math.max(1, viewState.currentPage - 1);
+  await queueUpdateRenderDoc();
 }
 
+async function removePageBytes(pageNum) {
+  const pdfBytes = Alpine.store('pdfState').pdfBytes;
+  const doc = await PDFLib.PDFDocument.load(pdfBytes);
 
+  if (doc.totalPages <= 1) return;
+  doc.removePage(pageNum - 1);
+
+  const newBytes = await doc.save();
+  const newPages = Number(Alpine.store('pdfState').pdfPages) - 1
+  Alpine.store('pdfState').pdfBytes = newBytes;
+  Alpine.store('pdfState').pdfPages = newPages;
+
+  savePdfToIndexedDb();
+}
+
+function removePageLocData(pageNum) {
+  delete Alpine.store('locData').pages[pageNum]
+}
 
 // ====================== MARKER DATA ======================
 function clearAllMarkers() {
-  Alpine.store('locData').clearAll();
-  console.log('All markers cleared');
+  if (!confirm('Delete all markers in this document?')) { return; }
+  Alpine.store('locData').clear();
+  log('All markers cleared');
 }
 
 function downloadMarkers() {

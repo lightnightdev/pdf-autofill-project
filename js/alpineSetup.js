@@ -144,6 +144,10 @@ document.addEventListener('alpine:init', () => {
         null
       );
     }
+    , selId(id) {
+      this.selectType = 'locData-el';
+      this.selectId = id;
+    }
   });
 
   // ====================== FONT STATE STORE ======================
@@ -272,6 +276,7 @@ document.addEventListener('alpine:init', () => {
           package.key = "__checkmark";
           package.text = resolveSavedTextValue("__checkmark")
           package.font = "_symbol"
+          package.size = 20
           ld.pages[pageNum].savedText[newId] = package;
           break;
         case "savedText":
@@ -291,7 +296,7 @@ document.addEventListener('alpine:init', () => {
           break;
       }
 
-      Alpine.store('viewState').selectId = newId;
+      Alpine.store('viewState').selId(newId);
     }
   }));
 

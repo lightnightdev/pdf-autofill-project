@@ -185,7 +185,7 @@
                     'spacing-yes': item.spacing > 0
                   }"
                   :style="`position: absolute; pointer-events: auto; left:${item.x}px; top:${item.y}px; font-family:${item.font}; font-size:${item.size}px; letter-spacing:${item.spacing}px;`"
-                  @click="$store.viewState.selectId = id" x-text="item.text">
+                  @click="$store.viewState.selId(id)" x-text="item.text">
 
                 </div>
               </template>
@@ -200,7 +200,7 @@
                     'spacing-yes': item.spacing > 0
                   }"
                   :style="`position: absolute; pointer-events: auto; left:${item.x}px; top:${item.y}px; font-family:${item.font}; font-size:${item.size}px; letter-spacing:${item.spacing}px;`"
-                  @click="$store.viewState.selectId = id" x-text="$store.locData.resolveSavedText(item.key)">
+                  @click="$store.viewState.selId(id)" x-text="$store.locData.resolveSavedText(item.key)">
                 </div>
               </template>
 
@@ -214,7 +214,7 @@
                     'spacing-yes': item.spacing > 0
                   }"
                   :style="`position: absolute; pointer-events: auto; left:${item.x}px; top:${item.y}px; font-family:${item.font}; font-size:${item.size}px; letter-spacing:${item.spacing}px;`"
-                  @click="$store.viewState.selectId = id" x-text="$store.csvState.getSampleRow(item.colIdx)">
+                  @click="$store.viewState.selId(id)" x-text="$store.csvState.getSampleRow(item.colIdx)">
                 </div>
               </template>
             </div>

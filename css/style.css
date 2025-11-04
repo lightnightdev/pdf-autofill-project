@@ -265,6 +265,11 @@ body {
 }
 
 .loc-data-el {
+
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+
   line-height: 1;
   transform: translate(0%, -100%);
   /* padding: 0px 0px; */
@@ -335,7 +340,9 @@ body {
   color: rgba(255, 255, 255, 0);
 }
 
-[x-cloak] { display: none !important; }
+[x-cloak] {
+  display: none !important;
+}
 
 .bi {
   opacity: 0.5;

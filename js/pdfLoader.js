@@ -120,7 +120,7 @@ async function renderPage(pageNum = 1) {
 
     const ld = Alpine.store('locData').pages[pageNum]
 
-    await drawSizingText(renderDoc, renderDocFonts, ld, pageNum - 1)
+    await drawSizingText(renderDoc, renderDocFonts, ld, pageNum)
 
     const typedarray = new Uint8Array(await renderDoc.save());
     pdfDoc = await pdfjsLib.getDocument({ data: typedarray }).promise;
@@ -174,41 +174,3 @@ function syncOverlayBoxToCanvas() {
 // Navigation
 // --------------------
 
-async function removeCurrentPage() {
-  const viewState = Alpine.store('viewState');
-  const pdfState = Alpine.store('pdfState');
-
-  if (!pdfDoc || pdfState.pdfPages <= 1) {
-    log('Only one page!');
-    return;
-  }
-
-  if (!confirm(`Hide page ${viewState.currentPage}? This will remove all markers.`)) return;
-
-  // Remove locData & customText for current page
-  removePageLocData(viewState.currentPage);
-  removeCustomTextFromPage();
-
-  await removePageBytes(viewState.currentPage);
-
-  displayCSVPreviewAsCards(Alpine.store('csvState').csvData);
-
-  log('Page hidden and removed.');
-
-  // Go to previous page
-  const newPage = viewState.currentPage > 1 ? viewState.currentPage - 1 : 1;
-  await queueUpdateRenderDoc(newPage);
-}
-
-async function removePageBytes(pageNum) {
-  const pdfBytes = Alpine.store('pdfState').pdfBytes;
-  const doc = await PDFLib.PDFDocument.load(pdfBytes);
-
-  if (doc.totalPages <= 1) return;
-  doc.removePage(pageNum - 1);
-
-  const newBytes = await doc.save();
-  Alpine.store('pdfState').pdfBytes = newBytes;
-
-  savePdfToIndexedDb();
-}
