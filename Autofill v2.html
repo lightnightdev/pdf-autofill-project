@@ -23,7 +23,7 @@
 
       <div class="mb-3">
         <h1>PDF-CSV Autofiller</h1>
-        <span id="webapp_version_id">v2.0.3</span>
+        <span id="webapp_version_id">v2.0.4</span>
       </div>
       <hr />
 
@@ -156,8 +156,6 @@
       </div>
 
       <hr />
-      <div id="logbox" class="logbox" x-data x-text="$store.logbox.output" x-effect="$el.scrollTop = $el.scrollHeight">
-      </div>
 
       <!-- ________________________________ TIPS ________________________________ -->
       <div class="menu-block">
@@ -173,6 +171,15 @@
           <p class="tip m-2"><b>Editing a marker:</b><br>- Click an existing marker or its column card<br>- Use (+/=)
             and (-) keys to adjust font size<br>- Use arrow keys to move<br>- Press (Delete) to delete marker</p>
           <p class="tip m-2"><b>Unzipping on Windows:</b><br>- Right click file > Properties > Unblock</p>
+        </div>
+      </div>
+
+      <hr />
+      <div x-data="{ logboxShow: false}">
+        <button class="btn btn-sm btn-outline-secondary m-2" @click="logboxShow = !logboxShow" x-text="logboxShow ? 'Hide logbox' : 'Show logbox'"></button>
+
+        <div id="logbox" class="logbox" x-data x-text="$store.logbox.output" x-effect="$el.scrollTop = $el.scrollHeight"
+          x-show="logboxShow" x-transition>
         </div>
       </div>
     </aside>
