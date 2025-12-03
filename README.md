@@ -3,12 +3,13 @@
 ## Overview
 The PDF Autofill Project is a browser-based tool for positioning CSV data onto a PDF template and exporting personalized, flattened documents in bulk. It is built entirely with client-side technologies (no server component required) using:
 
+- [Alpine.js] to manage state
 - [PDF.js](https://mozilla.github.io/pdf.js/) for on-screen PDF rendering
 - [pdf-lib](https://pdf-lib.js.org/) plus Fontkit for editing and embedding fonts
 - [Papa Parse](https://www.papaparse.com/) for CSV parsing
 - [JSZip](https://stuk.github.io/jszip/) for bundling generated PDFs into a single ZIP download
 
-All state (the PDF, CSV data, and placement coordinates) is cached in the browser via IndexedDB, so you can refresh the page or return later without losing your progress.
+All state (the PDF and placement coordinates) is cached in the browser via IndexedDB, so you can refresh the page or return later without losing your progress.
 
 ## Key Features
 - **Interactive placement**: Click anywhere on the PDF canvas to bind a CSV column to that location. Each column is previewed as a card showing sample values.
